@@ -11,6 +11,15 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Badge: typeof import('primevue/badge')['default']
     Button: typeof import('primevue/button')['default']
+    ButtonGroup: typeof import('primevue/buttongroup')['default']
+    ContextMenu: typeof import('primevue/contextmenu')['default']
+    Slider: typeof import('primevue/slider')['default']
+  }
+  export interface GlobalDirectives {
+    FocusTrap: typeof import('primevue/focustrap')['default']
+    Ripple: typeof import('primevue/ripple')['default']
+    Tooltip: typeof import('primevue/tooltip')['default']
   }
 }

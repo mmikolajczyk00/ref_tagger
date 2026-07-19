@@ -1,46 +1,47 @@
 {
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "workbench.colorCustomizations": {
-    "[Azure*]": {
-      "editorSuggestWidget.selectedForeground": "#6ab0a3",
-      "editorSuggestWidget.focusHighlightForeground": "#ead88b",
-      "editorSuggestWidget.selectedBackground": "#1f2f2f",
-      "editorError.foreground": "#fa7a87",
-      "editorError.background": "#ff717f76",
-      "editorError.border": "#aa505d00",
-      "quickInputList.focusBackground": "#365c4d",
-      "quickInputList.focusForeground": "#FFFFFF",
-      "quickInput.foreground": "#b9b9b9",
-      "minimapSlider.activeBackground": "#b5ffeb33",
-      "minimapSlider.hoverBackground": "#b5ffeb33",
-      "minimapSlider.background": "#b5ffeb33",
-      "terminal.findMatchHighlightBackground": "#6cffd893",
-      "terminal.findMatchBackground": "#7fffd293",
-      "terminal.selectionBackground": "#00b3ad93",
-      "terminal.findMatchBorder": "#69ffd7",
-      "editor.findMatchHighlightBackground": "#00ffbb7f",
-      "editor.findMatchBorder": "#00ffbb",
-      "editor.findMatchBackground": "#00ffbb7f",
-      "inlineChat.background": "#ffffff6b"
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
-    "activityBar.background": "#410A56",
-    "titleBar.activeBackground": "#5A0E78",
-    "titleBar.activeForeground": "#FEFBFF",
-    "titleBar.inactiveBackground": "#410A56",
-    "titleBar.inactiveForeground": "#FEFBFF",
-    "statusBar.background": "#410A56",
-    "statusBar.foreground": "#FEFBFF",
-    "statusBar.debuggingBackground": "#410A56",
-    "statusBar.debuggingForeground": "#FEFBFF",
-    "statusBar.noFolderBackground": "#410A56",
-    "statusBar.noFolderForeground": "#FEFBFF"
-  }
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "workbench.colorCustomizations": {
+        "[Azure*]": {
+            "editorSuggestWidget.selectedForeground": "#6ab0a3",
+            "editorSuggestWidget.focusHighlightForeground": "#ead88b",
+            "editorSuggestWidget.selectedBackground": "#1f2f2f",
+            "editorError.foreground": "#fa7a87",
+            "editorError.background": "#ff717f76",
+            "editorError.border": "#aa505d00",
+            "quickInputList.focusBackground": "#365c4d",
+            "quickInputList.focusForeground": "#FFFFFF",
+            "quickInput.foreground": "#b9b9b9",
+            "minimapSlider.activeBackground": "#b5ffeb33",
+            "minimapSlider.hoverBackground": "#b5ffeb33",
+            "minimapSlider.background": "#b5ffeb33",
+            "terminal.findMatchHighlightBackground": "#6cffd893",
+            "terminal.findMatchBackground": "#7fffd293",
+            "terminal.selectionBackground": "#00b3ad93",
+            "terminal.findMatchBorder": "#69ffd7",
+            "editor.findMatchHighlightBackground": "#00ffbb7f",
+            "editor.findMatchBorder": "#00ffbb",
+            "editor.findMatchBackground": "#00ffbb7f",
+            "inlineChat.background": "#ffffff6b"
+        },
+        "activityBar.background": "#410A56",
+        "titleBar.activeBackground": "#5A0E78",
+        "titleBar.activeForeground": "#FEFBFF",
+        "titleBar.inactiveBackground": "#410A56",
+        "titleBar.inactiveForeground": "#FEFBFF",
+        "statusBar.background": "#410A56",
+        "statusBar.foreground": "#FEFBFF",
+        "statusBar.debuggingBackground": "#410A56",
+        "statusBar.debuggingForeground": "#FEFBFF",
+        "statusBar.noFolderBackground": "#410A56",
+        "statusBar.noFolderForeground": "#FEFBFF"
+    },
+    "editor.tabSize": 8
 }

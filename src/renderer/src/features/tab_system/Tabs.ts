@@ -1,31 +1,68 @@
+import { CommandManager } from '@renderer/core/command_system/CommandManager'
+import EmptyTab from './ui/EmptyTab.vue'
+import UploadQueueTab from '../upload_queue/ui/UploadQueueTab.vue'
+import ExplorerTab from '../explorer/ui/ExplorerTab.vue'
+import CanvasTab from '../canvas/ui/CanvasTab.vue'
+import TagEditorTab from '../tag_editor/ui/TagEditorTab.vue'
+import { Feature } from '@renderer/core/command_system/CommandService'
+import { isRef } from 'vue'
+
 enum AppTabType {
-  Empty,
-  Canvas,
-  TagEditor
+    Empty,
+    UploadQueue,
+    Explorer,
+    Canvas,
+    TagEditor
 }
+
+const AppTabComponents = [EmptyTab, UploadQueueTab, ExplorerTab, CanvasTab, TagEditorTab]
+const AppTabIcons = ['', 'download_2', 'files', 'gallery_thumbnail', 'sell']
 
 class AppTab {
-  title: string = 'untitled'
-  id: number
-  tabType: AppTabType = AppTabType.Empty
+    title: string = 'untitled'
+    id: number
+    tabType: AppTabType = AppTabType.Empty
+    cmdManager = new CommandManager()
+    data: any
 
-  constructor(id: number, title?: string) {
-    this.id = id
+    constructor(id: number, title?: string) {
+        this.id = id
 
-    if (title) this.title = title
-  }
+        if (title) this.title = title
+    }
+
+    onActive() {}
+    onInactive() {}
 }
 
-class EmptyTab extends AppTab {
-  tabType = AppTabType.Empty
+class Empty_Tab extends AppTab {
+    tabType = AppTabType.Empty
 }
 
-class TagEditorTab extends AppTab {
-  tabType = AppTabType.TagEditor
-}
+// class UploadQueue_Tab extends AppTab {
+//   tabType = AppTabType.Explorer
+// }
 
-class CanvasEditorTab extends AppTab {
-  tabType = AppTabType.Canvas
-}
+// class Explorer_Tab extends AppTab {
+//   tabType = AppTabType.Explorer
+// }
 
-export { AppTab, AppTabType, EmptyTab, TagEditorTab, CanvasEditorTab }
+// class CanvasEditor_Tab extends AppTab {
+//   tabType = AppTabType.Canvas
+// }
+
+// class TagEditor_Tab extends AppTab {
+//   tabType = AppTabType.TagEditor
+// }
+
+export {
+    AppTab,
+    AppTabType,
+    Empty_Tab,
+    // UploadQueue_Tab,
+    // Explorer_Tab,
+    // CanvasEditor_Tab,
+    // TagEditor_Tab,
+    AppTabComponents,
+    AppTabIcons
+}

@@ -5,7 +5,8 @@ class Command {
 }
 
 type CommandFactory = (...args: any[]) => Command
-type CommandMap = Map<string, { factory: CommandFactory; showInPalette: boolean }>
+type CommandMap = Map<string, CommandFactory>
+type CommandMapAdv = Map<string, { factory: CommandFactory; showInPalette: boolean }>
 type CommandsScopeMap = Map<string, CommandMap>
 
 class CommandManager {
@@ -43,56 +44,57 @@ class CommandManager {
 }
 
 class CommandRegistry {
-  public commands = new Map<string, CommandMap>()
+  public commands_invisible = new Map<string, CommandMap>() // arent visible in command palette
+  public commands_visible = new Map<string, CommandMap>() // are shown in palette
 
   constructor() {}
 
   register(scope: string, id: string, factory: CommandFactory, showInPalette = true) {
-    // this.commands.set(id, {
-    //   factory: factory,
-    //   showInPalette: showInPalette
-    // })
-    if (!this.commands.get(scope)) this.commands.set(scope, new Map())
+    let cmdMap = showInPalette ? this.commands_visible : this.commands_invisible
 
-    this.commands.get(scope)!.set(id, { factory, showInPalette })
+    if (!cmdMap.get(scope)) cmdMap.set(scope, new Map())
+
+    cmdMap.get(scope)!.set(id, factory)
+  }
+  unregister(scope: string, id: string, factory: CommandFactory, showInPalette = true) {
+    let cmdMap = showInPalette ? this.commands_visible : this.commands_invisible
+
+    if (!cmdMap.get(scope)) console.log('scope not registered, cannot unregister')
+    else cmdMap.get(scope)!.delete(id)
   }
 
   create(id: string, ...args: any[]): Command | null {
     let cmd: Command | null = null
 
-    this.commands.forEach((v, k) => {
-      console.log(k, v)
+    // first check visible
+    this.commands_visible.forEach((v, k) => {
+      let factory = v.get(id)
 
-      let t = v.get(id)
-
-      console.log(t)
-
-      if (t) {
-        const { factory } = t
+      if (factory) {
         cmd = factory(...args)
       }
     })
 
-    if (!cmd) throw new Error('Command not found: ' + id)
-    else return cmd
+    if (cmd) return cmd
+
+    // then check invisible
+    this.commands_invisible.forEach((v, k) => {
+      let factory = v.get(id)
+
+      if (factory) {
+        cmd = factory(...args)
+      }
+    })
+
+    if (cmd) return cmd
+    else throw new Error('Command not found: ' + id)
   }
 
   // rn just gives the names
-  getShownInPalette() {
-    let arr: Array<string> = []
-    this.commands.forEach((map, scope) => {
-      let t = Array.from(map.entries())
-        .filter((e) => {
-          return e[1].showInPalette
-        })
-        .map((e) => {
-          return e[0]
-        })
-
-      arr.push(...t)
-    })
+  getShownInPalette(): Map<string, CommandMap> {
+    return this.commands_visible
   }
 }
 
 export { Command, CommandManager, CommandRegistry }
-export type { CommandFactory, CommandMap, CommandsScopeMap }
+export type { CommandFactory, CommandMapAdv, CommandMap, CommandsScopeMap }

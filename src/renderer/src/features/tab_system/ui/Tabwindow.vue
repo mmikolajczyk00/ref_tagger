@@ -1,17 +1,23 @@
 <template>
-  <div v-for="tab in tabSystem.openTabs" v-show="tab.id == tabSystem.activeTabId">
-    <component :is="tabComponents[tab.tabType]" />
-  </div>
+    <div
+        class="relative h-1 flex-1"
+        v-for="tab in tabStore.openTabs"
+        v-show="tab.id == tabStore.activeTabId"
+    >
+        <component
+            v-bind="tab.data"
+            :active="tab.id == tabStore.activeTabId"
+            :is="AppTabComponents[tab.tabType]"
+        />
+    </div>
 </template>
 
 <script setup lang="ts">
-import { inject, reactive, ref } from 'vue'
-import EmptyTab from './EmptyTab.vue'
-import CanvasTab from '@renderer/features/canvas/ui/CanvasTab.vue'
-import TagEditorTab from '@renderer/features/tab_editor/ui/TagEditorTab.vue'
-const tabSystem = ref(inject<any>('tabSystem'))
+import { inject } from 'vue'
 
-const tabComponents = [EmptyTab, CanvasTab, TagEditorTab]
+import { AppTabComponents } from '../Tabs'
+import { useTabStore } from '@renderer/core/stores/tabStore'
+const tabStore = useTabStore()
 </script>
 
 <style scoped></style>

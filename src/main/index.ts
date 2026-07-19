@@ -2,6 +2,9 @@ import { app, shell, BrowserWindow, ipcMain, globalShortcut } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import axios from 'axios'
+import axiosApi from '../shared/axios'
+const apiUrl = import.meta.env.VITE_API_URL
 
 function createWindow(): void {
   // Create the browser window.
@@ -12,7 +15,7 @@ function createWindow(): void {
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      webSecurity: false,
+      webSecurity: true,
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
@@ -65,6 +68,33 @@ app.whenReady().then(() => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+
+  ipcMain.handle('api:get', async (_, url: string) => {
+    console.log(url)
+
+    const res = await axiosApi.get(url)
+    return res.data
+  })
+
+  ipcMain.handle('api:post', async (_, url: string, data: any) => {
+    const res = await axiosApi.post(url, data)
+    return res.data
+  })
+
+  ipcMain.handle('api:postForm', async (_, url: string, data: any) => {
+    const res = await axiosApi.postForm(url, data)
+    return res.data
+  })
+
+  ipcMain.handle('api:delete', async (_, url: string, data: any) => {
+    const res = await axiosApi.delete(url, data)
+    return res.data
+  })
+
+  ipcMain.handle('api:put', async (_, url: string, data: any) => {
+    const res = await axiosApi.put(url, data)
+    return res.data
   })
 })
 

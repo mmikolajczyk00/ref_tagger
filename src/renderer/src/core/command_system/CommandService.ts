@@ -1,41 +1,97 @@
-import { CommandRegistry, CommandManager, CommandMap } from './CommandManager'
+import {
+    CommandRegistry,
+    CommandManager,
+    CommandMap,
+    CommandFactory,
+    CommandMapAdv
+} from './CommandManager'
 import { HotkeysManager, HotkeysMap } from './HotkeysManager'
+import { PromptAddFilesToCanvasCommand, RedoCommand, UndoCommand } from './GenericCommands'
+import { UUID } from 'crypto'
+import { useTabStore } from '../stores/tabStore'
+
+interface Feature {
+    registerFeature()
+    unregisterFeature()
+}
 
 class CommandService {
-  constructor(
-    private registry: CommandRegistry,
-    private manager: CommandManager,
-    private hotkeysMng: HotkeysManager
-  ) {}
+    constructor(
+        private registry: CommandRegistry,
+        private hotkeysMng: HotkeysManager
+    ) {
+        // undo redo global commands
 
-  execute(id: string, ...args: any[]): void {
-    const cmd = this.registry.create(id, ...args)
-    if (cmd) this.manager.execute(cmd)
-  }
+        registry.register('all', 'undo', () => {
+            return new UndoCommand(this.getCurrentCmdManager())
+        })
+        registry.register('all', 'redo', () => {
+            return new RedoCommand(this.getCurrentCmdManager())
+        })
+        this.hotkeysMng.bindHotkey('all', 'ctrl+z', 'undo')
+        this.hotkeysMng.bindHotkey('all', 'ctrl+y', 'redo')
 
-  undo(): void {
-    this.manager.undo()
-  }
+        registry.register('all', 'prompt_add_files_to_canvas', (files: UUID[]) => {
+            return new PromptAddFilesToCanvasCommand(files)
+        })
+    }
 
-  redo(): void {
-    this.manager.redo()
-  }
+    getCurrentCmdManager() {
+        const tabStore = useTabStore()
+        return tabStore.getActiveTab().cmdManager
+    }
 
-  registerFeature(
-    scope: string,
-    cmdMap: CommandMap,
-    hotkeysMap: HotkeysMap,
-    hotkeysScope: string = ''
-  ) {
-    hotkeysScope = hotkeysScope == '' ? scope : hotkeysScope
-    cmdMap.forEach((v, id) => {
-      this.registry.register(scope, id, v.factory, v.showInPalette)
-    })
+    execute(id: string, ...args: any[]): void {
+        const cmd = this.registry.create(id, ...args)
+        if (cmd) {
+            if (cmd.undoable) {
+                this.getCurrentCmdManager().execute(cmd)
+            } else {
+                cmd.execute()
+            }
+        }
+    }
 
-    console.log('registering features')
+    undo(): void {
+        this.getCurrentCmdManager().undo()
+    }
 
-    this.hotkeysMng.bindHotkeys(hotkeysScope, hotkeysMap)
-  }
+    redo(): void {
+        this.getCurrentCmdManager().redo()
+    }
+
+    registerFeature(
+        scope: string,
+        cmdMap: CommandMapAdv,
+        hotkeysMap: HotkeysMap,
+        hotkeysScope: string = ''
+    ) {
+        hotkeysScope = hotkeysScope == '' ? scope : hotkeysScope
+        cmdMap.forEach((v, id) => {
+            this.registry.register(scope, id, v.factory, v.showInPalette)
+        })
+
+        this.hotkeysMng.bindHotkeys(hotkeysScope, hotkeysMap)
+    }
+
+    unregisterFeature(
+        scope: string,
+        cmdMap: CommandMapAdv,
+        hotkeysMap: HotkeysMap,
+        hotkeysScope: string = ''
+    ) {
+        hotkeysScope = hotkeysScope == '' ? scope : hotkeysScope
+        cmdMap.forEach((v, id) => {
+            this.registry.unregister(scope, id, v.factory, v.showInPalette)
+        })
+
+        this.hotkeysMng.unbindHotkeys(hotkeysScope, hotkeysMap)
+    }
+
+    getShownInPalette() {
+        return this.registry.getShownInPalette()
+    }
 }
 
 export { CommandService }
+export type { Feature }

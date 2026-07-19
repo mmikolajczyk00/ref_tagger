@@ -11,13 +11,25 @@ export default defineConfig({
       headers: {
         'Content-Security-Policy': "default-src * 'unsafe-inline' 'unsafe-eval'; connect-src *;"
       }
+    },
+    resolve: {
+      alias: {
+        '@shared': resolve(__dirname, 'src/shared')
+      }
     }
   },
-  preload: {},
+  preload: {
+    resolve: {
+      alias: {
+        '@shared': resolve(__dirname, 'src/shared')
+      }
+    }
+  },
   renderer: {
     resolve: {
       alias: {
-        '@renderer': resolve('src/renderer/src')
+        '@renderer': resolve('src/renderer/src'),
+        '@shared': resolve(__dirname, 'src/shared')
       }
     },
     plugins: [
@@ -25,7 +37,7 @@ export default defineConfig({
       tailwindcss(),
       Components({
         resolvers: [PrimeVueResolver()],
-        dirs: ['src/renderer/src/components', 'src/renderer/src/features/*/ui']
+        dirs: ['src/renderer/src/*/ui/*']
       })
     ]
   }

@@ -5,7 +5,7 @@
     "src/renderer/src/**/*",
     "src/renderer/src/**/*.vue",
     "src/preload/*.d.ts"
-  ],
+, "src/shared/shared.ts", "src/shared/axios.ts", "src/shared/model"  ],
   "compilerOptions": {
     "composite": true,
     "baseUrl": ".",

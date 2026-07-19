@@ -1,4 +1,26 @@
 @import 'tailwindcss';
+@import 'tailwindcss-primeui';
+@custom-variant dark (&:where(.app-dark, .app-dark *));
+
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  src: url(materialsymbols.woff2) format('woff2');
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px; /* Preferred icon size */
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+}
 
 @theme {
   --color-avocado-600: oklch(0.53 0.12 118.34);
