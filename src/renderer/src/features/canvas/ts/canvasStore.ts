@@ -1,17 +1,16 @@
-import { UUID } from 'crypto'
 import { defineStore } from 'pinia'
-import { useTabStore } from './tabStore'
+import { useTabStore } from '../../../core/stores/useTabStore'
 import { AppTabType } from '@renderer/features/tab_system/Tabs'
-import CanvasScene from '@renderer/features/canvas/CanvasScene'
-import { Coordinates } from '@renderer/features/canvas/canvas_utils'
+import CanvasScene from './scene/CanvasScene'
+import { Coordinates } from './scene/canvas_utils'
 
 interface CanvasTabsState {
-    openCanvases: Map<UUID, CanvasScene>
+    openCanvases: Map<number, CanvasScene>
 }
 
 export const useCanvasStore = defineStore('canvasStore', {
     state: (): CanvasTabsState => ({
-        openCanvases: new Map<UUID, CanvasScene>()
+        openCanvases: new Map<number, CanvasScene>()
     }),
 
     getters: {
@@ -19,20 +18,20 @@ export const useCanvasStore = defineStore('canvasStore', {
             return state.openCanvases
         },
         getCanvas: (state) => {
-            return (id: UUID) => state.openCanvases.get(id)
+            return (id: number) => state.openCanvases.get(id)
         }
     },
 
     actions: {
-        addOpenCanvas(files: UUID[] = []) {
-            const scene = new CanvasScene(crypto.randomUUID())
+        addOpenCanvas(files: number[] = []) {
+            const scene = new CanvasScene(Date.now())
             const tabStore = useTabStore()
             tabStore.openTab(AppTabType.Canvas, 'new canvas', { canvasId: scene.id })
             this.openCanvases.set(scene.id, scene)
             scene.addImages(files, { x: 100, y: 100 } as Coordinates)
         },
 
-        closeCanvas(id: UUID) {
+        closeCanvas(id: number) {
             this.$state.openCanvases.delete(id)
         }
     }

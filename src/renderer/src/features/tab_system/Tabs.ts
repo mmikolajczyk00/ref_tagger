@@ -4,8 +4,6 @@ import UploadQueueTab from '../upload_queue/ui/UploadQueueTab.vue'
 import ExplorerTab from '../explorer/ui/ExplorerTab.vue'
 import CanvasTab from '../canvas/ui/CanvasTab.vue'
 import TagEditorTab from '../tag_editor/ui/TagEditorTab.vue'
-import { Feature } from '@renderer/core/command_system/CommandService'
-import { isRef } from 'vue'
 
 enum AppTabType {
     Empty,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useTransformStyle } from '../composables/useTransformStyle'
-import { TransformBox } from '../TransformBox'
+import { TransformBox } from '../ts/scene/TransformBox'
 
 const props = defineProps<{
     transformBox: TransformBox

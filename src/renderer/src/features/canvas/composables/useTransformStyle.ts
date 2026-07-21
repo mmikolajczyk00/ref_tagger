@@ -1,5 +1,5 @@
 import { computed, MaybeRefOrGetter, Ref, toValue } from 'vue'
-import { Transform } from '../canvas_utils'
+import { Transform } from '../ts/scene/canvas_utils'
 
 export function useTransformStyle(transformSource: MaybeRefOrGetter<Transform>) {
     return computed(() => {
@@ -19,7 +19,7 @@ export function useTransformStyle(transformSource: MaybeRefOrGetter<Transform>) 
             height: `${height * scale}px`,
             transform: `translate3d(${x}px, ${y}px,0) rotate(${rotation}rad)`,
             transformOrigin: 'top left',
-            'z-index': zIndex
+            zIndex: zIndex
         }
     })
 }

@@ -8,9 +8,9 @@
 
 import { Command } from '@renderer/core/command_system/CommandManager'
 import { HotkeysMap } from '@renderer/core/command_system/HotkeysManager'
-import { ExplorerManager } from '../ExplorerManager'
+import { ExplorerManager } from '../ts/ExplorerManager'
 import { UUID } from 'crypto'
-import { useCanvasStore } from '@renderer/core/stores/canvasStore'
+import { useCanvasStore } from '../../canvas/ts/canvasStore'
 
 export const EXPLORER_COMMANDS = {
     SELECT_ALL: 'select_all',

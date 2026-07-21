@@ -73,7 +73,7 @@
 import { useTemplateRef, ref, reactive, onMounted, watchEffect, computed, watch } from 'vue'
 import type { HtmlHTMLAttributes, Ref } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import { NoteCanvasElement } from '../CanvasElements'
+import { NoteCanvasElement } from '../ts/scene/CanvasElements'
 
 const { canvasNoteData } = defineProps({
     canvasNoteData: NoteCanvasElement

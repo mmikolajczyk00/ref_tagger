@@ -13,7 +13,7 @@ import { UUID } from 'crypto'
 import { Coordinates, Transform, Vector2 } from './canvas_utils'
 
 export default class CanvasScene {
-    id: UUID
+    id: number
     transform: Transform
     zoom: number = 1
     htmlElement: HTMLDivElement | undefined
@@ -36,7 +36,7 @@ export default class CanvasScene {
 
     mousePos = new Vector2(0, 0)
 
-    constructor(id: UUID) {
+    constructor(id: number) {
         this.id = id
         this.transform = new Transform(this, null, 'root')
 
@@ -48,7 +48,7 @@ export default class CanvasScene {
         return this.transform
     }
 
-    addImage(fileId: UUID, position?: Coordinates) {
+    addImage(fileId: number, position?: Coordinates) {
         let imageEl = new ImageCanvasElement(this, this.transform, fileId)
 
         if (typeof position !== 'undefined') imageEl.transform.setPos(position)
@@ -58,7 +58,7 @@ export default class CanvasScene {
         // this.transform.addChild(imageEl.transform);
         this.elementCount++
     }
-    addImages(files: UUID[], position?: Coordinates) {
+    addImages(files: number[], position?: Coordinates) {
         files.forEach((f) => {
             this.addImage(f, position)
         })
@@ -93,6 +93,9 @@ export default class CanvasScene {
             } else {
                 this.selectedElements.push(element)
                 element.isSelected = true
+
+                this.highestZIndex++
+                element.transform.zIndex = this.highestZIndex
             }
         } else {
             if (isSelected) {
@@ -100,6 +103,9 @@ export default class CanvasScene {
                     this.clearSelection()
                     this.selectedElements = [element]
                     element.isSelected = true
+
+                    this.highestZIndex++
+                    element.transform.zIndex = this.highestZIndex
                 } else {
                     this.clearSelection()
                 }
@@ -107,6 +113,9 @@ export default class CanvasScene {
                 this.clearSelection()
                 this.selectedElements = [element]
                 element.isSelected = true
+
+                this.highestZIndex++
+                element.transform.zIndex = this.highestZIndex
             }
         }
 

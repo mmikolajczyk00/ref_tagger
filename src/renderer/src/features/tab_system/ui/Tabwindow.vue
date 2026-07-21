@@ -1,22 +1,18 @@
 <template>
-    <div
-        class="relative h-1 flex-1"
-        v-for="tab in tabStore.openTabs"
-        v-show="tab.id == tabStore.activeTabId"
-    >
+    <keep-alive :max="8">
         <component
-            v-bind="tab.data"
-            :active="tab.id == tabStore.activeTabId"
-            :is="AppTabComponents[tab.tabType]"
+            v-bind="tabStore.currentActiveTab.data"
+            :key="tabStore.activeTabId"
+            :is="AppTabComponents[tabStore.currentActiveTab.tabType]"
         />
-    </div>
+    </keep-alive>
 </template>
 
 <script setup lang="ts">
-import { inject } from 'vue'
+import { inject, KeepAlive } from 'vue'
 
 import { AppTabComponents } from '../Tabs'
-import { useTabStore } from '@renderer/core/stores/tabStore'
+import { useTabStore } from '../../../core/stores/useTabStore'
 const tabStore = useTabStore()
 </script>
 

@@ -1,23 +1,23 @@
 <template>
-    <div class="flex gap-1 justify-start w-fit relative pr-8 items-center">
-        <div v-for="tab in tSys.openTabs" :key="tab.id">
+    <div class="relative flex w-fit items-center justify-start gap-1 pr-8">
+        <div v-for="tab in tabStore.openTabs" :key="tab.id">
             <div
-                class="group min-w-24 p-1 max-w-44 cursor-pointer flex items-center relative"
+                class="group relative flex max-w-44 min-w-24 cursor-pointer items-center p-1"
                 :class="[
-                    tab.id == tSys.activeTabId
-                        ? 'bg-zinc-700 hover:bg-zinc-600 text-zinc-100'
-                        : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100'
+                    tab.id == tabStore.activeTabId
+                        ? 'bg-zinc-700 text-zinc-100 hover:bg-zinc-600'
+                        : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
                 ]"
                 @click="clickTab(tab.id)"
             >
                 <span class="material-symbols-outlined mr-2">{{ AppTabIcons[tab.tabType] }}</span>
-                <p class="select-none text-nowrap text-ellipsis overflow-hidden">
+                <p class="overflow-hidden text-nowrap text-ellipsis select-none">
                     {{ tab.title }} : {{ tab.id }}
                 </p>
 
                 <Button
                     @click.stop="closeTab(tab.id)"
-                    class="group-hover:opacity-100 opacity-0 size-fit aspect-square p-1 absolute right-0"
+                    class="absolute right-0 aspect-square size-fit p-1 opacity-0 group-hover:opacity-100"
                     severity="secondary"
                     icon="pi pi-times"
                 />
@@ -25,7 +25,7 @@
         </div>
         <Button
             @click.stop="newEmptyTab()"
-            class="size-fit aspect-square p-1 absolute right-0"
+            class="absolute right-0 aspect-square size-fit p-1"
             severity="secondary"
             icon="pi pi-plus"
         />
@@ -39,11 +39,10 @@ import { CommandService } from '../../../core/command_system/CommandService'
 
 import { AppTabIcons } from '../Tabs'
 import { TAB_COMMANDS } from '../commands/TabCmd'
-import { useTabStore } from '@renderer/core/stores/tabStore'
+import { useTabStore } from '../../../core/stores/useTabStore'
 
 const commandService = inject('commandService') as CommandService
 let tabStore = useTabStore()
-let tSys = ref(tabStore) // so ts doesnt complainc
 
 function clickTab(id: number) {
     tabStore.setActiveTab(id)

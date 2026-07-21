@@ -12,8 +12,8 @@
 </template>
 
 <script setup lang="ts">
-import { useFileStore } from '../../../core/stores/fileStore'
-import { ImageCanvasElement } from '../CanvasElements'
+import { useFileStore } from '../../../core/stores/useFileStore'
+import { ImageCanvasElement } from '../ts/scene/CanvasElements'
 import { useTemplateRef, reactive, onMounted, computed } from 'vue'
 
 const fileStore = useFileStore()
@@ -31,8 +31,13 @@ const imageContainerClasses = computed(() => [
 
 const htmlEl = useTemplateRef('image-html-element')
 const canvasRef = useTemplateRef('imgCanvas')
-onMounted(() => {
-    canvasImageData?.setHtmlElement(htmlEl.value as HTMLDivElement)
+onMounted(async () => {
+    if (!canvasImageData) {
+        console.error('No image data provided to the element')
+        return
+    }
+
+    canvasImageData.setHtmlElement(htmlEl.value as HTMLDivElement)
 
     //load image and draw on canvas
 
@@ -41,7 +46,15 @@ onMounted(() => {
     let context = canvas.getContext('2d')
     const image = new Image()
 
-    const imageUrl = fileStore.getFileOfId(canvasImageData?.fileId)?.url
+    const mediaFile = await fileStore.getFileOfId(canvasImageData.fileId)
+    if (!mediaFile) {
+        console.error(`Could not load file of id ${canvasImageData.fileId}`)
+        return
+    }
+
+    const imageUrl = `media://load?path=${mediaFile.filePath}`
+
+    console.log('imageUrl', imageUrl)
 
     image.src = imageUrl!
 

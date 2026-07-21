@@ -1,7 +1,7 @@
 import type CanvasScene from './CanvasScene'
-import { CARDINAL_DIRECTIONS } from '../canvas/TransformBox'
 import { UUID } from 'crypto'
 import { doPolygonsIntersect, Rectangle, Transform, Vector2 } from './canvas_utils'
+import { CARDINAL_DIRECTIONS } from './TransformBox'
 
 abstract class CanvasElement {
     transform: Transform
@@ -12,7 +12,6 @@ abstract class CanvasElement {
     locked = false
     isGrabbed = false
     isSelected = false
-    zIndex: number = 0
 
     constructor(canvas: CanvasScene, parentTransform: Transform) {
         this.elementId = crypto.randomUUID()
@@ -57,7 +56,7 @@ class ImageCanvasElement extends CanvasElement {
     constructor(
         canvas: CanvasScene,
         parentTransform: Transform,
-        public fileId: UUID
+        public fileId: number
     ) {
         super(canvas, parentTransform)
     }

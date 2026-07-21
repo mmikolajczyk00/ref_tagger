@@ -1,54 +1,54 @@
 <script setup lang="ts">
-import CanvasScene from '../CanvasScene'
-import { computed, ref, useTemplateRef, watchEffect } from 'vue'
-import { CanvasManager } from '../CanvasManager'
-import { useCanvasStore } from '@renderer/core/stores/canvasStore.js'
-import { UUID } from 'crypto'
+import CanvasScene from '../ts/scene/CanvasScene'
+import { computed, onActivated, onDeactivated, onMounted, ref, useTemplateRef } from 'vue'
+import { CanvasManager } from '../ts/scene/CanvasManager'
 import CanvasElementWrapper from './CanvasElementWrapper.vue'
-import { CanvasElement, ImageCanvasElement } from '../CanvasElements'
+import { CanvasElement, ImageCanvasElement } from '../ts/scene/CanvasElements'
 import ImageElement from './ImageElement.vue'
 import TransformBoxOverlay from './TransformBoxOverlay.vue'
-import { CARDINAL_DIRECTIONS, TransformBox } from '../TransformBox'
-import { Vector2 } from '../canvas_utils'
-import SelectionBox from '../SelectionBox'
+import { CARDINAL_DIRECTIONS, TransformBox } from '../ts/scene/TransformBox'
+import { Vector2 } from '../ts/scene/canvas_utils'
 import SelectionBoxOverlay from './SelectionBoxOverlay.vue'
 import { MouseButton } from '@renderer/core/utils/general'
-import { useTransformStyle } from '../composables/useTransformStyle'
+import { useCanvasStore } from '../ts/canvasStore'
 
 const props = defineProps({
-    active: Boolean,
-    canvasId: String
+    canvasId: Number
 })
 
 const canvasStore = useCanvasStore()
-const canvasScene = canvasStore.getCanvas(props.canvasId as UUID)!
+const canvasScene = canvasStore.getCanvas(props.canvasId!)!
 
 const canvasManager = ref<CanvasManager>(new CanvasManager(canvasScene as CanvasScene))
 
 const canvasBg = useTemplateRef('canvas-bg')
 
-watchEffect((onCleanup) => {
+const handleGlobalMouseMove = (event: MouseEvent) => {
+    const container = canvasBg.value
+    if (!container) return
+
+    const rect = container.getBoundingClientRect()
+
+    const localX = event.clientX - rect.left
+    const localY = event.clientY - rect.top
+
+    canvasScene.updateMousePos({ x: localX, y: localY })
+}
+
+onActivated(() => {
     const manager = canvasManager.value
-    if (props.active) {
-        const handleGlobalMouseMove = (event: MouseEvent) => {
-            const container = canvasBg.value
-            if (!container) return
 
-            const rect = container.getBoundingClientRect()
+    console.log('onActivated')
 
-            const localX = event.clientX - rect.left
-            const localY = event.clientY - rect.top
+    window.addEventListener('mousemove', handleGlobalMouseMove)
+    manager.registerFeature()
+})
 
-            canvasScene.updateMousePos({ x: localX, y: localY })
-        }
+onDeactivated(() => {
+    const manager = canvasManager.value
 
-        window.addEventListener('mousemove', handleGlobalMouseMove)
-        manager.registerFeature()
-        onCleanup(() => {
-            manager.unregisterFeature()
-            window.removeEventListener('mousemove', handleGlobalMouseMove)
-        })
-    }
+    manager.unregisterFeature()
+    window.removeEventListener('mousemove', handleGlobalMouseMove)
 })
 
 function initMouseAction(

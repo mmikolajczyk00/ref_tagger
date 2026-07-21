@@ -1,110 +1,138 @@
-import { app, shell, BrowserWindow, ipcMain, globalShortcut } from 'electron'
-import { join } from 'path'
+import { app, shell, BrowserWindow, ipcMain, globalShortcut, protocol, net } from 'electron'
+import path, { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import axios from 'axios'
 import axiosApi from '../shared/axios'
-const apiUrl = import.meta.env.VITE_API_URL
+import { LocalDatabaseService } from './services/LocalDatabaseService'
+import { UploadFilePayload } from '../shared/types/models'
+import { pathToFileURL } from 'url'
+import { TagOperation } from '../renderer/src/features/explorer/ts/useTagEditorPanel'
+
+protocol.registerSchemesAsPrivileged([
+    { scheme: 'media', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+])
 
 function createWindow(): void {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
-    show: false,
-    autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
-    webPreferences: {
-      webSecurity: true,
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+    // Create the browser window.
+    const mainWindow = new BrowserWindow({
+        width: 900,
+        height: 670,
+        show: false,
+        autoHideMenuBar: true,
+        ...(process.platform === 'linux' ? { icon } : {}),
+        webPreferences: {
+            webSecurity: true,
+            preload: join(__dirname, '../preload/index.js'),
+            sandbox: false
+        }
+    })
+
+    mainWindow.on('ready-to-show', () => {
+        mainWindow.show()
+    })
+
+    mainWindow.webContents.setWindowOpenHandler((details) => {
+        shell.openExternal(details.url)
+        return { action: 'deny' }
+    })
+
+    // HMR for renderer base on electron-vite cli.
+    // Load the remote URL for development or the local html file for production.
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+        mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    } else {
+        mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
-  })
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
-  })
-
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
-
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
-
-  mainWindow.webContents.openDevTools({ mode: 'right' })
-
-  globalShortcut.register('CommandOrControl+Shift+I', () => {
     mainWindow.webContents.openDevTools({ mode: 'right' })
-  })
+
+    globalShortcut.register('CommandOrControl+Shift+I', () => {
+        mainWindow.webContents.openDevTools({ mode: 'right' })
+    })
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+    // Set app user model id for windows
+    electronApp.setAppUserModelId('com.electron')
 
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
+    // Default open or close DevTools by F12 in development
+    // and ignore CommandOrControl + R in production.
+    // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
+    app.on('browser-window-created', (_, window) => {
+        optimizer.watchWindowShortcuts(window)
+    })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+    // IPC test
+    ipcMain.on('ping', () => console.log('pong'))
 
-  createWindow()
+    app.on('activate', function () {
+        // On macOS it's common to re-create a window in the app when the
+        // dock icon is clicked and there are no other windows open.
+        if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
 
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+    // media
 
-  ipcMain.handle('api:get', async (_, url: string) => {
-    console.log(url)
+    protocol.handle('media', (request) => {
+        try {
+            const url = new URL(request.url)
 
-    const res = await axiosApi.get(url)
-    return res.data
-  })
+            const targetPath = url.searchParams.get('path')
+            if (!targetPath) {
+                return new Response('Missing path parameter', { status: 400 })
+            }
 
-  ipcMain.handle('api:post', async (_, url: string, data: any) => {
-    const res = await axiosApi.post(url, data)
-    return res.data
-  })
+            const normalizedPath = path.normalize(decodeURIComponent(targetPath))
 
-  ipcMain.handle('api:postForm', async (_, url: string, data: any) => {
-    const res = await axiosApi.postForm(url, data)
-    return res.data
-  })
+            const fileUrl = pathToFileURL(normalizedPath).toString()
 
-  ipcMain.handle('api:delete', async (_, url: string, data: any) => {
-    const res = await axiosApi.delete(url, data)
-    return res.data
-  })
+            return net.fetch(fileUrl)
+        } catch (error) {
+            console.error('Custom Protocol Error:', error)
+            return new Response('Internal Protocol Error', { status: 500 })
+        }
+    })
 
-  ipcMain.handle('api:put', async (_, url: string, data: any) => {
-    const res = await axiosApi.put(url, data)
-    return res.data
-  })
+    // database
+
+    const userDataPath = app.getPath('userData')
+
+    // Launch the database setup
+    const dbService = new LocalDatabaseService(userDataPath)
+
+    ipcMain.handle('api:files:getPaginated', (_event, page: number, limit: number) => {
+        return dbService.getFiles(page, limit)
+    })
+
+    ipcMain.handle('api:files:getById', (_event, id: number) => {
+        let file = dbService.getFileOfId(id)
+        console.log(file)
+
+        return file
+    })
+
+    ipcMain.handle('api:files:insert', async (_event, payload: UploadFilePayload) => {
+        return dbService.insertFile(payload)
+    })
+
+    ipcMain.handle('api:files:updateTags', async (_event, ops: TagOperation[]) => {
+        return dbService.processTagOperations(ops)
+    })
+
+    createWindow()
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+    if (process.platform !== 'darwin') {
+        app.quit()
+    }
 })
 
 // In this file you can include the rest of your app's specific main process

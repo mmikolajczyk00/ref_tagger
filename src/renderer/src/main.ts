@@ -1,5 +1,6 @@
 import './assets/main.css'
 import 'primeicons/primeicons.css'
+
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
@@ -13,10 +14,13 @@ import hotkeys from 'hotkeys-js'
 import { HotkeysManager } from './core/command_system/HotkeysManager'
 import { CommandService } from './core/command_system/CommandService'
 import DialogService from 'primevue/dialogservice'
-import { useCanvasStore } from './core/stores/canvasStore'
-import { useTabStore } from './core/stores/tabStore'
+import { useCanvasStore } from './features/canvas/ts/canvasStore'
+import { useTabStore } from './core/stores/useTabStore'
 import { AppTabType } from './features/tab_system/Tabs'
 import { UUID } from 'crypto'
+
+const PRIMEUI_LICENSE = import.meta.env.VITE_PRIMEUI_LICENSE_KEY
+
 const pinia = createPinia()
 
 const app = createApp(App)
@@ -76,7 +80,8 @@ app.use(PrimeVue, {
                 class: 'bg-red'
             }
         }
-    }
+    },
+    license: PRIMEUI_LICENSE
 })
 
 app.directive('focustrap', FocusTrap)
@@ -94,17 +99,15 @@ const canvasStore = useCanvasStore()
 const tabStore = useTabStore()
 tabStore.useCommandService(commandService)
 
+tabStore.openTab(AppTabType.UploadQueue)
+tabStore.openTab(AppTabType.Explorer)
 tabStore.openTab(AppTabType.Explorer)
 
 // app.provide('commandRegistry', commandRegistry)
 // app.provide('commandManager', commandManager)
 app.provide('commandService', commandService)
 
-const defaultImgs = [
-    'b6305ecf-215e-436b-9ee6-07c2952004ff',
-    'f452c40d-f021-467b-b294-e17e272f3e86',
-    'a930c8a6-dbc7-4abc-b84f-573187b447e3'
-] as UUID[]
+const defaultImgs = [10, 5] as number[]
 
 app.mount('#app')
 

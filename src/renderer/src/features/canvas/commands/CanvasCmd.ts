@@ -1,6 +1,6 @@
 import { Command } from '@renderer/core/command_system/CommandManager'
 import { HotkeysMap } from '@renderer/core/command_system/HotkeysManager'
-import { CanvasManager } from '../CanvasManager'
+import { CanvasManager } from '../ts/scene/CanvasManager'
 
 export const CANVAS_COMMANDS = {
     ARRANGE: 'arrange'

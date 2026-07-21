@@ -15,6 +15,7 @@ declare module 'vue' {
     Button: typeof import('primevue/button')['default']
     ButtonGroup: typeof import('primevue/buttongroup')['default']
     ContextMenu: typeof import('primevue/contextmenu')['default']
+    Divider: typeof import('primevue/divider')['default']
     Slider: typeof import('primevue/slider')['default']
   }
   export interface GlobalDirectives {

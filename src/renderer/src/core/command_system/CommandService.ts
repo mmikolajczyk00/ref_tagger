@@ -8,7 +8,7 @@ import {
 import { HotkeysManager, HotkeysMap } from './HotkeysManager'
 import { PromptAddFilesToCanvasCommand, RedoCommand, UndoCommand } from './GenericCommands'
 import { UUID } from 'crypto'
-import { useTabStore } from '../stores/tabStore'
+import { useTabStore } from '../stores/useTabStore'
 
 interface Feature {
     registerFeature()

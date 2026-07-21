@@ -1,7 +1,7 @@
 import { Command } from '@renderer/core/command_system/CommandManager'
 import { HotkeysMap } from '@renderer/core/command_system/HotkeysManager'
 import { AppTabType } from '../Tabs'
-import { useTabStore } from '@renderer/core/stores/tabStore'
+import { useTabStore } from '../../../core/stores/useTabStore'
 
 export const TAB_COMMANDS = {
     TAB_TEST: 'tab_test',

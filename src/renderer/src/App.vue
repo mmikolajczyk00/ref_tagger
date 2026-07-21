@@ -7,7 +7,7 @@ import DynamicDialog from 'primevue/dynamicdialog'
 </script>
 
 <template>
-    <div class="select-none h-screen w-screen box-border m-0 p-0 flex flex-col overflow-hidden">
+    <div class="m-0 box-border flex h-screen w-screen flex-col overflow-hidden p-0 select-none">
         <TabBar></TabBar>
         <Tabwindow></Tabwindow>
         <CommandPaletteModal></CommandPaletteModal>
