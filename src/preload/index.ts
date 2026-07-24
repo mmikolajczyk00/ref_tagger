@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { ProtocolPayload, ScrapeResult } from '../shared/shared'
-import { MediaType, UploadFilePayload } from '../shared/types/models'
+import { ScrapeResult } from '../shared/shared'
+import { UploadFilePayload } from '../shared/types/models'
 import { TagOperation } from '../renderer/src/features/explorer/ts/useTagEditorPanel'
 
 // Custom APIs for renderer

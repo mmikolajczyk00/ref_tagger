@@ -1,22 +1,22 @@
 <template>
     <div ref="note-html-element" :style="noteStyle" :class="noteClasses" class="noteStyle">
         <pre
+            v-show="!noteData.editMode"
+            ref="text-container"
             class="size-fit"
             :style="textContainerStyle"
-            ref="text-container"
-            v-show="!noteData.editMode"
             >{{ noteData.noteText }}</pre>
         <textarea
             v-show="noteData.editMode"
-            :style="textAreaStyle"
-            style="field-sizing: content"
             ref="text-area"
             v-model="noteData.noteText"
+            :style="textAreaStyle"
+            style="field-sizing: content"
         ></textarea>
 
         <!-- resize buttons -->
 
-        <div id="resize-btns-container" class="absolute size-full" v-show="noteData.editMode">
+        <div v-show="noteData.editMode" id="resize-btns-container" class="absolute size-full">
             <div
                 ref="resize-n"
                 class="absolute -top-8 flex w-full cursor-n-resize items-center justify-center"
@@ -70,9 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { useTemplateRef, ref, reactive, onMounted, watchEffect, computed, watch } from 'vue'
-import type { HtmlHTMLAttributes, Ref } from 'vue'
-import { onClickOutside } from '@vueuse/core'
+import { useTemplateRef, reactive, onMounted, computed } from 'vue'
 import { NoteCanvasElement } from '../ts/scene/CanvasElements'
 
 const { canvasNoteData } = defineProps({

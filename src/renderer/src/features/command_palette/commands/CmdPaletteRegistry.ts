@@ -1,9 +1,4 @@
-import {
-    Command,
-    CommandFactory,
-    CommandMap,
-    CommandMapAdv
-} from '@renderer/core/command_system/CommandManager'
+import { Command, CommandMapAdv } from '@renderer/core/command_system/CommandManager'
 import { HotkeysMap } from '@renderer/core/command_system/HotkeysManager'
 import { ref } from 'vue'
 

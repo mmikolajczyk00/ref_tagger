@@ -4,7 +4,7 @@
         :class="imageContainerClasses"
         class="group absolute size-full overflow-clip"
     >
-        <canvas class="size-full" ref="imgCanvas"></canvas>
+        <canvas ref="imgCanvas" class="size-full"></canvas>
         <p class="absolute bottom-5 left-0 bg-black text-white opacity-0 group-hover:opacity-100">
             {{ imageData.transform.position }}
         </p>

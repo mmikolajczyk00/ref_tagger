@@ -1,5 +1,4 @@
 import type CanvasScene from './CanvasScene'
-import { UUID } from 'crypto'
 import { doPolygonsIntersect, Rectangle, Transform, Vector2 } from './canvas_utils'
 import { CARDINAL_DIRECTIONS } from './TransformBox'
 
@@ -21,12 +20,12 @@ abstract class CanvasElement {
 
     setHtmlElement(htmlElement: HTMLDivElement) {
         this.htmlElement = htmlElement
-        this.canvas.htmlElement
+        this.canvas.htmlElement = htmlElement
     }
 
     getHtmlBoundingBox(): Rectangle {
-        let rect = this.htmlElement!.getBoundingClientRect()
-        let box = {
+        const rect = this.htmlElement!.getBoundingClientRect()
+        const box = {
             left: this.transform.position.x,
             bottom: this.transform.position.y,
             right: rect.width + this.transform.position.x,
@@ -37,7 +36,7 @@ abstract class CanvasElement {
 
     isOverlapping(other: Array<Vector2>) {
         // let rect1 = this.getHtmlBoundingBox();
-        let polygon = [
+        const polygon = [
             this.transform.getBottomLeft(),
             this.transform.getBottomRight(),
             this.transform.getTopRight(),
@@ -47,7 +46,7 @@ abstract class CanvasElement {
         return doPolygonsIntersect(polygon, other)
     }
 
-    select(e: MouseEvent) {
+    select() {
         this.canvas.setSelection(this)
     }
 }
@@ -94,7 +93,7 @@ class NoteCanvasElement extends CanvasElement {
         })
     }
 
-    setResizeButtons(resizeBtns: CARDINAL_DIRECTIONS) {
+    setResizeButtons() {
         // for (let i = 0; i < 8; i++) {
         //     const axis = CARDINAL_DIRECTIONS[i] as keyof CARDINAL_DIRECTIONS
         //     resizeBtns[axis].addEventListener('mousedown', () => {
@@ -180,7 +179,7 @@ class NoteCanvasElement extends CanvasElement {
         // this.canvas.toggleTransformBox(!onOff);
     }
 
-    onDoubleClick(e: MouseEvent) {
+    onDoubleClick() {
         this.setEditMode(true)
     }
 
@@ -208,7 +207,7 @@ class NoteCanvasElement extends CanvasElement {
     }
 
     getResizeAxisMaskFromAxisArea() {
-        let axisMask = new Vector2(1, 1)
+        const axisMask = new Vector2(1, 1)
         if (this.resizeAxis == CARDINAL_DIRECTIONS.n) {
             // pick the pivot point, and calculate scale difference
             axisMask.x = 0

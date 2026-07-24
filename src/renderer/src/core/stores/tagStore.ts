@@ -1,11 +1,8 @@
 import * as tagsService from '@renderer/core/api/tagsService'
-import { FileModel, FileResponse } from '../../../../shared/model/fileModel'
-import { TagModel, TagRequest, TagResponse } from '../../../../shared/model/tagModel'
-import axios from 'axios'
 import { UUID } from 'crypto'
+import { TagModel, TagRequest } from '../../../../shared/model/tagModel'
 import { defineStore } from 'pinia'
 import { useFileStore } from './useFileStore'
-const apiUrl = import.meta.env.VITE_API_URL
 
 interface TaggerState {
     allTags: Map<UUID, TagModel>
@@ -76,18 +73,17 @@ export const useTagStore = defineStore('tagStore', {
                     callback()
                 })
         },
-        async addTagAdvanced(new_tag: TagRequest, callback = () => {}, onErr = () => {}) {
+        async addTagAdvanced(new_tag: TagRequest, callback = () => {}) {
             console.log('store', new_tag)
 
             tagsService
                 .addTagAdvanced(new_tag)
-                .then((result) => {
+                .then(() => {
                     this.fetchAllTags()
                     this.fetchAllGroupsData()
                 })
                 .catch((err) => {
                     catchError(err)
-                    onErr
                 })
                 .finally(() => {
                     callback()
@@ -96,7 +92,7 @@ export const useTagStore = defineStore('tagStore', {
         async addListOfTags(tagList: string[], callback = () => {}) {
             tagsService
                 .addTags(tagList)
-                .then((result) => {
+                .then(() => {
                     this.fetchAllTags()
                 })
                 .catch((err) => {

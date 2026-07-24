@@ -2,15 +2,13 @@
     <keep-alive :max="8">
         <component
             v-bind="tabStore.currentActiveTab.data"
-            :key="tabStore.activeTabId"
             :is="AppTabComponents[tabStore.currentActiveTab.tabType]"
+            :key="tabStore.activeTabId"
         />
     </keep-alive>
 </template>
 
 <script setup lang="ts">
-import { inject, KeepAlive } from 'vue'
-
 import { AppTabComponents } from '../Tabs'
 import { useTabStore } from '../../../core/stores/useTabStore'
 const tabStore = useTabStore()

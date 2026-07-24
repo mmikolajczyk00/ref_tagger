@@ -10,26 +10,22 @@ export function autocompleteFilter(
     suggestions: string[],
     options: AutocompleteOptions = {}
 ): string[] {
-    let {
-        typoTolerance = 3,
-        minLengthForTypo = 3,
-        matchFromStart = true,
-        autocompleteSize = Math.min(15, suggestions.length)
-    } = options
+    const { typoTolerance = 3, minLengthForTypo = 3, matchFromStart = true } = options
+    let autocompleteSize = Math.min(15, suggestions.length)
     autocompleteSize = Math.min(suggestions.length, autocompleteSize)
 
     if (!input || input.length == 0) return suggestions.slice(0, autocompleteSize)
 
     console.log({ input })
 
-    let matches = Array.from(''.repeat(autocompleteSize))
+    const matches = Array.from(''.repeat(autocompleteSize))
 
     const inputLower = input.toLowerCase()
     const inputLength = input.length
 
     let perfectMatch = null as null | string
-    let startsWithMatches = [] as string[]
-    let exactMatches = [] as string[]
+    const startsWithMatches = [] as string[]
+    const exactMatches = [] as string[]
 
     for (let i = 0; i < suggestions.length; i++) {
         const suggestion = suggestions[i]

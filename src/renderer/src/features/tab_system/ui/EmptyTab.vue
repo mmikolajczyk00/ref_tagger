@@ -1,5 +1,5 @@
 <template>
-    <div class="size-full relative flex items-center justify-center">
+    <div class="relative flex size-full items-center justify-center">
         <div class="flex flex-col gap-2">
             <Button outlined @click="open(AppTabType.Explorer)">Open Explorer</Button>
             <Button outlined @click="open(AppTabType.TagEditor)">Open Tag Editor</Button>
@@ -14,7 +14,7 @@ import { CommandService } from '../../../core/command_system/CommandService'
 import { TAB_COMMANDS } from '../commands/TabCmd'
 const cmdService = inject('commandService') as CommandService
 
-function open(tabType: AppTabType) {
+function open() {
     cmdService.execute(TAB_COMMANDS.NEW_EXPLORER_TAB)
     cmdService.execute(TAB_COMMANDS.CLOSE_ACTIVE_TAB)
 }

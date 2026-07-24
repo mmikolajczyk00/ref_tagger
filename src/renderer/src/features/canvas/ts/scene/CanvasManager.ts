@@ -1,9 +1,5 @@
 import { CommandService } from '@renderer/core/command_system/CommandService'
-import { useFileStore } from '../../../../core/stores/useFileStore'
-import { useTagStore } from '@renderer/core/stores/tagStore'
 import { CANVAS_HOTKEYS_MAP, generate_canvas_commands_factories } from '../../commands/CanvasCmd'
-import { useCanvasStore } from '../canvasStore'
-import { UUID } from 'crypto'
 import CanvasScene from './CanvasScene'
 import { inject } from 'vue'
 

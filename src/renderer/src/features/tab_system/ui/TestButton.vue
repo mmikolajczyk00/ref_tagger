@@ -1,5 +1,5 @@
 <template>
-    <div class="m-auto border w-fit" @click="test">click</div>
+    <div class="m-auto w-fit border" @click="test">click</div>
 </template>
 
 <script setup lang="ts">

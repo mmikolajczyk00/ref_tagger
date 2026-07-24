@@ -16,29 +16,27 @@
                 </p>
 
                 <Button
-                    @click.stop="closeTab(tab.id)"
                     class="absolute right-0 aspect-square size-fit p-1 opacity-0 group-hover:opacity-100"
                     severity="secondary"
                     icon="pi pi-times"
+                    @click.stop="closeTab(tab.id)"
                 />
             </div>
         </div>
         <Button
-            @click.stop="newEmptyTab()"
             class="absolute right-0 aspect-square size-fit p-1"
             severity="secondary"
             icon="pi pi-plus"
+            @click.stop="newEmptyTab()"
         />
     </div>
 </template>
 
 <script setup lang="ts">
-import { inject, onMounted, reactive, Ref, ref, watch } from 'vue'
-import { AppTab, AppTabType } from '../Tabs'
-import { CommandService } from '../../../core/command_system/CommandService'
-
+import { inject } from 'vue'
 import { AppTabIcons } from '../Tabs'
 import { TAB_COMMANDS } from '../commands/TabCmd'
+import { CommandService } from '../../../core/command_system/CommandService'
 import { useTabStore } from '../../../core/stores/useTabStore'
 
 const commandService = inject('commandService') as CommandService

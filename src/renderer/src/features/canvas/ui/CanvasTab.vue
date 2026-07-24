@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import CanvasScene from '../ts/scene/CanvasScene'
-import { computed, onActivated, onDeactivated, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, onActivated, onDeactivated, ref, useTemplateRef } from 'vue'
 import { CanvasManager } from '../ts/scene/CanvasManager'
 import CanvasElementWrapper from './CanvasElementWrapper.vue'
 import { CanvasElement, ImageCanvasElement } from '../ts/scene/CanvasElements'
@@ -156,7 +156,7 @@ function handleWheel(e: WheelEvent) {
 }
 
 function handleResizeStart(ev: { axis: CARDINAL_DIRECTIONS; e: MouseEvent }) {
-    const { axis, e } = ev
+    const { axis } = ev
 
     const handleMouseMove = (e: MouseEvent) => {
         canvasScene.transformBox.resizeUpdate(axis, e.altKey)
@@ -205,28 +205,28 @@ const canvasBgStyle = computed(() => {
 
 <template>
     <div
-        class="relative size-full"
         ref="canvas-bg"
+        class="relative size-full"
         @mousedown="handleBgClick($event)"
         @wheel="handleWheel($event)"
     >
         <div class="absolute bottom-0 left-0 z-50">
             {{ canvasScene.mousePos }} || {{ canvasScene.zoom }}
         </div>
-        <div :style="canvasBgStyle" ref="canvas-pivot">
+        <div ref="canvas-pivot" :style="canvasBgStyle">
             <CanvasElementWrapper
-                :transform="img.transform as Transform"
                 v-for="img in canvasScene.imageElements"
                 :key="img.elementId"
+                :transform="img.transform as Transform"
                 @mousedown.left.stop="handleElementMouseDown(img, $event)"
             >
                 <ImageElement :canvas-image-data="img as ImageCanvasElement"></ImageElement>
             </CanvasElementWrapper>
             <TransformBoxOverlay
-                @resize-start="handleResizeStart($event)"
-                @rotate-start="handleRotateStart()"
                 class="z-50"
                 :transform-box="canvasScene.transformBox as TransformBox"
+                @resize-start="handleResizeStart($event)"
+                @rotate-start="handleRotateStart()"
             ></TransformBoxOverlay>
             <SelectionBoxOverlay :selection-box="canvasScene.selectionBox"> </SelectionBoxOverlay>
         </div>

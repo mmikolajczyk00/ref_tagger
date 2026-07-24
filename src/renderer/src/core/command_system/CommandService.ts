@@ -1,10 +1,4 @@
-import {
-    CommandRegistry,
-    CommandManager,
-    CommandMap,
-    CommandFactory,
-    CommandMapAdv
-} from './CommandManager'
+import { CommandRegistry, CommandMapAdv } from './CommandManager'
 import { HotkeysManager, HotkeysMap } from './HotkeysManager'
 import { PromptAddFilesToCanvasCommand, RedoCommand, UndoCommand } from './GenericCommands'
 import { UUID } from 'crypto'

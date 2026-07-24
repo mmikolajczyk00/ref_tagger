@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { QueuedFile } from '../ts/UploadQueue'
 import { useUploadStore } from '../ts/useUploadStore'
 
 const isDragging = ref(false)
@@ -59,13 +58,13 @@ async function handleDrop(event: DragEvent) {
 
         <div class="mt-4 flex gap-4">
             <button
-                @click="uploadStore.processQueue"
                 :disabled="isProcessing || uploadStore.queue.length === 0"
                 class="rounded bg-indigo-600 px-4 py-2 disabled:opacity-50"
+                @click="uploadStore.processQueue"
             >
                 {{ isProcessing ? 'Processing...' : 'Upload All' }}
             </button>
-            <button @click="uploadStore.clearFinished" class="rounded bg-zinc-700 px-4 py-2">
+            <button class="rounded bg-zinc-700 px-4 py-2" @click="uploadStore.clearFinished">
                 Clear Finished
             </button>
         </div>

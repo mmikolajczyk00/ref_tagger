@@ -1,4 +1,4 @@
-import { computed, MaybeRefOrGetter, Ref, toValue } from 'vue'
+import { computed, MaybeRefOrGetter, toValue } from 'vue'
 import { Transform } from '../ts/scene/canvas_utils'
 
 export function useTransformStyle(transformSource: MaybeRefOrGetter<Transform>) {

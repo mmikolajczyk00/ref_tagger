@@ -1,18 +1,14 @@
 <script setup lang="ts">
 import Chip from 'primevue/chip'
 import InputText from 'primevue/inputtext'
-import Panel from 'primevue/panel'
-import type { MediaFile, TagOperation } from 'src/shared/types/models'
+import { eventBus } from '../../../events/bus'
+import { MediaFile, TagOperation } from '@shared/types/models'
 import { useTagEditor } from '../ts/useTagEditorPanel'
-import { normalizeTag } from '@renderer/core/utils/tagsUtils'
-import { eventBus } from '@renderer/events/bus'
+import { normalizeTag } from '../../../core/utils/tagsUtils'
 
 const props = defineProps<{
     selectedFiles: MediaFile[]
 }>()
-
-// Your existing normalization logic
-normalizeTag
 
 const { inputText, allGroup, someGroup, submitTags, removeTag } = useTagEditor(
     () => props.selectedFiles,
@@ -65,8 +61,8 @@ function handleRemoveTag(tag: any) {
                         :key="tag.id"
                         :label="tag.name"
                         removable
-                        @remove="handleRemoveTag(tag)"
                         class="bg-primary font-semibold text-zinc-950"
+                        @remove="handleRemoveTag(tag)"
                     />
                 </div>
             </div>
@@ -78,8 +74,8 @@ function handleRemoveTag(tag: any) {
                         :key="tag.id"
                         :label="tag.name"
                         removable
-                        @remove="handleRemoveTag(tag)"
                         class="border-primary bg-primary/50 border border-dashed"
+                        @remove="handleRemoveTag(tag)"
                     />
                 </div>
             </div>

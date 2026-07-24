@@ -1,4 +1,4 @@
-import { Coordinates, rotateVectorAroundOrigin, Transform, Vector2 } from './canvas_utils'
+import { Coordinates, Transform, Vector2 } from './canvas_utils'
 import type CanvasScene from './CanvasScene'
 
 export class MoveAction {
@@ -113,7 +113,7 @@ export class TransformBox {
     }
 
     onSelectionChange() {
-        let selArr = this.canvas.selectedElements
+        const selArr = this.canvas.selectedElements
 
         this.transform.rotation = 0
 
@@ -136,10 +136,10 @@ export class TransformBox {
 
         // fit box to content
         else {
-            let botLeft = new Vector2(0, 0)
-            let topRight = new Vector2(0, 0)
+            const botLeft = new Vector2(0, 0)
+            const topRight = new Vector2(0, 0)
 
-            let firstElRect = selArr[0].transform.getBoundingBox()
+            const firstElRect = selArr[0].transform.getBoundingBox()
             botLeft.x = firstElRect.left
             botLeft.y = firstElRect.bottom
             topRight.x = firstElRect.right
@@ -147,7 +147,7 @@ export class TransformBox {
 
             for (let i = 1; i < selArr.length; i++) {
                 const element = selArr[i]
-                let rect = element.transform.getBoundingBox()
+                const rect = element.transform.getBoundingBox()
 
                 botLeft.x = Math.min(rect.left, botLeft.x)
                 botLeft.y = Math.min(rect.bottom, botLeft.y)
@@ -177,24 +177,24 @@ export class TransformBox {
             .magnitude()
     }
     resizeUpdate(axis: CARDINAL_DIRECTIONS, isAlt: boolean) {
-        let tboxPivot = this.axisToPivot.get(axis)!()
+        const tboxPivot = this.axisToPivot.get(axis)!()
 
-        let currentMouseToPivotDistance = tboxPivot
+        const currentMouseToPivotDistance = tboxPivot
             .clone()
             .subtract(this.canvas.mousePos)
             .multiplyByVector(this.axisMask)
             .magnitude()
 
         // default option is the max (for diagonals)
-        let scaleDifference = currentMouseToPivotDistance / this.startMouseToPivotDistance
+        const scaleDifference = currentMouseToPivotDistance / this.startMouseToPivotDistance
 
-        let moveScale = scaleDifference - 1
+        const moveScale = scaleDifference - 1
 
-        this.resizeAction.oldTransforms.forEach(({ pos, pivot, rotOrScale }, id) => {
-            let el = this.canvas.elementsDict.get(id)
+        this.resizeAction.oldTransforms.forEach(({ pos, rotOrScale }, id) => {
+            const el = this.canvas.elementsDict.get(id)
             if (el) {
-                let activePivot = isAlt ? el.transform.getCenter() : tboxPivot
-                let pivotToPos = pos.clone().subtract(activePivot).multiply(moveScale)
+                const activePivot = isAlt ? el.transform.getCenter() : tboxPivot
+                const pivotToPos = pos.clone().subtract(activePivot).multiply(moveScale)
                 el.transform.setPos(pivotToPos.added(pos))
 
                 el.transform.scale = rotOrScale * scaleDifference
@@ -210,23 +210,23 @@ export class TransformBox {
 
     rotateStart() {
         this.rotateAction.saveOld(this.canvas)
-        let v = this.transform.getCenter().subtract(this.canvas.mousePos)
+        const v = this.transform.getCenter().subtract(this.canvas.mousePos)
         this.initialAngle = Math.atan2(v.x, v.y)
         this.initialCenter = this.transform.getCenter()
         this.initialPos = this.transform.position.clone()
     }
     rotateUpdate(isAlt: boolean) {
-        let center = this.transform.getCenter()
-        let v = center.subtracted(this.canvas.mousePos)
-        let angle = this.initialAngle - Math.atan2(v.x, v.y)
+        const center = this.transform.getCenter()
+        const v = center.subtracted(this.canvas.mousePos)
+        const angle = this.initialAngle - Math.atan2(v.x, v.y)
 
         this.rotateAction.oldTransforms.forEach(({ pos, pivot, rotOrScale }, id) => {
-            let el = this.canvas.elementsDict.get(id)
+            const el = this.canvas.elementsDict.get(id)
             if (el) {
                 el.transform.setRotation(rotOrScale + angle)
 
-                let activePivot = isAlt ? pivot : this.initialCenter
-                let diff = pos.subtracted(activePivot)
+                const activePivot = isAlt ? pivot : this.initialCenter
+                const diff = pos.subtracted(activePivot)
                 diff.rotate(angle)
 
                 el.transform.setPos(diff.add(activePivot))
@@ -235,6 +235,7 @@ export class TransformBox {
 
         this.onSelectionChange()
     }
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     rotateEnd() {}
 
     moveStart() {
@@ -243,10 +244,10 @@ export class TransformBox {
     }
 
     moveUpdate() {
-        let delta = this.startMouse.subtracted(this.canvas.mousePos).multiply(-1)
+        const delta = this.startMouse.subtracted(this.canvas.mousePos).multiply(-1)
 
         this.moveAction.oldPositions.forEach((pos, id) => {
-            let el = this.canvas.elementsDict.get(id)
+            const el = this.canvas.elementsDict.get(id)
             if (el) {
                 el.transform.setPos(pos.added(delta))
             }
@@ -254,10 +255,11 @@ export class TransformBox {
 
         this.onSelectionChange()
     }
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     moveEnd() {}
 
     getResizeAxisMask(axis: CARDINAL_DIRECTIONS) {
-        let axisMask = { x: 1, y: 1 }
+        const axisMask = { x: 1, y: 1 }
         if (axis == CARDINAL_DIRECTIONS.n || axis == CARDINAL_DIRECTIONS.s) {
             axisMask.x = 0
         } else if (axis == CARDINAL_DIRECTIONS.e || axis == CARDINAL_DIRECTIONS.w) {
@@ -277,16 +279,4 @@ export enum CARDINAL_DIRECTIONS {
     se = 'se',
     sw = 'sw',
     none = 'none'
-}
-
-function snapDegrees(deg: number, snaps = 8) {
-    deg = deg % 360
-
-    let snap = 360 / snaps
-
-    for (let i = 0; i < snaps; i++) {
-        if (deg >= i * snap && deg <= (i + 1) * snap) return i * snap
-    }
-
-    return 0
 }

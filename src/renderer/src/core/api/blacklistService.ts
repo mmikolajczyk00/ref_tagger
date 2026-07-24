@@ -1,28 +1,27 @@
 import { ActionResult } from 'puppeteer-core'
-import api from '../../../../shared/axios'
 
 export async function getAll(): Promise<Set<string>> {
-  const data = await window.api.get('blacklist')
+    const data = await window.api.get('blacklist')
 
-  return new Set<string>(data)
+    return new Set<string>(data)
 }
 
 export async function add(newArr: string[]): Promise<ActionResult> {
-  console.log(newArr)
+    console.log(newArr)
 
-  const data = await window.api.post('blacklist', newArr)
+    const data = await window.api.post('blacklist', newArr)
 
-  return data
+    return data
 }
 
 export async function remove(arr: string[]): Promise<ActionResult> {
-  const data = await window.api.delete('blacklist', { data: arr })
+    const data = await window.api.delete('blacklist', { data: arr })
 
-  return data
+    return data
 }
 
 export async function clearAll(): Promise<ActionResult> {
-  const data = await window.api.delete('blacklist?all=true')
+    const data = await window.api.delete('blacklist?all=true')
 
-  return data
+    return data
 }

@@ -2,12 +2,9 @@ import { app, shell, BrowserWindow, ipcMain, globalShortcut, protocol, net } fro
 import path, { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import axios from 'axios'
-import axiosApi from '../shared/axios'
 import { LocalDatabaseService } from './services/LocalDatabaseService'
 import { TagOperation, UploadFilePayload } from '../shared/types/models'
 import { pathToFileURL } from 'url'
-import { log } from 'console'
 
 protocol.registerSchemesAsPrivileged([
     { scheme: 'media', privileges: { standard: true, secure: true, supportFetchAPI: true } }
@@ -111,7 +108,7 @@ app.whenReady().then(() => {
     })
 
     ipcMain.handle('api:files:getById', (_event, id: number) => {
-        let file = dbService.getFileOfId(id)
+        const file = dbService.getFileOfId(id)
         console.log(file)
 
         return file

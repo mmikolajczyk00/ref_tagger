@@ -6,19 +6,6 @@ export const CANVAS_COMMANDS = {
     ARRANGE: 'arrange'
 } as const
 
-class CanvasCommand extends Command {
-    undoable: boolean = true
-    constructor(private rsCanvas: CanvasManager) {
-        super()
-    }
-    execute(): void {
-        console.log('execute')
-    }
-    undo(): void {
-        console.log('undo')
-    }
-}
-
 class ArrangeCommand extends Command {
     undoable: boolean = true
     constructor(private rsCanvas: CanvasManager) {

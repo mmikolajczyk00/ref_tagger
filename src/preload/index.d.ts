@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { PaginatedResult, MediaFile, MediaType } from '../shared/types/models'
+import { PaginatedResult, MediaFile } from '../shared/types/models'
 import { TagOperation } from '@renderer/features/explorer/ts/useTagEditorPanel'
 import { Result } from '../shared/types/api'
 

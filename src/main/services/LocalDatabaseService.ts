@@ -1,18 +1,9 @@
 // main/services/DatabaseService.ts
 import Database from 'better-sqlite3'
-import {
-    MediaFile,
-    MediaType,
-    PaginatedResult,
-    Tag,
-    TagOperation,
-    UploadFilePayload
-} from '../../shared/types/models'
 import path from 'path'
-import fs from 'fs'
-
 import schemaString from './schema.sql?raw'
 import { Result } from '../../shared/types/api'
+import { MediaFile } from '../../shared/types/models'
 
 interface SQLiteMediaFileRaw extends Omit<MediaFile, 'tags'> {
     tagsJson: string

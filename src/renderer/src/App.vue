@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import CommandPaletteModal from './features/command_palette/ui/CommandPaletteModal.vue'
 import TabBar from './features/tab_system/ui/TabBar.vue'
 import Tabwindow from './features/tab_system/ui/Tabwindow.vue'

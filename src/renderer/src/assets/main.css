@@ -3,117 +3,117 @@
 @custom-variant dark (&:where(.app-dark, .app-dark *));
 
 @font-face {
-  font-family: 'Material Symbols Outlined';
-  font-style: normal;
-  src: url(materialsymbols.woff2) format('woff2');
+    font-family: 'Material Symbols Outlined';
+    font-style: normal;
+    src: url(materialsymbols.woff2) format('woff2');
 }
 
 .material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px; /* Preferred icon size */
-  display: inline-block;
-  line-height: 1;
-  text-transform: none;
-  letter-spacing: normal;
-  word-wrap: normal;
-  white-space: nowrap;
-  direction: ltr;
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px; /* Preferred icon size */
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
 }
 
 @theme {
-  --color-avocado-600: oklch(0.53 0.12 118.34);
-  --text-tiny: 0.625rem;
-  --text-tiny--line-height: 1.5rem;
-  --text-tiny--letter-spacing: 0.125rem;
-  --text-tiny--font-weight: 500;
+    --color-avocado-600: oklch(0.53 0.12 118.34);
+    --text-tiny: 0.625rem;
+    --text-tiny--line-height: 1.5rem;
+    --text-tiny--letter-spacing: 0.125rem;
+    --text-tiny--font-weight: 500;
 }
 
 @layer utilities {
-  .squish {
-    @apply duration-75 ease-out hover:scale-95;
-  }
-  .it-table {
-    @apply bg-zinc-950 border-zinc-700 border-2;
-  }
-  .it-table tr:hover td {
-    @apply bg-teal-950 text-teal-300;
-  }
-  .it-table td {
-    @apply border-zinc-800 min-w-0 border p-2;
-  }
-  .it-table th {
-    @apply border-zinc-800 bg-zinc-950 border p-2;
-  }
-  .it-table > tbody tr:nth-child(odd) {
-    @apply bg-zinc-900;
-  }
-  .it-table .col-resizing {
-    @apply border-teal-500 border-r-2;
-  }
-  .active-tab-btn {
-    @apply text-zinc-100 bg-zinc-950;
-  }
-  .inactive-tab-btn {
-    @apply bg-zinc-700 text-zinc-400;
-  }
-  .base-tab-btn {
-    @apply hover:bg-zinc-500 hover:text-zinc-50 flex h-full flex-1 items-center justify-center rounded-md ease-out;
-  }
-  .drag-region {
-    -webkit-app-region: drag;
-    -webkit-user-select: none;
-  }
-  .no-drag-region {
-    -webkit-app-region: no-drag;
-    -webkit-user-select: none;
-  }
+    .squish {
+        @apply duration-75 ease-out hover:scale-95;
+    }
+    .it-table {
+        @apply border-2 border-zinc-700 bg-zinc-950;
+    }
+    .it-table tr:hover td {
+        @apply bg-teal-950 text-teal-300;
+    }
+    .it-table td {
+        @apply min-w-0 border border-zinc-800 p-2;
+    }
+    .it-table th {
+        @apply border border-zinc-800 bg-zinc-950 p-2;
+    }
+    .it-table > tbody tr:nth-child(odd) {
+        @apply bg-zinc-900;
+    }
+    .it-table .col-resizing {
+        @apply border-r-2 border-teal-500;
+    }
+    .active-tab-btn {
+        @apply bg-zinc-950 text-zinc-100;
+    }
+    .inactive-tab-btn {
+        @apply bg-zinc-700 text-zinc-400;
+    }
+    .base-tab-btn {
+        @apply flex h-full flex-1 items-center justify-center rounded-md ease-out hover:bg-zinc-500 hover:text-zinc-50;
+    }
+    .drag-region {
+        -webkit-app-region: drag;
+        -webkit-user-select: none;
+    }
+    .no-drag-region {
+        -webkit-app-region: no-drag;
+        -webkit-user-select: none;
+    }
 
-  .text-dimmed {
-    @apply text-zinc-400;
-  }
+    .text-dimmed {
+        @apply text-zinc-400;
+    }
 
-  .teal-spinner {
-    --p-progressspinner-color-one: var(--color-teal-200);
-    --p-progressspinner-color-two: var(--color-teal-500);
-    --p-progressspinner-color-three: var(--color-teal-200);
-    --p-progressspinner-color-four: var(--color-teal-500);
-  }
+    .teal-spinner {
+        --p-progressspinner-color-one: var(--color-teal-200);
+        --p-progressspinner-color-two: var(--color-teal-500);
+        --p-progressspinner-color-three: var(--color-teal-200);
+        --p-progressspinner-color-four: var(--color-teal-500);
+    }
 
-  .bright-spinner {
-    --p-progressspinner-color-one: var(--color-zinc-100);
-    --p-progressspinner-color-two: var(--color-zinc-100);
-    --p-progressspinner-color-three: var(--color-zinc-100);
-    --p-progressspinner-color-four: var(--color-zinc-100);
-  }
+    .bright-spinner {
+        --p-progressspinner-color-one: var(--color-zinc-100);
+        --p-progressspinner-color-two: var(--color-zinc-100);
+        --p-progressspinner-color-three: var(--color-zinc-100);
+        --p-progressspinner-color-four: var(--color-zinc-100);
+    }
 }
 
 .material-symbols-outlined {
-  font-variation-settings:
-    'FILL' 1,
-    'wght' 200,
-    'GRAD' 0,
-    'opsz' 24;
+    font-variation-settings:
+        'FILL' 1,
+        'wght' 200,
+        'GRAD' 0,
+        'opsz' 24;
 }
 
 .material-symbols-outlined.symbols-bold {
-  font-variation-settings:
-    'FILL' 1,
-    'wght' 300,
-    'GRAD' 0,
-    'opsz' 24;
+    font-variation-settings:
+        'FILL' 1,
+        'wght' 300,
+        'GRAD' 0,
+        'opsz' 24;
 }
 
 :root {
-  --p-tooltip-background: var(--color-zinc-900);
+    --p-tooltip-background: var(--color-zinc-900);
 }
 
 div img video {
-  @apply select-none;
+    @apply select-none;
 }
 
 /* scrollbar */
 * {
-  @apply [&::-webkit-scrollbar-thumb]:bg-teal-500 [&::-webkit-scrollbar-track]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar]:w-2;
+    @apply [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-teal-500 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-zinc-700;
 }

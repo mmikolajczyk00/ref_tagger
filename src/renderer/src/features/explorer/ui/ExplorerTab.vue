@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { inject, onMounted, ref, useTemplateRef } from 'vue'
+import { onMounted, ref } from 'vue'
 import { clamp } from '@vueuse/core'
-import { CommandService } from '../../../core/command_system/CommandService'
-import { EXPLORER_COMMANDS } from '../commands/ExplorerCmd.js'
 import { useExplorer } from '../ts/useExplorer'
 import { useSelectionManager } from '@renderer/core/composables/useSelectionManager'
 
@@ -10,59 +8,13 @@ import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import TagEditorPanel from './TagEditorPanel.vue'
 
-const props = defineProps(['active'])
-const commandService = inject('commandService') as CommandService
+const { mediaFiles, resetAndRefresh, initialize } = useExplorer()
 
-const { mediaFiles, isLoading, fetchNextPage, resetAndRefresh, initialize } = useExplorer()
-
-const { selectedIds, selectedItems, handleItemClick, clearSelection, isSelected } =
-    useSelectionManager(() => {
-        return mediaFiles.value
-    })
-
-// const explorerMng = new ExplorerManager(commandService)
-
-// watchEffect((onCleanup) => {
-//     if (props.active) {
-//         explorerMng.registerFeature()
-//         onCleanup(() => {
-//             explorerMng.unregisterFeature()
-//         })
-//     }
-// })
+const { selectedItems, handleItemClick, clearSelection, isSelected } = useSelectionManager(() => {
+    return mediaFiles.value
+})
 
 // REFS
-
-const contextMenu = useTemplateRef('cmenu')
-
-// CONTEXT MENU
-const contextMenuData = ref([
-    {
-        label: 'Canvas',
-        icon: 'gallery_thumbnail',
-        items: [
-            {
-                label: 'Add to new canvas',
-                command: () => {
-                    commandService.execute(EXPLORER_COMMANDS.ADD_TO_NEW_CANVAS)
-                }
-            },
-            {
-                label: 'Add to existing canvas',
-                command: () => {
-                    console.log('2')
-                }
-            }
-        ]
-    },
-    {
-        label: 'Delete',
-        icon: 'delete',
-        command: () => {
-            console.log('delete')
-        }
-    }
-])
 
 // ZOOM THUMBNAIL SIZE
 const thumbnailScale = ref(300 as number)
@@ -91,18 +43,18 @@ onMounted(() => {
                     <h1 class="text-xl font-bold">Explorer</h1>
                 </div>
                 <button
-                    @click="resetAndRefresh"
                     class="rounded bg-zinc-800 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-700"
+                    @click="resetAndRefresh"
                 >
                     Refresh Library
                 </button>
             </header>
 
             <div
-                @wheel="handleWheel"
-                @click="clearSelection"
                 class="flex size-full flex-row flex-wrap content-start items-start justify-start gap-1 overflow-clip overflow-y-auto bg-zinc-900"
                 :style="{ '--thumb-size': `${thumbnailScale}px` }"
+                @wheel="handleWheel"
+                @click="clearSelection"
             >
                 <div
                     v-for="(f, index) in mediaFiles"
@@ -132,8 +84,8 @@ onMounted(() => {
                 </div>
             </div>
         </SplitterPanel>
-        <SplitterPanel :minSize="5" :size="15">
-            <TagEditorPanel :selectedFiles="selectedItems"></TagEditorPanel>
+        <SplitterPanel :min-size="5" :size="15">
+            <TagEditorPanel :selected-files="selectedItems"></TagEditorPanel>
         </SplitterPanel>
     </Splitter>
 </template>

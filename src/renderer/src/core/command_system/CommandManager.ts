@@ -1,7 +1,7 @@
 class Command {
-  execute(): void {}
-  undo(): void {}
-  undoable = true
+    execute = () => {}
+    undo = () => {}
+    undoable = true
 }
 
 type CommandFactory = (...args: any[]) => Command
@@ -10,90 +10,91 @@ type CommandMapAdv = Map<string, { factory: CommandFactory; showInPalette: boole
 type CommandsScopeMap = Map<string, CommandMap>
 
 class CommandManager {
-  undoStack: Array<Command> = []
-  redoStack: Array<Command> = []
+    undoStack: Array<Command> = []
+    redoStack: Array<Command> = []
 
-  execute(cmd: Command) {
-    cmd.execute()
-    if (cmd.undoable) {
-      this.undoStack.push(cmd)
-      this.redoStack = []
+    execute(cmd: Command) {
+        cmd.execute()
+        if (cmd.undoable) {
+            this.undoStack.push(cmd)
+            this.redoStack = []
+        }
     }
-  }
 
-  addWithoutExecute(cmd: Command) {
-    this.undoStack.push(cmd)
-    this.redoStack = []
-  }
-
-  undo() {
-    if (this.undoStack.length > 0) {
-      let cmd = this.undoStack.pop() as Command
-      cmd.undo()
-      this.redoStack.push(cmd)
+    addWithoutExecute(cmd: Command) {
+        this.undoStack.push(cmd)
+        this.redoStack = []
     }
-  }
 
-  redo() {
-    if (this.redoStack.length > 0) {
-      let cmd = this.redoStack.pop() as Command
-      cmd.execute()
-      this.undoStack.push(cmd)
+    undo() {
+        if (this.undoStack.length > 0) {
+            const cmd = this.undoStack.pop() as Command
+            cmd.undo()
+            this.redoStack.push(cmd)
+        }
     }
-  }
+
+    redo() {
+        if (this.redoStack.length > 0) {
+            const cmd = this.redoStack.pop() as Command
+            cmd.execute()
+            this.undoStack.push(cmd)
+        }
+    }
 }
 
 class CommandRegistry {
-  public commands_invisible = new Map<string, CommandMap>() // arent visible in command palette
-  public commands_visible = new Map<string, CommandMap>() // are shown in palette
+    public commands_invisible = new Map<string, CommandMap>() // arent visible in command palette
+    public commands_visible = new Map<string, CommandMap>() // are shown in palette
 
-  constructor() {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    constructor() {}
 
-  register(scope: string, id: string, factory: CommandFactory, showInPalette = true) {
-    let cmdMap = showInPalette ? this.commands_visible : this.commands_invisible
+    register(scope: string, id: string, factory: CommandFactory, showInPalette = true) {
+        const cmdMap = showInPalette ? this.commands_visible : this.commands_invisible
 
-    if (!cmdMap.get(scope)) cmdMap.set(scope, new Map())
+        if (!cmdMap.get(scope)) cmdMap.set(scope, new Map())
 
-    cmdMap.get(scope)!.set(id, factory)
-  }
-  unregister(scope: string, id: string, factory: CommandFactory, showInPalette = true) {
-    let cmdMap = showInPalette ? this.commands_visible : this.commands_invisible
+        cmdMap.get(scope)!.set(id, factory)
+    }
+    unregister(scope: string, id: string, factory: CommandFactory, showInPalette = true) {
+        const cmdMap = showInPalette ? this.commands_visible : this.commands_invisible
 
-    if (!cmdMap.get(scope)) console.log('scope not registered, cannot unregister')
-    else cmdMap.get(scope)!.delete(id)
-  }
+        if (!cmdMap.get(scope)) console.log('scope not registered, cannot unregister')
+        else cmdMap.get(scope)!.delete(id)
+    }
 
-  create(id: string, ...args: any[]): Command | null {
-    let cmd: Command | null = null
+    create(id: string, ...args: any[]): Command | null {
+        let cmd: Command | null = null
 
-    // first check visible
-    this.commands_visible.forEach((v, k) => {
-      let factory = v.get(id)
+        // first check visible
+        this.commands_visible.forEach((v) => {
+            const factory = v.get(id)
 
-      if (factory) {
-        cmd = factory(...args)
-      }
-    })
+            if (factory) {
+                cmd = factory(...args)
+            }
+        })
 
-    if (cmd) return cmd
+        if (cmd) return cmd
 
-    // then check invisible
-    this.commands_invisible.forEach((v, k) => {
-      let factory = v.get(id)
+        // then check invisible
+        this.commands_invisible.forEach((v) => {
+            const factory = v.get(id)
 
-      if (factory) {
-        cmd = factory(...args)
-      }
-    })
+            if (factory) {
+                cmd = factory(...args)
+            }
+        })
 
-    if (cmd) return cmd
-    else throw new Error('Command not found: ' + id)
-  }
+        if (cmd) return cmd
+        else throw new Error('Command not found: ' + id)
+    }
 
-  // rn just gives the names
-  getShownInPalette(): Map<string, CommandMap> {
-    return this.commands_visible
-  }
+    // rn just gives the names
+    getShownInPalette(): Map<string, CommandMap> {
+        return this.commands_visible
+    }
 }
 
 export { Command, CommandManager, CommandRegistry }

@@ -8,12 +8,6 @@ import {
 import { AppTab, AppTabType } from '@renderer/features/tab_system/Tabs'
 import { computed, ref } from 'vue'
 
-interface State {
-    openTabs: Array<AppTab>
-    tabHistory: Array<AppTab>
-    activeTabId: number
-}
-
 export const useTabStore = defineStore('tabStore', () => {
     const openTabs = ref<AppTab[]>([])
     const tabHistory = ref<AppTab[]>([])
@@ -43,10 +37,9 @@ export const useTabStore = defineStore('tabStore', () => {
         currentActiveTab.value.onActive()
     }
     function openTab(type: AppTabType, title?: string, data?: any) {
-        let tab: AppTab
-        let len = openTabs.value.length
+        const len = openTabs.value.length
 
-        tab = new AppTab(len, title)
+        const tab = new AppTab(len, title)
         tab.tabType = type
         tab.data = data
 
@@ -56,7 +49,7 @@ export const useTabStore = defineStore('tabStore', () => {
         openTab(AppTabType.Empty)
     }
     function closeTab(id: number) {
-        let tab = openTabs.value[id]
+        const tab = openTabs.value[id]
         tab.onInactive()
 
         for (let i = id + 1; i < openTabs.value.length; i++) {
@@ -75,7 +68,7 @@ export const useTabStore = defineStore('tabStore', () => {
         closeTab(activeTabId.value)
     }
     function reopenTab() {
-        let tab = tabHistory.value.pop()
+        const tab = tabHistory.value.pop()
 
         if (!tab) return
 

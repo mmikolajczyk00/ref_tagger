@@ -2,7 +2,7 @@ import { CommandService, Feature } from '@renderer/core/command_system/CommandSe
 import { EXPLORER_HOTKEYS_MAP, generate_explorer_commands_factories } from '../commands/ExplorerCmd'
 import { UUID } from 'crypto'
 import { SelectionHandler } from '@renderer/core/utils/selectionHandler'
-import { computed, isProxy, isReactive, isRef, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useFileStore } from '../../../core/stores/useFileStore'
 import { useTagStore } from '@renderer/core/stores/tagStore'
 import { FileModel, GalleryFile } from '@shared/model/fileModel'

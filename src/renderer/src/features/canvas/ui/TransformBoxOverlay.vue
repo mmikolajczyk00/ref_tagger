@@ -16,38 +16,38 @@ const emit = defineEmits(['resizeStart', 'rotateStart'])
     <div v-if="!transformBox.hidden" class="tbox" :style="transformStyle">
         <div class="resize-corners">
             <div
-                @mousedown.stop="emit('resizeStart', { axis: 'nw', e: $event })"
                 class="tbox-resize-corner -top-2.5 -left-2.5 cursor-nw-resize"
+                @mousedown.stop="emit('resizeStart', { axis: 'nw', e: $event })"
             ></div>
             <div
-                @mousedown.stop="emit('resizeStart', { axis: 'ne', e: $event })"
                 class="tbox-resize-corner -top-2.5 -right-2.5 cursor-ne-resize"
+                @mousedown.stop="emit('resizeStart', { axis: 'ne', e: $event })"
             ></div>
             <div
-                @mousedown.stop="emit('resizeStart', { axis: 'se', e: $event })"
                 class="tbox-resize-corner -right-2.5 -bottom-2.5 cursor-se-resize"
+                @mousedown.stop="emit('resizeStart', { axis: 'se', e: $event })"
             ></div>
             <div
-                @mousedown.stop="emit('resizeStart', { axis: 'sw', e: $event })"
                 class="tbox-resize-corner -bottom-2.5 -left-2.5 cursor-sw-resize"
+                @mousedown.stop="emit('resizeStart', { axis: 'sw', e: $event })"
             ></div>
         </div>
         <div class="resize-edges">
             <div
-                @mousedown.stop="emit('resizeStart', { axis: 'n', e: $event })"
                 class="tbox-resize-bar -top-2 flex h-2 w-full cursor-n-resize justify-center"
+                @mousedown.stop="emit('resizeStart', { axis: 'n', e: $event })"
             ></div>
             <div
-                @mousedown.stop="emit('resizeStart', { axis: 'e', e: $event })"
                 class="tbox-resize-bar -right-2 flex h-full w-2 cursor-e-resize flex-col justify-center"
+                @mousedown.stop="emit('resizeStart', { axis: 'e', e: $event })"
             ></div>
             <div
-                @mousedown.stop="emit('resizeStart', { axis: 's', e: $event })"
                 class="tbox-resize-bar -bottom-2 flex h-2 w-full cursor-s-resize justify-center"
+                @mousedown.stop="emit('resizeStart', { axis: 's', e: $event })"
             ></div>
             <div
-                @mousedown.stop="emit('resizeStart', { axis: 'w', e: $event })"
                 class="tbox-resize-bar -left-2 flex h-full w-2 cursor-w-resize flex-col justify-center"
+                @mousedown.stop="emit('resizeStart', { axis: 'w', e: $event })"
             ></div>
         </div>
 

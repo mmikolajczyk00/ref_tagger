@@ -7,17 +7,15 @@ import Aura from '@primeuix/themes/aura'
 import FocusTrap from 'primevue/focustrap'
 import VueLazyload from 'vue-lazyload'
 
-import { createApp, reactive, ref } from 'vue'
+import { createApp } from 'vue'
 import App from './App.vue'
-import { CommandManager, CommandRegistry } from './core/command_system/CommandManager'
-import hotkeys from 'hotkeys-js'
+import { CommandRegistry } from './core/command_system/CommandManager'
 import { HotkeysManager } from './core/command_system/HotkeysManager'
 import { CommandService } from './core/command_system/CommandService'
 import DialogService from 'primevue/dialogservice'
 import { useCanvasStore } from './features/canvas/ts/canvasStore'
 import { useTabStore } from './core/stores/useTabStore'
 import { AppTabType } from './features/tab_system/Tabs'
-import { UUID } from 'crypto'
 
 const PRIMEUI_LICENSE = import.meta.env.VITE_PRIMEUI_LICENSE_KEY
 

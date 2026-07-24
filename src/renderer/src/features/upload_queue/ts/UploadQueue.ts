@@ -9,4 +9,3 @@ export interface QueuedFile {
     status: UploadStatus
     errorMessage?: string
 }
-

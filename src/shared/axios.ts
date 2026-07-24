@@ -2,11 +2,11 @@ import axios from 'axios'
 const apiUrl = import.meta.env.VITE_API_URL
 
 const axiosApi = axios.create({
-  baseURL: apiUrl,
-  timeout: 5000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+    baseURL: apiUrl,
+    timeout: 5000,
+    headers: {
+        'Content-Type': 'application/json'
+    }
 })
 
 export default axiosApi
