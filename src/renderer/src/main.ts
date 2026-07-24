@@ -107,7 +107,7 @@ tabStore.openTab(AppTabType.Explorer)
 // app.provide('commandManager', commandManager)
 app.provide('commandService', commandService)
 
-const defaultImgs = [10, 5] as number[]
+const defaultImgs = [1, 2] as number[]
 
 app.mount('#app')
 

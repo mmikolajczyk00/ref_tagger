@@ -7,10 +7,10 @@ import { CanvasElement, ImageCanvasElement } from '../ts/scene/CanvasElements'
 import ImageElement from './ImageElement.vue'
 import TransformBoxOverlay from './TransformBoxOverlay.vue'
 import { CARDINAL_DIRECTIONS, TransformBox } from '../ts/scene/TransformBox'
-import { Vector2 } from '../ts/scene/canvas_utils'
+import { Transform, Vector2 } from '../ts/scene/canvas_utils'
 import SelectionBoxOverlay from './SelectionBoxOverlay.vue'
-import { MouseButton } from '@renderer/core/utils/general'
 import { useCanvasStore } from '../ts/canvasStore'
+import { MouseButton } from '../../../core/utils/general'
 
 const props = defineProps({
     canvasId: Number
