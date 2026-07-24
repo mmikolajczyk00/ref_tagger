@@ -1,6 +1,5 @@
 import { UUID } from 'crypto'
 import { Command, CommandManager } from './CommandManager'
-import { defineAsyncComponent } from 'vue'
 
 class UndoCommand extends Command {
     undoable = false
@@ -37,14 +36,6 @@ class PromptAddFilesToCanvasCommand extends Command {
 
     constructor(private files: UUID[]) {
         super()
-
-        import('primevue/usedialog').then((a) => {
-            // const dialog = a.useDialog()
-            // const dynamicComponent = defineAsyncComponent(
-            //     () => import('../ui/CanvasListDialog.vue')
-            // )
-            // dialog.open(dynamicComponent, {})
-        })
     }
 
     execute(): void {

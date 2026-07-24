@@ -27,7 +27,6 @@ class ExplorerCommand extends Command {
         super()
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     execute(): void {}
 
     undo(): void {

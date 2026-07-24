@@ -25,7 +25,7 @@ export default defineConfig(
         files: ['**/*.{ts,mts,tsx,vue}'],
         rules: {
             'no-empty-function': 'off',
-            '@typescript-eslint/no-empty-function': 'error',
+            '@typescript-eslint/no-empty-function': 'off',
             '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/explicit-function-return-type': 'off',
             'vue/require-default-prop': 'off',

@@ -29,9 +29,8 @@ class AppTab {
         if (title) this.title = title
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     onActive() {}
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
+
     onInactive() {}
 }
 

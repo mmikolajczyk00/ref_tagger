@@ -227,13 +227,12 @@ export default class CanvasScene {
         this.transformBox.transform.move(vector)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     panStart() {}
     panUpdate(v: Coordinates) {
         this.panOffset.add(v)
         this.transform.move(v)
     }
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
+
     panEnd() {}
 
     zoomUpdate(delta: number, localMouse: Coordinates) {

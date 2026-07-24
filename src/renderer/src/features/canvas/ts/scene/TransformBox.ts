@@ -235,7 +235,7 @@ export class TransformBox {
 
         this.onSelectionChange()
     }
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
+
     rotateEnd() {}
 
     moveStart() {
@@ -255,7 +255,7 @@ export class TransformBox {
 
         this.onSelectionChange()
     }
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
+
     moveEnd() {}
 
     getResizeAxisMask(axis: CARDINAL_DIRECTIONS) {

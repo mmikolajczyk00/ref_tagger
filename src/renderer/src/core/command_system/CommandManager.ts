@@ -1,6 +1,6 @@
 class Command {
-    execute = () => {}
-    undo = () => {}
+    execute(): void {}
+    undo(): void {}
     undoable = true
 }
 
@@ -47,7 +47,6 @@ class CommandRegistry {
     public commands_invisible = new Map<string, CommandMap>() // arent visible in command palette
     public commands_visible = new Map<string, CommandMap>() // are shown in palette
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     constructor() {}
 
     register(scope: string, id: string, factory: CommandFactory, showInPalette = true) {
@@ -57,7 +56,7 @@ class CommandRegistry {
 
         cmdMap.get(scope)!.set(id, factory)
     }
-    unregister(scope: string, id: string, factory: CommandFactory, showInPalette = true) {
+    unregister(scope: string, id: string, _factory: CommandFactory, showInPalette = true) {
         const cmdMap = showInPalette ? this.commands_visible : this.commands_invisible
 
         if (!cmdMap.get(scope)) console.log('scope not registered, cannot unregister')
