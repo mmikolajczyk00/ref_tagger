@@ -18,8 +18,8 @@ const emit = defineEmits<{
     blur: []
 }>()
 
-function removeChip(index: number) {
-    modelValue.value = modelValue.value.filter((_, i) => i !== index)
+function removeChip(tagValue: string) {
+    modelValue.value = modelValue.value.filter((t) => t !== tagValue)
 }
 </script>
 
@@ -29,12 +29,12 @@ function removeChip(index: number) {
             class="flex flex-wrap items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-1"
         >
             <Chip
-                v-for="(tag, i) in modelValue"
-                :key="i"
+                v-for="tag in modelValue"
+                :key="tag"
                 :label="tag"
                 removable
                 class="bg-primary text-xs font-medium text-zinc-950"
-                @remove="removeChip(i)"
+                @remove="removeChip(tag)"
             />
 
             <div class="relative inline-flex min-w-[80px] flex-1">

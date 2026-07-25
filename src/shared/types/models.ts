@@ -34,3 +34,11 @@ export interface TagOperation {
     tagName?: string // Used for adds
     tagId?: number // Used for removals
 }
+
+export interface TagSearchQuery {
+    requiredTags?: string[]
+    excludedTags?: string[]
+    normalTags?: string[]
+    page?: number
+    limit?: number
+}

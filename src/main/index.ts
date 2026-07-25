@@ -3,7 +3,7 @@ import path, { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { LocalDatabaseService } from './services/LocalDatabaseService'
-import { TagOperation, UploadFilePayload } from '../shared/types/models'
+import { TagOperation, TagSearchQuery, UploadFilePayload } from '../shared/types/models'
 import { pathToFileURL } from 'url'
 
 protocol.registerSchemesAsPrivileged([
@@ -135,6 +135,10 @@ app.whenReady().then(() => {
 
     ipcMain.handle('api:files:updateTags', async (_event, ops: TagOperation[]) => {
         return dbService.processTagOperations(ops)
+    })
+
+    ipcMain.handle('api:files:search', (_event, query: TagSearchQuery) => {
+        return dbService.searchFiles(query)
     })
 
     ipcMain.handle('api:tags:getAll', () => {

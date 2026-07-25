@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { ScrapeResult } from '../shared/shared'
-import { TagOperation, UploadFilePayload } from '../shared/types/models'
+import { TagOperation, TagSearchQuery, UploadFilePayload } from '../shared/types/models'
 
 // Custom APIs for renderer
 const api = {
@@ -23,7 +23,8 @@ const api = {
             return webUtils.getPathForFile(file)
         },
         applyTagOperations: (operations: TagOperation[]) =>
-            ipcRenderer.invoke('api:files:updateTags', operations)
+            ipcRenderer.invoke('api:files:updateTags', operations),
+        searchFiles: (query: TagSearchQuery) => ipcRenderer.invoke('api:files:search', query)
     },
 
     tags: {

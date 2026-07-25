@@ -1,18 +1,33 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { clamp } from '@vueuse/core'
 import { useExplorer } from '../ts/useExplorer'
-import { useSelectionManager } from '@renderer/core/composables/useSelectionManager'
 
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import TagEditorPanel from './TagEditorPanel.vue'
+import { useSelectionManager } from '../../../core/composables/useSelectionManager'
+import SearchTagInput from '../../search/ui/SearchTagInput.vue'
 
-const { mediaFiles, resetAndRefresh, initialize } = useExplorer()
+const { mediaFiles, resetAndRefresh, initialize, search } = useExplorer()
 
 const { selectedItems, handleItemClick, clearSelection, isSelected } = useSelectionManager(() => {
     return mediaFiles.value
 })
+
+const searchChips = ref<string[]>([])
+
+watch(searchChips, (chips) => {
+    search(chips)
+})
+
+function handleSearchSubmit() {
+    search(searchChips.value)
+}
+
+function clearSearch() {
+    searchChips.value = []
+}
 
 // REFS
 
@@ -49,6 +64,19 @@ onMounted(() => {
                     Refresh Library
                 </button>
             </header>
+
+            <div class="mb-4 flex shrink-0 items-center gap-2">
+                <div class="flex-1">
+                    <SearchTagInput v-model="searchChips" @submit="handleSearchSubmit" />
+                </div>
+                <button
+                    v-if="searchChips.length > 0"
+                    class="rounded bg-zinc-800 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-700"
+                    @click="clearSearch"
+                >
+                    Clear
+                </button>
+            </div>
 
             <div
                 class="flex size-full flex-row flex-wrap content-start items-start justify-start gap-1 overflow-clip overflow-y-auto bg-zinc-900"

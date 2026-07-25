@@ -11,6 +11,7 @@ type iapi = {
         getFilePath: (file: File) => Promise<string> // webutils stuff
         insertMediaFile: (payload: UploadFilePayload) => Promise<Result<void>>
         applyTagOperations: (operations: TagOperation[]) => Promise<Result<MediaFile[]>>
+        searchFiles: (query: TagSearchQuery) => Promise<Result<PaginatedResult<MediaFile>>>
     }
 
     tags: {
