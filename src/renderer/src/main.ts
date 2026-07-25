@@ -3,7 +3,6 @@ import 'primeicons/primeicons.css'
 
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import Aura from '@primeuix/themes/aura'
 import FocusTrap from 'primevue/focustrap'
 import VueLazyload from 'vue-lazyload'
 
@@ -17,8 +16,7 @@ import { useCanvasStore } from './features/canvas/ts/canvasStore'
 import { useTabStore } from './core/stores/useTabStore'
 import { AppTabType } from './features/tab_system/Tabs'
 import { ApplicationContext } from './core/command_system/AppContext'
-import { useTagStore } from './core/stores/useTagStore'
-import { normalizeTag } from './core/utils/tagsUtils'
+import { RefSheeterPreset } from './core/theme/presets'
 
 const PRIMEUI_LICENSE = import.meta.env.VITE_PRIMEUI_LICENSE_KEY
 
@@ -50,36 +48,14 @@ app.use(VueLazyload, {
 
 app.use(PrimeVue, {
     theme: {
-        preset: Aura,
+        preset: RefSheeterPreset,
         options: {
+            darkModeSelector: '.app-dark',
             cssLayer: {
                 name: 'primevue',
                 order: 'theme, base, primevue'
             },
             inputVariant: 'filled'
-        }
-    },
-    pt: {
-        global: {
-            css: `
-              .p-datatable-tbody > tr > td {
-               overflow: visible;
-              }
-              .p-datatable-flex-scrollable > .p-datatable-table-container {
-                  display: flex;
-                  flex-direction: column;
-                  flex: 1;
-                  height: 100%;
-              }
-            `
-        },
-        datatable: {
-            bodycell: {
-                class: 'bg-red'
-            },
-            tbody: {
-                class: 'bg-red'
-            }
         }
     },
     license: PRIMEUI_LICENSE

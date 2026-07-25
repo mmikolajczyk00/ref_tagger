@@ -19,5 +19,3 @@ function open() {
     cmdService.execute(TAB_COMMANDS.CLOSE_ACTIVE_TAB)
 }
 </script>
-
-<style scoped></style>

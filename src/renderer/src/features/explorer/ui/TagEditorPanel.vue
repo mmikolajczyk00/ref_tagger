@@ -59,8 +59,10 @@ function handleRemoveTag(tag: any) {
 </script>
 
 <template>
-    <div class="flex h-full w-full flex-col rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-        <h3 class="mb-3 text-lg font-bold text-zinc-100">Edit Tags</h3>
+    <div
+        class="border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 flex h-full w-full flex-col rounded-lg border p-4"
+    >
+        <h3 class="text-surface-950 dark:text-surface-0 mb-3 text-lg font-bold">Edit Tags</h3>
 
         <div class="flex-1 overflow-y-auto pr-1">
             <div v-if="allGroup.length" class="mb-4">
@@ -70,7 +72,7 @@ function handleRemoveTag(tag: any) {
                         :key="tag.id"
                         :label="tag.name"
                         removable
-                        class="bg-primary font-semibold text-zinc-950"
+                        class="bg-primary text-primary-contrast font-semibold"
                         @remove="handleRemoveTag(tag)"
                     />
                 </div>

@@ -23,5 +23,3 @@ const transformStyle = useTransformStyleUnzoomed(
         :style="transformStyle"
     ></div>
 </template>
-
-<style scoped></style>

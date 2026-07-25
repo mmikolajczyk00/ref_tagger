@@ -1,8 +1,8 @@
 // composables/useLocalExplorer.ts
 import { eventBus } from '@renderer/events/bus'
-import { MediaFile, TagSearchQuery } from 'src/shared/types/models'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { parseSearchChips } from '../../search/ts/parseSearchQuery'
+import { MediaFile, TagSearchQuery } from 'src/shared/types/models'
 
 export function useExplorer() {
     const mediaFiles = ref<MediaFile[]>([])

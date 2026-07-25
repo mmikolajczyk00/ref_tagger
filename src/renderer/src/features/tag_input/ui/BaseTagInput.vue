@@ -26,14 +26,14 @@ function removeChip(tagValue: string) {
 <template>
     <div class="relative">
         <div
-            class="flex flex-wrap items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-1"
+            class="border-surface-300 dark:border-surface-700 bg-surface-0 dark:bg-surface-800 flex flex-wrap items-center gap-1 rounded-lg border px-2 py-1"
         >
             <Chip
                 v-for="tag in modelValue"
                 :key="tag"
                 :label="tag"
                 removable
-                class="bg-primary text-xs font-medium text-zinc-950"
+                class="bg-primary text-primary-contrast text-xs font-medium"
                 @remove="removeChip(tag)"
             />
 
@@ -42,11 +42,13 @@ function removeChip(tagValue: string) {
                     class="pointer-events-none absolute inset-0 flex items-center text-sm"
                     aria-hidden="true"
                 >
-                    <span class="text-zinc-100">{{ inputValue }}</span>
-                    <span v-if="ghostText" class="text-zinc-500">{{ ghostText }}</span>
+                    <span class="text-surface-950 dark:text-surface-0">{{ inputValue }}</span>
+                    <span v-if="ghostText" class="text-surface-400 dark:text-surface-500">{{
+                        ghostText
+                    }}</span>
                 </span>
                 <input
-                    class="relative w-full bg-transparent py-1 text-sm text-transparent caret-zinc-100 outline-none"
+                    class="caret-surface-950 dark:caret-surface-0 relative w-full bg-transparent py-1 text-sm text-transparent outline-none"
                     :value="inputValue"
                     :placeholder="modelValue.length === 0 ? placeholder : ''"
                     @input="inputValue = ($event.target as HTMLInputElement).value"
@@ -58,7 +60,7 @@ function removeChip(tagValue: string) {
 
         <div
             v-if="suggestions.length > 0"
-            class="absolute z-50 mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 shadow-lg"
+            class="border-surface-300 dark:border-surface-700 bg-surface-0 dark:bg-surface-800 absolute z-50 mt-1 w-full rounded-lg border shadow-lg"
         >
             <div
                 v-for="(sug, i) in suggestions"
@@ -66,8 +68,8 @@ function removeChip(tagValue: string) {
                 :class="[
                     'cursor-pointer px-3 py-1.5 text-sm',
                     i === selectedIndex
-                        ? 'bg-primary text-zinc-950'
-                        : 'text-zinc-300 hover:bg-zinc-700'
+                        ? 'bg-primary text-primary-contrast'
+                        : 'text-surface-700 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700'
                 ]"
                 @mousedown.prevent="emit('select-suggestion', sug)"
                 @mouseenter="emit('highlight-suggestion', i)"

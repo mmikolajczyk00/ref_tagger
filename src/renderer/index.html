@@ -2,7 +2,35 @@
 <html>
     <head>
         <meta charset="UTF-8" />
-        <title>Electron</title>
+        <meta name="color-scheme" content="dark light" />
+        <title>RefSheeter</title>
+        <script>
+            ;(() => {
+                try {
+                    const s = JSON.parse(localStorage.getItem('ref-sheeter-settings'))
+                    const mode = s?.themeMode || 'dark'
+                    const isDark =
+                        mode === 'dark' ||
+                        (mode === 'system' &&
+                            window.matchMedia('(prefers-color-scheme: dark)').matches)
+                    if (isDark) document.documentElement.classList.add('app-dark')
+
+                    const primaryColors = {
+                        'aura-teal': '#14b8a6',
+                        'aura-indigo': '#6366f1',
+                        'aura-rose': '#f43f5e',
+                        'aura-amber': '#f59e0b'
+                    }
+                    const themeId = s?.themeId || 'aura-teal'
+                    const primary500 = primaryColors[themeId] || '#14b8a6'
+                    const style = document.createElement('style')
+                    style.textContent = `:root { --p-primary-500: ${primary500}; }`
+                    document.head.appendChild(style)
+                } catch {
+                    document.documentElement.classList.add('app-dark')
+                }
+            })()
+        </script>
     </head>
 
     <body>

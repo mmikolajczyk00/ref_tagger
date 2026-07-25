@@ -18,5 +18,3 @@ watchEffect(() => {
     console.log(tabStore, tabStore.currentActiveTab.id)
 })
 </script>
-
-<style scoped></style>

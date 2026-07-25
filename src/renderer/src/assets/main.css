@@ -12,7 +12,7 @@
     font-family: 'Material Symbols Outlined';
     font-weight: normal;
     font-style: normal;
-    font-size: 24px; /* Preferred icon size */
+    font-size: 24px;
     display: inline-block;
     line-height: 1;
     text-transform: none;
@@ -22,12 +22,31 @@
     direction: ltr;
 }
 
-@theme {
-    --color-avocado-600: oklch(0.53 0.12 118.34);
+@theme inline {
     --text-tiny: 0.625rem;
     --text-tiny--line-height: 1.5rem;
     --text-tiny--letter-spacing: 0.125rem;
     --text-tiny--font-weight: 500;
+    --color-success-50: var(--color-emerald-50);
+    --color-success-100: var(--color-emerald-100);
+    --color-success-200: var(--color-emerald-200);
+    --color-success-300: var(--color-emerald-300);
+    --color-success-400: var(--color-emerald-400);
+    --color-success-500: var(--color-emerald-500);
+    --color-success-600: var(--color-emerald-600);
+    --color-success-700: var(--color-emerald-700);
+    --color-success-800: var(--color-emerald-800);
+    --color-success-900: var(--color-emerald-900);
+    --color-danger-50: var(--color-red-50);
+    --color-danger-100: var(--color-red-100);
+    --color-danger-200: var(--color-red-200);
+    --color-danger-300: var(--color-red-300);
+    --color-danger-400: var(--color-red-400);
+    --color-danger-500: var(--color-red-500);
+    --color-danger-600: var(--color-red-600);
+    --color-danger-700: var(--color-red-700);
+    --color-danger-800: var(--color-red-800);
+    --color-danger-900: var(--color-red-900);
 }
 
 @layer utilities {
@@ -35,32 +54,42 @@
         @apply duration-75 ease-out hover:scale-95;
     }
     .it-table {
-        @apply border-2 border-zinc-700 bg-zinc-950;
+        @apply border-surface-300 dark:border-surface-700 bg-surface-0 dark:bg-surface-950 border-2;
     }
     .it-table tr:hover td {
-        @apply bg-teal-950 text-teal-300;
+        @apply bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-300;
     }
     .it-table td {
-        @apply min-w-0 border border-zinc-800 p-2;
+        @apply border-surface-200 dark:border-surface-800 min-w-0 border p-2;
     }
     .it-table th {
-        @apply border border-zinc-800 bg-zinc-950 p-2;
+        @apply border-surface-200 dark:border-surface-800 bg-surface-0 dark:bg-surface-950 border p-2;
     }
     .it-table > tbody tr:nth-child(odd) {
-        @apply bg-zinc-900;
+        @apply bg-surface-100 dark:bg-surface-900;
     }
     .it-table .col-resizing {
-        @apply border-r-2 border-teal-500;
+        @apply border-primary-500 border-r-2;
     }
-    .active-tab-btn {
-        @apply bg-zinc-950 text-zinc-100;
+
+    .text-dimmed {
+        @apply text-surface-500 dark:text-surface-400;
     }
-    .inactive-tab-btn {
-        @apply bg-zinc-700 text-zinc-400;
+
+    .teal-spinner {
+        --p-progressspinner-color-one: var(--color-primary-200);
+        --p-progressspinner-color-two: var(--color-primary-500);
+        --p-progressspinner-color-three: var(--color-primary-200);
+        --p-progressspinner-color-four: var(--color-primary-500);
     }
-    .base-tab-btn {
-        @apply flex h-full flex-1 items-center justify-center rounded-md ease-out hover:bg-zinc-500 hover:text-zinc-50;
+
+    .bright-spinner {
+        --p-progressspinner-color-one: var(--color-surface-0);
+        --p-progressspinner-color-two: var(--color-surface-0);
+        --p-progressspinner-color-three: var(--color-surface-0);
+        --p-progressspinner-color-four: var(--color-surface-0);
     }
+
     .drag-region {
         -webkit-app-region: drag;
         -webkit-user-select: none;
@@ -68,24 +97,6 @@
     .no-drag-region {
         -webkit-app-region: no-drag;
         -webkit-user-select: none;
-    }
-
-    .text-dimmed {
-        @apply text-zinc-400;
-    }
-
-    .teal-spinner {
-        --p-progressspinner-color-one: var(--color-teal-200);
-        --p-progressspinner-color-two: var(--color-teal-500);
-        --p-progressspinner-color-three: var(--color-teal-200);
-        --p-progressspinner-color-four: var(--color-teal-500);
-    }
-
-    .bright-spinner {
-        --p-progressspinner-color-one: var(--color-zinc-100);
-        --p-progressspinner-color-two: var(--color-zinc-100);
-        --p-progressspinner-color-three: var(--color-zinc-100);
-        --p-progressspinner-color-four: var(--color-zinc-100);
     }
 }
 
@@ -106,7 +117,7 @@
 }
 
 :root {
-    --p-tooltip-background: var(--color-zinc-900);
+    --p-tooltip-background: var(--p-surface-900);
 }
 
 div img video {
@@ -115,5 +126,5 @@ div img video {
 
 /* scrollbar */
 * {
-    @apply [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-teal-500 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-zinc-700;
+    @apply [&::-webkit-scrollbar-thumb]:bg-primary-500 [&::-webkit-scrollbar-track]:bg-surface-200 dark:[&::-webkit-scrollbar-track]:bg-surface-700 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:rounded-full;
 }

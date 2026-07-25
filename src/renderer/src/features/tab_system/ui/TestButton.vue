@@ -14,5 +14,3 @@ function test() {
     commandService.execute(TAB_COMMANDS.TAB_TEST)
 }
 </script>
-
-<style scoped></style>
