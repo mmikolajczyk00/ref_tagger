@@ -216,11 +216,13 @@ const canvasBgStyle = computed(() => {
             </CanvasElementWrapper>
             <TransformBoxOverlay
                 class="z-50"
+                :zoom="canvasScene.zoom"
                 :transform-box="canvasScene.transformBox as TransformBox"
                 @resize-start="handleResizeStart($event)"
                 @rotate-start="handleRotateStart()"
             ></TransformBoxOverlay>
-            <SelectionBoxOverlay :selection-box="canvasScene.selectionBox"> </SelectionBoxOverlay>
+            <SelectionBoxOverlay :zoom="canvasScene.zoom" :selection-box="canvasScene.selectionBox">
+            </SelectionBoxOverlay>
         </div>
     </div>
 </template>

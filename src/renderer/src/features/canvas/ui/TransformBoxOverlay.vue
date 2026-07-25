@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useTransformStyle } from '../composables/useTransformStyle'
 import { TransformBox } from '../ts/scene/TransformBox'
+import { useTransformStyleUnzoomed } from '../composables/useTransformStyle'
 
 const props = defineProps<{
     transformBox: TransformBox
+    zoom: number
 }>()
 
-const transformStyle = useTransformStyle(computed(() => props.transformBox.transform))
+const transformStyle = useTransformStyleUnzoomed(
+    computed(() => props.transformBox.transform),
+    computed(() => props.zoom)
+)
 
 const emit = defineEmits(['resizeStart', 'rotateStart'])
 </script>

@@ -23,3 +23,29 @@ export function useTransformStyle(transformSource: MaybeRefOrGetter<Transform>) 
         }
     })
 }
+
+export function useTransformStyleUnzoomed(
+    transformSource: MaybeRefOrGetter<Transform>,
+    zoomSource: MaybeRefOrGetter<number>
+) {
+    return computed(() => {
+        const transform = toValue(transformSource)
+        const zoom = toValue(zoomSource)
+        if (!transform) return { display: 'none' }
+
+        const { x, y } = transform.position
+
+        const { width, height, rotation, zIndex } = transform
+
+        return {
+            position: 'absolute' as const,
+            top: 0,
+            left: 0,
+            width: `${width * zoom}px`,
+            height: `${height * zoom}px`,
+            transform: `translate3d(${x}px, ${y}px,0) rotate(${rotation}rad) scale(${1 / zoom})`,
+            transformOrigin: 'top left',
+            zIndex: zIndex
+        }
+    })
+}
