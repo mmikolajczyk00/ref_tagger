@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import CanvasScene from '../ts/scene/CanvasScene'
-import { computed, onActivated, onDeactivated, ref, useTemplateRef } from 'vue'
-import { CanvasManager } from '../ts/scene/CanvasManager'
+import { computed, onActivated, onDeactivated, useTemplateRef } from 'vue'
 import CanvasElementWrapper from './CanvasElementWrapper.vue'
 import { CanvasElement, ImageCanvasElement } from '../ts/scene/CanvasElements'
 import ImageElement from './ImageElement.vue'
@@ -12,14 +10,14 @@ import SelectionBoxOverlay from './SelectionBoxOverlay.vue'
 import { useCanvasStore } from '../ts/canvasStore'
 import { MouseButton } from '../../../core/utils/general'
 
-const props = defineProps({
-    canvasId: Number
-})
+export interface CanvasTabProps {
+    canvasId: number
+}
+
+const props = defineProps<CanvasTabProps>()
 
 const canvasStore = useCanvasStore()
 const canvasScene = canvasStore.getCanvas(props.canvasId!)!
-
-const canvasManager = ref<CanvasManager>(new CanvasManager(canvasScene as CanvasScene))
 
 const canvasBg = useTemplateRef('canvas-bg')
 
@@ -36,18 +34,12 @@ const handleGlobalMouseMove = (event: MouseEvent) => {
 }
 
 onActivated(() => {
-    const manager = canvasManager.value
-
     console.log('onActivated')
 
     window.addEventListener('mousemove', handleGlobalMouseMove)
-    manager.registerFeature()
 })
 
 onDeactivated(() => {
-    const manager = canvasManager.value
-
-    manager.unregisterFeature()
     window.removeEventListener('mousemove', handleGlobalMouseMove)
 })
 

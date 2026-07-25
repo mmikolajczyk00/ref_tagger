@@ -44,6 +44,18 @@ function createWindow(): void {
 
     mainWindow.webContents.openDevTools({ mode: 'right' })
 
+    // keybinds
+    mainWindow.webContents.on('before-input-event', (_event, input) => {
+        // Check if the user pressed Ctrl+W (or Cmd+W on Mac)
+        const isMod = input.control || input.meta
+        if (isMod && input.code === 'KeyW') {
+            // Tell Electron to ignore the menu shortcut, letting your renderer handle it
+            mainWindow.webContents.setIgnoreMenuShortcuts(true)
+        } else {
+            mainWindow.webContents.setIgnoreMenuShortcuts(false)
+        }
+    })
+
     globalShortcut.register('CommandOrControl+Shift+I', () => {
         mainWindow.webContents.openDevTools({ mode: 'right' })
     })

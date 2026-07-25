@@ -1,33 +1,44 @@
-import { Command } from '@renderer/core/command_system/CommandManager'
-import { HotkeysMap } from '@renderer/core/command_system/HotkeysManager'
-import { CanvasManager } from '../ts/scene/CanvasManager'
+import { CommandRegistry, ICommand } from '@renderer/core/command_system/UndoRedoManager'
+import CanvasScene from '../ts/scene/CanvasScene'
+import { useCanvasStore } from '../ts/canvasStore'
 
 export const CANVAS_COMMANDS = {
     ARRANGE: 'arrange'
 } as const
 
-class ArrangeCommand extends Command {
+class ArrangeCommand implements ICommand {
     undoable: boolean = true
-    constructor(private rsCanvas: CanvasManager) {
-        super()
+    timestamp: number | undefined
+    private elements: Array<string>
+
+    constructor(private canvasScene: CanvasScene) {
+        this.elements = this.canvasScene.selectedElements.map((el) => el.elementId)
     }
+
     execute(): void {
-        console.log('execute')
+        console.log('execute', this.canvasScene, this.elements)
     }
     undo(): void {
         console.log('undo')
     }
 }
 
-export function generate_canvas_commands_factories(rsCanvas: CanvasManager) {
-    return new Map([
-        [
-            CANVAS_COMMANDS.ARRANGE,
-            {
-                factory: () => new ArrangeCommand(rsCanvas),
-                showInPalette: true
-            }
-        ]
-    ])
+export function registerCanvasCommands(commandRegistry: CommandRegistry) {
+    const activeScene = () => useCanvasStore().getActiveCanvas
+    const scope = 'canvas'
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.ARRANGE,
+        label: 'Arrange',
+        scope,
+        showInPalette: true,
+        keybind: 'shift+a',
+        when: () => true,
+        create: () => {
+            const scene = activeScene()
+            if (scene) return new ArrangeCommand(scene)
+            console.error('There is no active scene to arrange.')
+            return null
+        }
+    })
 }
-export const CANVAS_HOTKEYS_MAP: HotkeysMap = new Map([['shit+a', CANVAS_COMMANDS.ARRANGE]])

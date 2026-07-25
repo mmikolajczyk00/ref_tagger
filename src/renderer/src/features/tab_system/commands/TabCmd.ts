@@ -1,10 +1,8 @@
-import { Command } from '@renderer/core/command_system/CommandManager'
-import { HotkeysMap } from '@renderer/core/command_system/HotkeysManager'
+import { CommandRegistry, ICommand } from '@renderer/core/command_system/UndoRedoManager'
 import { AppTabType } from '../Tabs'
 import { useTabStore } from '../../../core/stores/useTabStore'
 
 export const TAB_COMMANDS = {
-    TAB_TEST: 'tab_test',
     NEW_EMPTY_TAB: 'new_empty_tab',
     NEW_CANVAS_TAB: 'new_canvas_tab',
     NEW_EXPLORER_TAB: 'new_explorer_tab',
@@ -13,143 +11,106 @@ export const TAB_COMMANDS = {
     REOPEN_TAB: 'reopen_tab'
 } as const
 
-class TabTestCommand extends Command {
-    undoable: boolean = true
-    execute(): void {
-        console.log('execute')
-    }
-    undo(): void {
-        console.log('undo')
-    }
-}
-
-class OpenNewTabCommand extends Command {
+class OpenNewTabCommand implements ICommand {
     undoable: boolean = false
+    timestamp: number | undefined
 
-    constructor(private tabType: AppTabType) {
-        super()
-    }
+    constructor(private tabType: AppTabType) {}
 
     execute(): void {
         const tabStore = useTabStore()
         tabStore.openTab(this.tabType)
     }
-    undo(): void {
-        throw new Error('Cannot undo this action')
-    }
+    undo(): void {}
 }
 
-class OpenNewEmptyTabCommand extends Command {
+class OpenNewEmptyTabCommand implements ICommand {
     undoable: boolean = false
+    timestamp: number | undefined
 
-    constructor() {
-        super()
-    }
+    constructor() {}
 
     execute(): void {
         const tabStore = useTabStore()
-        tabStore.openEmptyTab()
+        tabStore.openTab(AppTabType.Empty)
     }
-    undo(): void {
-        throw new Error('Cannot undo this action')
-    }
+    undo(): void {}
 }
-class CloseActiveTabCommand extends Command {
+class CloseActiveTabCommand implements ICommand {
     undoable: boolean = false
+    timestamp: number | undefined
 
-    constructor() {
-        super()
-    }
+    constructor() {}
 
     execute(): void {
         const tabStore = useTabStore()
         tabStore.closeActiveTab()
     }
-    undo(): void {
-        throw new Error('Cannot undo this action')
-    }
+    undo(): void {}
 }
-class ReopenTabCommand extends Command {
+class ReopenTabCommand implements ICommand {
     undoable: boolean = false
+    timestamp: number | undefined
 
-    constructor() {
-        super()
-    }
+    constructor() {}
 
     execute(): void {
         const tabStore = useTabStore()
         tabStore.reopenTab()
     }
-    undo(): void {
-        throw new Error('Cannot undo this action')
-    }
+    undo(): void {}
 }
 
-export function generate_tab_commands_factories() {
-    return new Map([
-        [
-            TAB_COMMANDS.TAB_TEST,
-            {
-                factory: () => {
-                    return new TabTestCommand()
-                },
-                showInPalette: true
-            }
-        ],
-        [
-            TAB_COMMANDS.NEW_EMPTY_TAB,
-            {
-                factory: () => new OpenNewEmptyTabCommand(),
-                showInPalette: true
-            }
-        ],
-        [
-            TAB_COMMANDS.NEW_CANVAS_TAB,
-            {
-                factory: () => new OpenNewTabCommand(AppTabType.Canvas),
-                showInPalette: true
-            }
-        ],
-        [
-            TAB_COMMANDS.NEW_EXPLORER_TAB,
-            {
-                factory: () => new OpenNewTabCommand(AppTabType.Explorer),
-                showInPalette: true
-            }
-        ],
-        [
-            TAB_COMMANDS.NEW_TAGEDITOR_TAB,
-            {
-                factory: () => new OpenNewTabCommand(AppTabType.TagEditor),
-                showInPalette: true
-            }
-        ],
-        [
-            TAB_COMMANDS.CLOSE_ACTIVE_TAB,
-            {
-                factory: () => new CloseActiveTabCommand(),
-                showInPalette: true
-            }
-        ],
-        [
-            TAB_COMMANDS.REOPEN_TAB,
-            {
-                factory: () => new ReopenTabCommand(),
-                showInPalette: true
-            }
-        ]
-    ])
-}
-export const TAB_HOTKEYS_MAP: HotkeysMap = new Map([
-    ['ctrl+t', TAB_COMMANDS.NEW_EMPTY_TAB],
-    ['ctrl+shift+t', TAB_COMMANDS.REOPEN_TAB],
-    ['alt+w', TAB_COMMANDS.CLOSE_ACTIVE_TAB]
-])
+export function registerTabCommands(registry: CommandRegistry) {
+    const scope = 'all'
 
-export {
-    TabTestCommand,
-    OpenNewEmptyTabCommand,
-    OpenNewTabCommand,
-    CloseActiveTabCommand,
-    ReopenTabCommand
+    registry.register({
+        id: TAB_COMMANDS.NEW_EMPTY_TAB,
+        label: 'New Empty Tab',
+        scope,
+        showInPalette: true,
+        keybind: 'ctrl+t',
+        when: () => true,
+        create: () => new OpenNewEmptyTabCommand()
+    })
+    registry.register({
+        id: TAB_COMMANDS.NEW_CANVAS_TAB,
+        label: 'New Canvas Tab',
+        scope,
+        showInPalette: true,
+        keybind: '',
+        when: () => true,
+        create: () => new OpenNewTabCommand(AppTabType.Canvas)
+    })
+    registry.register({
+        id: TAB_COMMANDS.NEW_EXPLORER_TAB,
+        label: 'New Explorer Tab',
+        scope,
+        showInPalette: true,
+        keybind: '',
+        when: () => true,
+        create: () => new OpenNewTabCommand(AppTabType.Explorer)
+    })
+
+    registry.register({
+        id: TAB_COMMANDS.CLOSE_ACTIVE_TAB,
+        label: 'Close Active Tab',
+        scope,
+        showInPalette: true,
+        keybind: 'ctrl+w',
+        when: () => true,
+        create: () => new CloseActiveTabCommand()
+    })
+
+    registry.register({
+        id: TAB_COMMANDS.REOPEN_TAB,
+        label: 'Reopen Tab',
+        scope,
+        showInPalette: true,
+        keybind: 'ctrl+shift+t',
+        when: () => true,
+        create: () => new ReopenTabCommand()
+    })
 }
+
+export { OpenNewEmptyTabCommand, OpenNewTabCommand, CloseActiveTabCommand, ReopenTabCommand }

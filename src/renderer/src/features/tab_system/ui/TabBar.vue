@@ -1,25 +1,25 @@
 <template>
     <div class="relative flex w-fit items-center justify-start gap-1 pr-8">
-        <div v-for="tab in tabStore.openTabs" :key="tab.id">
+        <div v-for="(tab, index) in tabStore.openTabs" :key="tab.id">
             <div
                 class="group relative flex max-w-44 min-w-24 cursor-pointer items-center p-1"
                 :class="[
-                    tab.id == tabStore.activeTabId
+                    index == tabStore.activeTabIndex
                         ? 'bg-zinc-700 text-zinc-100 hover:bg-zinc-600'
                         : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
                 ]"
-                @click="clickTab(tab.id)"
+                @click="clickTab(index)"
             >
-                <span class="material-symbols-outlined mr-2">{{ AppTabIcons[tab.tabType] }}</span>
+                <span class="material-symbols-outlined mr-2">{{ AppTabIcons[tab.type] }}</span>
                 <p class="overflow-hidden text-nowrap text-ellipsis select-none">
-                    {{ tab.title }} : {{ tab.id }}
+                    {{ tab.title }} : {{ index }}
                 </p>
 
                 <Button
                     class="absolute right-0 aspect-square size-fit p-1 opacity-0 group-hover:opacity-100"
                     severity="secondary"
                     icon="pi pi-times"
-                    @click.stop="closeTab(tab.id)"
+                    @click.stop="closeTab(index)"
                 />
             </div>
         </div>
@@ -42,8 +42,8 @@ import { useTabStore } from '../../../core/stores/useTabStore'
 const commandService = inject('commandService') as CommandService
 let tabStore = useTabStore()
 
-function clickTab(id: number) {
-    tabStore.setActiveTab(id)
+function clickTab(index: number) {
+    tabStore.setActiveTab(index)
 }
 function closeTab(id: number) {
     tabStore.closeTab(id)
