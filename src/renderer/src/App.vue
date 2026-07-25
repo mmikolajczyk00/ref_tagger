@@ -1,7 +1,15 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useTagStore } from './core/stores/useTagStore'
 import TabBar from './features/tab_system/ui/TabBar.vue'
 import Tabwindow from './features/tab_system/ui/Tabwindow.vue'
 import DynamicDialog from 'primevue/dynamicdialog'
+
+const tagStore = useTagStore()
+
+onMounted(() => {
+    tagStore.fetchTags()
+})
 </script>
 
 <template>

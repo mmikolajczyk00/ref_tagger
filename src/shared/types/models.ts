@@ -12,7 +12,6 @@ export interface MediaFile {
 export interface Tag {
     id: number
     name: string
-    color: string
 }
 
 // Data Transfer Object for paginated results

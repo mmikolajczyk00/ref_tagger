@@ -30,6 +30,7 @@ Run `lint -> typecheck -> build` before committing. No test framework is configu
 - **Prettier** (config in `.prettierrc.yaml`): no semicolons, single quotes, trailing comma none, 4-space tab width, 100 print width
 - `.editorconfig` specifies 2-space indent but Prettier overrides it — Prettier wins
 - Vue SFCs must use `<script setup lang="ts">` (enforced by ESLint rule `vue/block-lang`)
+- Use modern vue 3.5 composition API standards
 - PrimeVue components are auto-imported by `unplugin-vue-components` — DO NOT manually import them in components; register new ones by using them in templates
 - Components go in `src/renderer/src/*/ui/*` (the `dirs` config for auto-import resolver)
 - IPC returns use Result pattern: `{ success: true, data }` or `{ success: false, error }`

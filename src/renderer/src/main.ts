@@ -18,6 +18,7 @@ import { useTabStore } from './core/stores/useTabStore'
 import { AppTabType } from './features/tab_system/Tabs'
 import { ApplicationContext } from './core/command_system/AppContext'
 import { useTagStore } from './core/stores/useTagStore'
+import { normalizeTag } from './core/utils/tagsUtils'
 
 const PRIMEUI_LICENSE = import.meta.env.VITE_PRIMEUI_LICENSE_KEY
 

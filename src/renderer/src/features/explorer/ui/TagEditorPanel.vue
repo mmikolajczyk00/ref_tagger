@@ -1,41 +1,50 @@
 <script setup lang="ts">
-import Chip from 'primevue/chip'
-import InputText from 'primevue/inputtext'
+import { ref } from 'vue'
 import { eventBus } from '../../../events/bus'
 import { MediaFile, TagOperation } from '@shared/types/models'
 import { useTagEditor } from '../ts/useTagEditorPanel'
 import { normalizeTag } from '../../../core/utils/tagsUtils'
+import EditorTagInput from '../../tag_input/ui/EditorTagInput.vue'
+import { useTagStore } from '../../../core/stores/useTagStore'
 
 const props = defineProps<{
     selectedFiles: MediaFile[]
 }>()
 
-const { inputText, allGroup, someGroup, submitTags, removeTag } = useTagEditor(
+const { allGroup, someGroup, existingTagIds, submitTags, removeTag } = useTagEditor(
     () => props.selectedFiles,
     normalizeTag
 )
 
+const pendingTags = ref<string[]>([])
+
+const tagStore = useTagStore()
+
 async function applyOperations(ops: TagOperation[]) {
     const result = await window.api.files.applyTagOperations(ops)
 
-    console.log('result', result)
-
     if (result.success) {
-        console.log(result.data)
+        console.log('applyOperations', result.data)
 
-        const changed = result.data
+        const { files: changedFiles, tags: changedTags } = result.data
+
+        for (const tag of changedTags) {
+            tagStore.addTagLocally(tag)
+        }
 
         eventBus.emit('files:updated', {
-            ids: new Set(changed.map((f) => f.id)),
-            files: new Map(changed.map((f) => [f.id, f]))
+            ids: new Set(changedFiles.map((f) => f.id)),
+            files: new Map(changedFiles.map((f) => [f.id, f]))
         })
+
+        pendingTags.value = []
     } else {
         console.error(result.error)
     }
 }
 
 function handleAddTags() {
-    const operations = submitTags()
+    const operations = submitTags(pendingTags.value)
     if (!operations.length) return
 
     applyOperations(operations)
@@ -84,12 +93,12 @@ function handleRemoveTag(tag: any) {
         <Divider class="my-3" />
 
         <div>
-            <InputText
-                v-model="inputText"
-                placeholder="Add tags (space or comma separated)..."
-                class="w-full"
-                @keydown.enter="handleAddTags"
+            <EditorTagInput
+                v-model="pendingTags"
+                :existing-tag-ids="existingTagIds"
+                @submit="handleAddTags"
             />
+            <Button label="Add Tags" class="mt-2 w-full" @click="handleAddTags" />
         </div>
     </div>
 </template>

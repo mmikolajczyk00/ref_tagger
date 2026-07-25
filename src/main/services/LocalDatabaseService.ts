@@ -176,7 +176,9 @@ export class LocalDatabaseService {
         }
     }
 
-    public processTagOperations(operations: TagOperation[]): Result<MediaFile[]> {
+    public processTagOperations(
+        operations: TagOperation[]
+    ): Result<{ files: MediaFile[]; tags: Tag[] }> {
         try {
             const insertTagStmt = this.db.prepare(`
           INSERT INTO tags (name, color) VALUES (?, '#808080')
@@ -192,12 +194,14 @@ export class LocalDatabaseService {
         `)
 
             const affectedFileIds = [...new Set(operations.map((op) => op.fileId))]
+            const changedTags: Tag[] = []
 
             const changed = this.db.transaction((ops: TagOperation[]) => {
                 for (const op of ops) {
                     if (op.action === 'add' && op.tagName) {
                         const tag = insertTagStmt.get(op.tagName) as { id: number }
                         addFileTagStmt.run(op.fileId, tag.id)
+                        changedTags.push({ id: tag.id, name: op.tagName })
                     } else if (op.action === 'remove' && op.tagId) {
                         removeFileTagStmt.run(op.fileId, op.tagId)
                     }
@@ -206,7 +210,7 @@ export class LocalDatabaseService {
                 return this.getFilesByIds(affectedFileIds)
             })(operations)
 
-            return { success: true, data: changed.data }
+            return { success: true, data: { files: changed.data, tags: changedTags } }
         } catch (err) {
             return {
                 success: false,
