@@ -16,7 +16,7 @@ const { inputText, allGroup, someGroup, submitTags, removeTag } = useTagEditor(
 )
 
 async function applyOperations(ops: TagOperation[]) {
-    const result = await window.api.applyTagOperations(ops)
+    const result = await window.api.files.applyTagOperations(ops)
 
     console.log('result', result)
 

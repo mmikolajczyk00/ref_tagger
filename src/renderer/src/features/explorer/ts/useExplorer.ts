@@ -22,7 +22,7 @@ export function useExplorer() {
 
         isLoading.value = true
         try {
-            const result = await window.api.getMediaFiles(currentPage.value, 50)
+            const result = await window.api.files.getMediaFiles(currentPage.value, 50)
             if (!result.success) {
                 console.error('Failed to fetch files:', result.error)
                 return

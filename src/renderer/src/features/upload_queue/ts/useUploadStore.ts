@@ -30,7 +30,7 @@ export const useUploadStore = defineStore('upload', () => {
             item.status = 'uploading'
 
             try {
-                await window.api.insertMediaFile({
+                await window.api.files.insertMediaFile({
                     filePath: item.path,
                     fileName: item.name,
                     mediaType: item.type

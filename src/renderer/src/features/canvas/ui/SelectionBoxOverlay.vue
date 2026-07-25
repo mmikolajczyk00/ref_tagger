@@ -24,6 +24,4 @@ const transformStyle = useTransformStyleUnzoomed(
     ></div>
 </template>
 
-<style scoped>
-@reference "#main.css";
-</style>
+<style scoped></style>

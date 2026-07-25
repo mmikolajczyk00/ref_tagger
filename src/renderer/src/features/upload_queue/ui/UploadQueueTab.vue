@@ -16,7 +16,7 @@ async function handleDrop(event: DragEvent) {
         const file = files[i]
         console.log('event', event)
 
-        const absolutePath = await window.api.getFilePath(file)
+        const absolutePath = await window.api.files.getFilePath(file)
         if (!absolutePath) continue
 
         let mediaType = 'unknown'
