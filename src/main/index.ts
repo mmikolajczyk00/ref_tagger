@@ -44,6 +44,9 @@ function createWindow(): void {
 
     mainWindow.webContents.openDevTools({ mode: 'right' })
 
+    mainWindow.setAutoHideMenuBar(false)
+    mainWindow.setMenuBarVisibility(false)
+
     // keybinds
     mainWindow.webContents.on('before-input-event', (_event, input) => {
         // Check if the user pressed Ctrl+W (or Cmd+W on Mac)
