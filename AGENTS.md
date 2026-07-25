@@ -41,6 +41,3 @@ Run `lint -> typecheck -> build` before committing. No test framework is configu
 - `.env` is gitignored but required at runtime for `VITE_PRIMEUI_LICENSE_KEY` — copy from a teammate if missing
 - `postinstall` runs `electron-builder install-app-deps` to rebuild native modules; don't skip it
 - `vue-tsc` is used for renderer typechecking (NOT plain `tsc`)
-- No `<style scoped>` enforcement but the convention appears mixed
-- Some files like '/src/renderer/src/features/explorer/ui/ExplorerTab copy dont delete.vue' - (*/copy) - are meant to be used for reference only, not edited
-- Some

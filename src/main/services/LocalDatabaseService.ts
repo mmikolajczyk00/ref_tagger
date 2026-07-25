@@ -237,8 +237,17 @@ export class LocalDatabaseService {
         }
     }
 
-    public getTags(): Set<Tag> {
-        throw new Error('Method not implemented.')
+    public getAllTags(): Result<Tag[]> {
+        try {
+            const stmt = this.db.prepare('SELECT id, name, color FROM tags ORDER BY name')
+            const tags = stmt.all() as Tag[]
+            return { success: true, data: tags }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to get all tags.'
+            }
+        }
     }
 
     public insertFile(payload: UploadFilePayload) {

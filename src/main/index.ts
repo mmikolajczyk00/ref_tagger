@@ -137,6 +137,10 @@ app.whenReady().then(() => {
         return dbService.processTagOperations(ops)
     })
 
+    ipcMain.handle('api:tags:getAll', () => {
+        return dbService.getAllTags()
+    })
+
     createWindow()
 })
 

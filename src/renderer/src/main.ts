@@ -17,6 +17,7 @@ import { useCanvasStore } from './features/canvas/ts/canvasStore'
 import { useTabStore } from './core/stores/useTabStore'
 import { AppTabType } from './features/tab_system/Tabs'
 import { ApplicationContext } from './core/command_system/AppContext'
+import { useTagStore } from './core/stores/useTagStore'
 
 const PRIMEUI_LICENSE = import.meta.env.VITE_PRIMEUI_LICENSE_KEY
 
