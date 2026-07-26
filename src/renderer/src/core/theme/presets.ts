@@ -16,12 +16,34 @@ const zincLight = {
     950: '#09090b'
 }
 
-const lightColorScheme = {
+const sharedSemantic = {
     surface: zincLight,
     formField: {
-        background: '{surface.0}',
-        borderColor: '{surface.400}',
-        color: '{surface.700}'
+        background: 'light-dark({surface.100}, {surface.800})',
+        filledBackground: 'light-dark({surface.100}, {surface.800})',
+        filledHoverBackground: 'light-dark({surface.100}, {surface.800})',
+        filledFocusBackground: 'light-dark({surface.100}, {surface.800})',
+        borderColor: 'light-dark({surface.200}, {surface.700})',
+        hoverBorderColor: 'light-dark({surface.300}, {surface.600})',
+        focusBorderColor: '{primary.color}',
+        color: 'light-dark({surface.950}, {surface.0})',
+        placeholderColor: 'light-dark({surface.400}, {surface.500})',
+        iconColor: 'light-dark({surface.400}, {surface.500})',
+        shadow: 'none'
+    },
+    overlay: {
+        select: {
+            background: 'light-dark({surface.0}, {surface.800})',
+            borderColor: 'light-dark({surface.200}, {surface.700})',
+            color: '{text.color}'
+        }
+    },
+    list: {
+        option: {
+            focusBackground: 'light-dark({surface.100}, {surface.700})',
+            selectedBackground: '{highlight.background}',
+            selectedFocusBackground: '{highlight.focus.background}'
+        }
     }
 }
 
@@ -40,9 +62,7 @@ export const RefSheeterPreset = definePreset(Aura, {
             900: '#134e4a',
             950: '#042f2e'
         },
-        colorScheme: {
-            light: lightColorScheme
-        }
+        ...sharedSemantic
     }
 })
 
@@ -65,9 +85,7 @@ export const themes: Record<ThemeId, ReturnType<typeof definePreset>> = {
                 900: '#312e81',
                 950: '#1e1b4b'
             },
-            colorScheme: {
-                light: lightColorScheme
-            }
+            ...sharedSemantic
         }
     }),
     'aura-rose': definePreset(Aura, {
@@ -85,9 +103,7 @@ export const themes: Record<ThemeId, ReturnType<typeof definePreset>> = {
                 900: '#881337',
                 950: '#4c0519'
             },
-            colorScheme: {
-                light: lightColorScheme
-            }
+            ...sharedSemantic
         }
     }),
     'aura-amber': definePreset(Aura, {
@@ -105,9 +121,7 @@ export const themes: Record<ThemeId, ReturnType<typeof definePreset>> = {
                 900: '#78350f',
                 950: '#451a03'
             },
-            colorScheme: {
-                light: lightColorScheme
-            }
+            ...sharedSemantic
         }
     })
 }
