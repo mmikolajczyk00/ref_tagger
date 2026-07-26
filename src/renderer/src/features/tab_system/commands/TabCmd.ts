@@ -6,7 +6,7 @@ export const TAB_COMMANDS = {
     NEW_EMPTY_TAB: 'new_empty_tab',
     NEW_CANVAS_TAB: 'new_canvas_tab',
     NEW_EXPLORER_TAB: 'new_explorer_tab',
-    NEW_TAGEDITOR_TAB: 'new_tageditor_tab',
+    NEW_TAG_EDITOR_TAB: 'new_tage_ditor_tab',
     CLOSE_ACTIVE_TAB: 'close_active_tab',
     REOPEN_TAB: 'reopen_tab'
 } as const
@@ -19,23 +19,12 @@ class OpenNewTabCommand implements ICommand {
 
     execute(): void {
         const tabStore = useTabStore()
-        tabStore.openTab(this.tabType)
+        const index = tabStore.openTab(this.tabType)
+        if (index !== -1) tabStore.setActiveTab(index)
     }
     undo(): void {}
 }
 
-class OpenNewEmptyTabCommand implements ICommand {
-    undoable: boolean = false
-    timestamp: number | undefined
-
-    constructor() {}
-
-    execute(): void {
-        const tabStore = useTabStore()
-        tabStore.openTab(AppTabType.Empty)
-    }
-    undo(): void {}
-}
 class CloseActiveTabCommand implements ICommand {
     undoable: boolean = false
     timestamp: number | undefined
@@ -71,7 +60,7 @@ export function registerTabCommands(registry: CommandRegistry) {
         showInPalette: true,
         keybind: 'ctrl+t',
         when: () => true,
-        create: () => new OpenNewEmptyTabCommand()
+        create: () => new OpenNewTabCommand(AppTabType.Empty)
     })
     registry.register({
         id: TAB_COMMANDS.NEW_CANVAS_TAB,
@@ -90,6 +79,16 @@ export function registerTabCommands(registry: CommandRegistry) {
         keybind: '',
         when: () => true,
         create: () => new OpenNewTabCommand(AppTabType.Explorer)
+    })
+
+    registry.register({
+        id: TAB_COMMANDS.NEW_TAG_EDITOR_TAB,
+        label: 'New Tag Editor Tab',
+        scope,
+        showInPalette: true,
+        keybind: '',
+        when: () => true,
+        create: () => new OpenNewTabCommand(AppTabType.TagEditor)
     })
 
     registry.register({
@@ -113,4 +112,4 @@ export function registerTabCommands(registry: CommandRegistry) {
     })
 }
 
-export { OpenNewEmptyTabCommand, OpenNewTabCommand, CloseActiveTabCommand, ReopenTabCommand }
+export { OpenNewTabCommand, CloseActiveTabCommand, ReopenTabCommand }

@@ -3,13 +3,15 @@ import UploadQueueTab from '../upload_queue/ui/UploadQueueTab.vue'
 import ExplorerTab from '../explorer/ui/ExplorerTab.vue'
 import CanvasTab, { CanvasTabProps } from '../canvas/ui/CanvasTab.vue'
 import { UndoRedoManager } from '@renderer/core/command_system/UndoRedoManager'
+import TagEditorTab from '../tag_editor/ui/TagEditorTab.vue'
 
 export enum AppTabType {
     Empty = 'Empty',
     Upload = 'Upload',
     Explorer = 'Explorer',
     Canvas = 'Canvas',
-    UploadQueue = 'UploadQueue'
+    UploadQueue = 'UploadQueue',
+    TagEditor = 'TagEditor'
 }
 
 export const AppTabComponents = {
@@ -17,7 +19,8 @@ export const AppTabComponents = {
     [AppTabType.Upload]: UploadQueueTab,
     [AppTabType.Explorer]: ExplorerTab,
     [AppTabType.Canvas]: CanvasTab,
-    [AppTabType.UploadQueue]: UploadQueueTab
+    [AppTabType.UploadQueue]: UploadQueueTab,
+    [AppTabType.TagEditor]: TagEditorTab
 }
 
 export interface BaseTab {
@@ -41,6 +44,9 @@ export interface ExplorerTab extends BaseTab {
 }
 
 export interface UploadQueueTab extends BaseTab {
+    type: AppTabType.Upload
+}
+export interface TagEditorTab extends BaseTab {
     type: AppTabType.Upload
 }
 

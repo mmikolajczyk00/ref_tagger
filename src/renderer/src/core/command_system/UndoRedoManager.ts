@@ -33,7 +33,6 @@ class UndoRedoManager {
 
     execute(cmd: ICommand) {
         cmd.execute()
-        console.log(this.undoStack)
         if (cmd.undoable) {
             this.undoStack.push(cmd)
             this.redoStack = []
