@@ -11,7 +11,6 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 function createWindow(): void {
-    // Create the browser window.
     const mainWindow = new BrowserWindow({
         width: 900,
         height: 670,
@@ -20,7 +19,7 @@ function createWindow(): void {
         ...(process.platform === 'linux' ? { icon } : {}),
         webPreferences: {
             webSecurity: true,
-            preload: join(__dirname, '../preload/index.js'),
+            preload: join(__dirname, '../preload/index.mjs'),
             sandbox: false
         }
     })
@@ -34,8 +33,6 @@ function createWindow(): void {
         return { action: 'deny' }
     })
 
-    // HMR for renderer base on electron-vite cli.
-    // Load the remote URL for development or the local html file for production.
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
         mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
     } else {
@@ -47,12 +44,9 @@ function createWindow(): void {
     mainWindow.setAutoHideMenuBar(false)
     mainWindow.setMenuBarVisibility(false)
 
-    // keybinds
     mainWindow.webContents.on('before-input-event', (_event, input) => {
-        // Check if the user pressed Ctrl+W (or Cmd+W on Mac)
         const isMod = input.control || input.meta
         if (isMod && input.code === 'KeyW') {
-            // Tell Electron to ignore the menu shortcut, letting your renderer handle it
             mainWindow.webContents.setIgnoreMenuShortcuts(true)
         } else {
             mainWindow.webContents.setIgnoreMenuShortcuts(false)
@@ -64,30 +58,18 @@ function createWindow(): void {
     })
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-    // Set app user model id for windows
     electronApp.setAppUserModelId('com.electron')
 
-    // Default open or close DevTools by F12 in development
-    // and ignore CommandOrControl + R in production.
-    // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
     app.on('browser-window-created', (_, window) => {
         optimizer.watchWindowShortcuts(window)
     })
 
-    // IPC test
     ipcMain.on('ping', () => console.log('pong'))
 
     app.on('activate', function () {
-        // On macOS it's common to re-create a window in the app when the
-        // dock icon is clicked and there are no other windows open.
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
-
-    // media
 
     protocol.handle('media', (request) => {
         try {
@@ -109,13 +91,7 @@ app.whenReady().then(() => {
         }
     })
 
-    // database
-
     const userDataPath = app.getPath('userData')
-
-    console.log('userDataPath', userDataPath)
-
-    // Launch the database setup
     const dbService = new LocalDatabaseService(userDataPath)
 
     ipcMain.handle('api:files:getPaginated', (_event, page: number, limit: number) => {
@@ -123,17 +99,14 @@ app.whenReady().then(() => {
     })
 
     ipcMain.handle('api:files:getById', (_event, id: number) => {
-        const file = dbService.getFileOfId(id)
-        console.log(file)
-
-        return file
+        return dbService.getFileOfId(id)
     })
 
-    ipcMain.handle('api:files:insert', async (_event, payload: UploadFilePayload) => {
+    ipcMain.handle('api:files:insert', (_event, payload: UploadFilePayload) => {
         return dbService.insertFile(payload)
     })
 
-    ipcMain.handle('api:files:updateTags', async (_event, ops: TagOperation[]) => {
+    ipcMain.handle('api:files:updateTags', (_event, ops: TagOperation[]) => {
         return dbService.processTagOperations(ops)
     })
 
@@ -148,14 +121,8 @@ app.whenReady().then(() => {
     createWindow()
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit()
     }
 })
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.

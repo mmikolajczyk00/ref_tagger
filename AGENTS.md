@@ -39,6 +39,6 @@ Run `lint -> typecheck -> build` before committing. No test framework is configu
 
 - `media://` custom protocol serves local files via `path` query param — used for displaying media in renderer without `file://` restrictions
 - SQLite schema defined in `src/main/services/schema.sql`, loaded as raw string via `?raw` import; DB auto-initialized at `{userData}/ref-sheeter.sqlite`
-- `.env` is gitignored but required at runtime for `VITE_PRIMEUI_LICENSE_KEY` — copy from a teammate if missing
+- never read '.env'
 - `postinstall` runs `electron-builder install-app-deps` to rebuild native modules; don't skip it
 - `vue-tsc` is used for renderer typechecking (NOT plain `tsc`)

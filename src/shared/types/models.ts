@@ -4,7 +4,7 @@ export interface MediaFile {
     id: number
     fileName: string
     filePath: string
-    type: MediaType
+    mediaType: MediaType
     createdAt: string
     tags: Array<Tag>
 }

@@ -16,6 +16,7 @@ export const useTagStore = defineStore('tags', () => {
     // 1. Fetch tags once on app start
     async function fetchTags() {
         const res = await window.api.tags.getAll()
+
         if (res.success && res.data) {
             tags.value = res.data
 
