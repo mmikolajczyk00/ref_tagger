@@ -11,10 +11,32 @@ import DynamicDialog from 'primevue/dynamicdialog'
 const tagStore = useTagStore()
 const settings = useSettingsStore()
 
+function applyPrimaryPalette(palette: Record<string, string>) {
+    const root = document.documentElement
+    for (const [shade, color] of Object.entries(palette)) {
+        root.style.setProperty(`--p-primary-${shade}`, color)
+    }
+    root.style.setProperty('--p-primary-color', `light-dark(${palette[500]}, ${palette[400]})`)
+    root.style.setProperty(
+        '--p-primary-hover-color',
+        `light-dark(${palette[600]}, ${palette[300]})`
+    )
+    root.style.setProperty(
+        '--p-primary-active-color',
+        `light-dark(${palette[700]}, ${palette[200]})`
+    )
+    root.style.setProperty(
+        '--p-primary-contrast-color',
+        'light-dark(#ffffff, var(--p-surface-900))'
+    )
+}
+
 watch(
     () => settings.themeId,
     (id) => {
-        updatePrimaryPalette(primaryPalettes[id])
+        const palette = primaryPalettes[id]
+        updatePrimaryPalette(palette)
+        applyPrimaryPalette(palette)
     },
     { immediate: true }
 )
