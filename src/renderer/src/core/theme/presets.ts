@@ -16,6 +16,15 @@ const zincLight = {
     950: '#09090b'
 }
 
+const lightColorScheme = {
+    surface: zincLight,
+    formField: {
+        background: '{surface.0}',
+        borderColor: '{surface.400}',
+        color: '{surface.700}'
+    }
+}
+
 export const RefSheeterPreset = definePreset(Aura, {
     semantic: {
         primary: {
@@ -32,22 +41,7 @@ export const RefSheeterPreset = definePreset(Aura, {
             950: '#042f2e'
         },
         colorScheme: {
-            light: {
-                surface: zincLight,
-                'surface-ground': '{surface.100}',
-                'surface-section': '{surface.0}',
-                'surface-card': '{surface.0}',
-                'surface-overlay': '{surface.0}',
-                'surface-border': '{surface.200}',
-                'surface-hover': '{surface.100}',
-                'surface-muted': '{surface.300}',
-                'surface-emphasis': '{surface.400}',
-                formField: {
-                    background: '{surface.0}',
-                    border: '{surface.400}',
-                    color: '{surface.700}'
-                }
-            }
+            light: lightColorScheme
         }
     }
 })
@@ -72,22 +66,7 @@ export const themes: Record<ThemeId, ReturnType<typeof definePreset>> = {
                 950: '#1e1b4b'
             },
             colorScheme: {
-                light: {
-                    surface: zincLight,
-                    'surface-ground': '{surface.100}',
-                    'surface-section': '{surface.0}',
-                    'surface-card': '{surface.0}',
-                    'surface-overlay': '{surface.0}',
-                    'surface-border': '{surface.200}',
-                    'surface-hover': '{surface.100}',
-                    'surface-muted': '{surface.300}',
-                    'surface-emphasis': '{surface.400}',
-                    formField: {
-                        background: '{surface.0}',
-                        border: '{surface.400}',
-                        color: '{surface.700}'
-                    }
-                }
+                light: lightColorScheme
             }
         }
     }),
@@ -107,22 +86,7 @@ export const themes: Record<ThemeId, ReturnType<typeof definePreset>> = {
                 950: '#4c0519'
             },
             colorScheme: {
-                light: {
-                    surface: zincLight,
-                    'surface-ground': '{surface.100}',
-                    'surface-section': '{surface.0}',
-                    'surface-card': '{surface.0}',
-                    'surface-overlay': '{surface.0}',
-                    'surface-border': '{surface.200}',
-                    'surface-hover': '{surface.100}',
-                    'surface-muted': '{surface.300}',
-                    'surface-emphasis': '{surface.400}',
-                    formField: {
-                        background: '{surface.0}',
-                        border: '{surface.400}',
-                        color: '{surface.700}'
-                    }
-                }
+                light: lightColorScheme
             }
         }
     }),
@@ -142,22 +106,7 @@ export const themes: Record<ThemeId, ReturnType<typeof definePreset>> = {
                 950: '#451a03'
             },
             colorScheme: {
-                light: {
-                    surface: zincLight,
-                    'surface-ground': '{surface.100}',
-                    'surface-section': '{surface.0}',
-                    'surface-card': '{surface.0}',
-                    'surface-overlay': '{surface.0}',
-                    'surface-border': '{surface.200}',
-                    'surface-hover': '{surface.100}',
-                    'surface-muted': '{surface.300}',
-                    'surface-emphasis': '{surface.400}',
-                    formField: {
-                        background: '{surface.0}',
-                        border: '{surface.400}',
-                        color: '{surface.700}'
-                    }
-                }
+                light: lightColorScheme
             }
         }
     })
