@@ -28,7 +28,13 @@ const api = {
     },
 
     tags: {
-        getAll: () => ipcRenderer.invoke('api:tags:getAll')
+        getAll: () => ipcRenderer.invoke('api:tags:getAll'),
+        create: (name: string, color: string) => ipcRenderer.invoke('api:tags:create', name, color),
+        delete: (id: number) => ipcRenderer.invoke('api:tags:delete', id),
+        updateName: (id: number, name: string) =>
+            ipcRenderer.invoke('api:tags:updateName', id, name),
+        updateColor: (id: number, color: string) =>
+            ipcRenderer.invoke('api:tags:updateColor', id, color)
     }
 }
 

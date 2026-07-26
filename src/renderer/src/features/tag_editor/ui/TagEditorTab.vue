@@ -1,109 +1,62 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, nextTick } from 'vue'
+import { useDialog } from 'primevue/usedialog'
+import { normalizeTag } from '@renderer/core/utils/tagsUtils'
+import { Tag } from 'src/shared/types/models'
+import { useTagEditor } from '../ts/useTagEditor'
+import NewTagDialog from './NewTagDialog.vue'
 
-interface Tag {
-    id: number
-    name: string
-    color: string
-}
+const { isLoading, searchQuery, filteredTags, first, rows, addTag, removeTag, updateTagName } =
+    useTagEditor()
 
-function hslToHex(h: number, s: number, l: number): string {
-    s /= 100
-    l /= 100
-    const a = s * Math.min(l, 1 - l)
-    const f = (n: number) => {
-        const k = (n + h / 30) % 12
-        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)
-        return Math.round(255 * color)
-            .toString(16)
-            .padStart(2, '0')
-    }
-    return `#${f(0)}${f(8)}${f(4)}`
-}
+const dialog = useDialog()
+const dt = ref()
 
-function generateMockTags(): Tag[] {
-    const names = [
-        'Nature',
-        'Urban',
-        'Portrait',
-        'Landscape',
-        'Abstract',
-        'Minimalist',
-        'Vintage',
-        'Modern',
-        'Grunge',
-        'Retro',
-        'Cyberpunk',
-        'Pastel',
-        'Neon',
-        'Mono',
-        'Duotone',
-        'Warm',
-        'Cool',
-        'Neutral',
-        'Bright',
-        'Muted',
-        'Dark',
-        'Light',
-        'Contrast',
-        'Soft',
-        'Sharp',
-        'Dreamy',
-        'Gritty',
-        'Clean',
-        'Dirty',
-        'Elegant',
-        'Raw',
-        'Polished',
-        'Bold',
-        'Subtle',
-        'Vibrant',
-        'Desaturated',
-        'High Key',
-        'Low Key',
-        'Film',
-        'Digital',
-        'Analog',
-        'Texture',
-        'Pattern',
-        'Silhouette',
-        'Symmetry',
-        'Asymmetry',
-        'Depth',
-        'Flat',
-        'Layered',
-        'Minimal',
-        'Maximal',
-        'Organic',
-        'Geometric',
-        'Fluid',
-        'Structured',
-        'Chaos',
-        'Order'
-    ]
-    return names.map((name, i) => {
-        const hue = (i * 137.508) % 360
-        const saturation = 55 + ((i * 17) % 25)
-        const lightness = 40 + ((i * 13) % 25)
-        return { id: i + 1, name, color: hslToHex(hue, saturation, lightness) }
+const editingId = ref<number | null>(null)
+const draftName = ref('')
+
+function startEdit(tag: Tag) {
+    editingId.value = tag.id
+    draftName.value = tag.name
+    nextTick(() => {
+        const input = document.querySelector<HTMLInputElement>('[data-edit-name]')
+        input?.focus()
+        input?.select()
     })
 }
 
-const tags = ref<Tag[]>(generateMockTags())
-const searchQuery = ref('')
-const first = ref(0)
-const rows = ref(10)
-const dt = ref()
+function onNameInput(e: Event) {
+    draftName.value = normalizeTag((e.target as HTMLInputElement).value)
+}
 
-const filteredTags = computed(() => {
-    const q = searchQuery.value.toLowerCase().trim()
-    if (!q) return tags.value
-    return tags.value.filter((t) => t.name.toLowerCase().includes(q))
-})
+async function commitEdit() {
+    if (editingId.value == null) return
+    const id = editingId.value
+    const name = draftName.value.trim()
+    editingId.value = null
+    if (!name) return
+    await updateTagName(id, name)
+}
 
-watch(searchQuery, () => {
-    first.value = 0
-})
+function cancelEdit() {
+    editingId.value = null
+}
+
+async function onNewTag() {
+    const result = await new Promise<{ name: string; color: string } | undefined>((resolve) => {
+        dialog.open(NewTagDialog, {
+            onClose: (options) => resolve(options?.data)
+        })
+    })
+
+    if (result) {
+        await addTag(result.name, result.color)
+    }
+}
+
+async function onDeleteTag(id: number) {
+    await removeTag(id)
+}
 </script>
 
 <template>
@@ -118,7 +71,7 @@ watch(searchQuery, () => {
                 label="New Tag"
                 size="small"
                 severity="secondary"
-                @click="console.log('Add tag – placeholder')"
+                @click="onNewTag"
             />
         </div>
 
@@ -144,6 +97,7 @@ watch(searchQuery, () => {
                 ref="dt"
                 v-model:first="first"
                 :value="filteredTags"
+                :loading="isLoading"
                 :paginator="true"
                 :rows="rows"
                 :rows-per-page-options="[10, 25, 50]"
@@ -164,7 +118,23 @@ watch(searchQuery, () => {
                 />
                 <Column field="name" header="Name" :sortable="true">
                     <template #body="{ data }">
-                        <span class="truncate font-medium">{{ data.name }}</span>
+                        <InputText
+                            v-if="editingId === data.id"
+                            data-edit-name
+                            :model-value="draftName"
+                            size="small"
+                            class="w-full"
+                            @input="onNameInput"
+                            @keydown.enter="commitEdit"
+                            @blur="cancelEdit"
+                        />
+                        <span
+                            v-else
+                            class="cursor-text truncate font-medium"
+                            @click="startEdit(data)"
+                        >
+                            {{ data.name }}
+                        </span>
                     </template>
                 </Column>
                 <Column
@@ -176,24 +146,19 @@ watch(searchQuery, () => {
                 >
                     <template #body="{ data }">
                         <button
-                            class="block h-full w-full min-h-[28px] rounded border-0 cursor-pointer transition-[filter] duration-150 hover:brightness-110 hover:contrast-125"
+                            class="block h-full min-h-[28px] w-full cursor-pointer rounded border-0 transition-[filter] duration-150 hover:brightness-110 hover:contrast-125"
                             :style="{ backgroundColor: data.color }"
                             title="Click to edit color"
                         />
                     </template>
                 </Column>
-                <Column header-class="w-24">
-                    <template #body>
+                <Column header-class="w-12">
+                    <template #body="{ data }">
                         <div class="flex justify-end gap-0.5">
-                            <button
-                                class="hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 rounded p-1.5 transition-colors"
-                                title="Edit"
-                            >
-                                <span class="material-symbols-outlined text-sm">edit</span>
-                            </button>
                             <button
                                 class="hover:bg-danger-50 text-surface-400 hover:text-danger-500 rounded p-1.5 transition-colors dark:hover:bg-red-950"
                                 title="Delete"
+                                @click="onDeleteTag(data.id)"
                             >
                                 <span class="material-symbols-outlined text-sm">delete</span>
                             </button>

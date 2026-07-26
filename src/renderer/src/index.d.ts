@@ -16,6 +16,10 @@ type iapi = {
 
     tags: {
         getAll: () => Promise<Result<Tag[]>>
+        create: (name: string, color: string) => Promise<Result<Tag>>
+        delete: (id: number) => Promise<Result<void>>
+        updateName: (id: number, name: string) => Promise<Result<Tag>>
+        updateColor: (id: number, color: string) => Promise<Result<Tag>>
     }
 }
 

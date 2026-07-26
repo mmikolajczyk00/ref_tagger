@@ -167,7 +167,7 @@ export class LocalDatabaseService {
     ): Promise<Result<{ files: MediaFile[]; tags: Tag[] }>> {
         try {
             const affectedFileIds = [...new Set(operations.map((op) => op.fileId))]
-            const changedTags: { id: number; name: string }[] = []
+            const changedTags: Tag[] = []
 
             for (const op of operations) {
                 if (op.action === 'add' && op.tagName) {
@@ -175,7 +175,7 @@ export class LocalDatabaseService {
                         where: { name: op.tagName },
                         create: { name: op.tagName, color: '#808080' },
                         update: {},
-                        select: { id: true, name: true }
+                        select: { id: true, name: true, color: true }
                     })
                     try {
                         await this.prisma.fileTag.create({
@@ -276,6 +276,68 @@ export class LocalDatabaseService {
             return {
                 success: false,
                 error: err instanceof Error ? err.message : 'Failed to get all tags.'
+            }
+        }
+    }
+
+    async createTag(name: string, color: string): Promise<Result<Tag>> {
+        try {
+            const tag = await this.prisma.tag.create({
+                data: { name, color }
+            })
+            return { success: true, data: tag }
+        } catch (err: any) {
+            if (err?.code === 'P2002') {
+                return { success: false, error: 'Tag name already exists.' }
+            }
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to create tag.'
+            }
+        }
+    }
+
+    async deleteTag(id: number): Promise<Result<void>> {
+        try {
+            await this.prisma.tag.delete({ where: { id } })
+            return { success: true, data: undefined as void }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to delete tag.'
+            }
+        }
+    }
+
+    async updateTagName(id: number, name: string): Promise<Result<Tag>> {
+        try {
+            const tag = await this.prisma.tag.update({
+                where: { id },
+                data: { name }
+            })
+            return { success: true, data: tag }
+        } catch (err: any) {
+            if (err?.code === 'P2002') {
+                return { success: false, error: 'Tag name already exists.' }
+            }
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to rename tag.'
+            }
+        }
+    }
+
+    async updateTagColor(id: number, color: string): Promise<Result<Tag>> {
+        try {
+            const tag = await this.prisma.tag.update({
+                where: { id },
+                data: { color }
+            })
+            return { success: true, data: tag }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to update tag color.'
             }
         }
     }

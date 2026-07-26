@@ -5,6 +5,7 @@ import { normalizeTag } from '../utils/tagsUtils'
 export interface ITag {
     id: number
     name: string
+    color: string
 }
 
 export const useTagStore = defineStore('tags', () => {
