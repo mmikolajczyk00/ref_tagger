@@ -17,6 +17,7 @@ import { useTabStore } from './core/stores/useTabStore'
 import { AppTabType } from './features/tab_system/Tabs'
 import { ApplicationContext } from './core/command_system/AppContext'
 import { RefSheeterPreset } from './core/theme/presets'
+import { primeVuePassThrough } from './core/theme/primeVuePassThrough'
 
 const PRIMEUI_LICENSE = import.meta.env.VITE_PRIMEUI_LICENSE_KEY
 
@@ -58,6 +59,7 @@ app.use(PrimeVue, {
             inputVariant: 'filled'
         }
     },
+    pt: primeVuePassThrough,
     license: PRIMEUI_LICENSE
 })
 
