@@ -118,6 +118,22 @@ app.whenReady().then(() => {
         return dbService.getAllTags()
     })
 
+    ipcMain.handle('api:tags:create', (_event, name: string, color: string) => {
+        return dbService.createTag(name, color)
+    })
+
+    ipcMain.handle('api:tags:delete', (_event, id: number) => {
+        return dbService.deleteTag(id)
+    })
+
+    ipcMain.handle('api:tags:updateName', (_event, id: number, name: string) => {
+        return dbService.updateTagName(id, name)
+    })
+
+    ipcMain.handle('api:tags:updateColor', (_event, id: number, color: string) => {
+        return dbService.updateTagColor(id, color)
+    })
+
     createWindow()
 })
 
