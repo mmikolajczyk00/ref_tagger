@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { eventBus } from '../../../events/bus'
-import { MediaFile, TagOperation } from '@shared/types/models'
+import { FileTagResult, MediaFile, TagOperation, TagOperationResult } from '@shared/types/models'
 import { useTagEditor } from '../ts/useTagEditorPanel'
 import { normalizeTag } from '../../../core/utils/tagsUtils'
 import EditorTagInput from '../../tag_input/ui/EditorTagInput.vue'
@@ -9,6 +8,10 @@ import { useTagStore } from '../../../core/stores/useTagStore'
 
 const props = defineProps<{
     selectedFiles: MediaFile[]
+}>()
+
+const emit = defineEmits<{
+    (e: 'files-updated', updates: FileTagResult[]): void
 }>()
 
 const { allGroup, someGroup, existingTagIds, submitTags, removeTag } = useTagEditor(
@@ -24,18 +27,10 @@ async function applyOperations(ops: TagOperation[]) {
     const result = await window.api.files.applyTagOperations(ops)
 
     if (result.success) {
-        console.log('applyOperations', result.data)
+        const { files, tags } = result.data as TagOperationResult
 
-        const { files: changedFiles, tags: changedTags } = result.data
-
-        for (const tag of changedTags) {
-            tagStore.addTagLocally(tag)
-        }
-
-        eventBus.emit('files:updated', {
-            ids: new Set(changedFiles.map((f) => f.id)),
-            files: new Map(changedFiles.map((f) => [f.id, f]))
-        })
+        tagStore.addTagsLocally(tags)
+        emit('files-updated', files)
 
         pendingTags.value = []
     } else {

@@ -6,12 +6,13 @@ type iapi = {
     }
 
     files: {
-        getMediaFiles: (page: number, limit: number) => Promise<Result<PaginatedResult<MediaFile>>>
+        getMediaFiles: (page: number, limit: number) => Promise<Result<PaginatedMediaFiles>>
         getMediaFileOfId(id: number): Promise<Result<MediaFile>>
         getFilePath: (file: File) => Promise<string> // webutils stuff
         insertMediaFile: (payload: UploadFilePayload) => Promise<Result<void>>
-        applyTagOperations: (operations: TagOperation[]) => Promise<Result<MediaFile[]>>
-        searchFiles: (query: TagSearchQuery) => Promise<Result<PaginatedResult<MediaFile>>>
+        applyTagOperations: (operations: TagOperation[]) => Promise<Result<TagOperationResult>>
+        searchFiles: (query: TagSearchQuery) => Promise<Result<PaginatedMediaFiles>>
+        getFilesOfIds: (ids: number[]) => Promise<Result<Record<number, MediaFile>>>
     }
 
     tags: {

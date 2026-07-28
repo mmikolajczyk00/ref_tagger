@@ -6,9 +6,10 @@ import { Result } from '../../shared/types/api'
 import {
     MediaFile,
     MediaType,
-    PaginatedResult,
+    PaginatedMediaFiles,
     Tag,
     TagOperation,
+    TagOperationResult,
     TagSearchQuery,
     UploadFilePayload
 } from '../../shared/types/models'
@@ -63,6 +64,14 @@ function fileToResponse(f: FileRow) {
     }
 }
 
+function filesToRecord(files: FileRow[]): Record<number, MediaFile> {
+    const result: Record<number, MediaFile> = {}
+    for (const file of files) {
+        result[file.id] = fileToResponse(file)
+    }
+    return result
+}
+
 function buildNormalTagFilter(tag: string): Record<string, unknown> {
     if (!tag.includes('*')) return { name: tag }
 
@@ -97,7 +106,7 @@ export class LocalDatabaseService {
         this.prisma = new PrismaClient({ adapter: adapterFactory })
     }
 
-    async getFiles(page: number, limit: number): Promise<Result<PaginatedResult<MediaFile>>> {
+    async getFilesPage(page: number, limit: number): Promise<Result<PaginatedMediaFiles>> {
         try {
             const skip = (page - 1) * limit
             const [files, total] = await Promise.all([
@@ -112,7 +121,7 @@ export class LocalDatabaseService {
             return {
                 success: true,
                 data: {
-                    data: files.map(fileToResponse),
+                    data: filesToRecord(files),
                     total,
                     page,
                     limit
@@ -122,6 +131,21 @@ export class LocalDatabaseService {
             return {
                 success: false,
                 error: err instanceof Error ? err.message : 'Failed to get files.'
+            }
+        }
+    }
+
+    async getFilesOfIds(ids: number[]): Promise<Result<Record<number, MediaFile>>> {
+        try {
+            const files = await this.prisma.file.findMany({
+                where: { id: { in: ids } },
+                include: { tags: { include: { tag: true } } }
+            })
+            return { success: true, data: filesToRecord(files) }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to get files by ids.'
             }
         }
     }
@@ -162,9 +186,7 @@ export class LocalDatabaseService {
         }
     }
 
-    async processTagOperations(
-        operations: TagOperation[]
-    ): Promise<Result<{ files: MediaFile[]; tags: Tag[] }>> {
+    async processTagOperations(operations: TagOperation[]): Promise<Result<TagOperationResult>> {
         try {
             const affectedFileIds = [...new Set(operations.map((op) => op.fileId))]
             const changedTags: Tag[] = []
@@ -199,7 +221,13 @@ export class LocalDatabaseService {
 
             return {
                 success: true,
-                data: { files: files.map(fileToResponse), tags: changedTags }
+                data: {
+                    files: files.map((file) => ({
+                        id: file.id,
+                        tags: file.tags.map((ft) => ft.tag)
+                    })),
+                    tags: changedTags
+                }
             }
         } catch (err) {
             return {
@@ -209,7 +237,7 @@ export class LocalDatabaseService {
         }
     }
 
-    async searchFiles(query: TagSearchQuery): Promise<Result<PaginatedResult<MediaFile>>> {
+    async searchFiles(query: TagSearchQuery): Promise<Result<PaginatedMediaFiles>> {
         try {
             const { page = 1, limit = 50 } = query
             const offset = (page - 1) * limit
@@ -254,7 +282,7 @@ export class LocalDatabaseService {
             return {
                 success: true,
                 data: {
-                    data: files.map(fileToResponse),
+                    data: filesToRecord(files),
                     total,
                     page,
                     limit

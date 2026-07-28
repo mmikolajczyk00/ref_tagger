@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onActivated, onMounted, ref, watch } from 'vue'
 import { clamp } from '@vueuse/core'
 import { useExplorer } from '../ts/useExplorer'
+import { FileTagResult, MediaFile } from 'src/shared/types/models'
 
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
@@ -9,10 +10,18 @@ import TagEditorPanel from './TagEditorPanel.vue'
 import { useSelectionManager } from '../../../core/composables/useSelectionManager'
 import SearchTagInput from '../../search/ui/SearchTagInput.vue'
 
-const { mediaFiles, resetAndRefresh, initialize, search } = useExplorer()
+const {
+    refetch,
+    mediaFiles,
+    resetAndRefresh,
+    initialize,
+    search,
+    applyFileTagUpdates,
+    applyFileTagUpdatesToRecord
+} = useExplorer()
 
 const { selectedItems, handleItemClick, clearSelection, isSelected } = useSelectionManager(() => {
-    return mediaFiles.value
+    return Object.values(mediaFiles.value)
 })
 
 const searchChips = ref<string[]>([])
@@ -29,6 +38,12 @@ function clearSearch() {
     searchChips.value = []
 }
 
+function onFilesUpdated(updates: FileTagResult[]) {
+    applyFileTagUpdates(updates)
+    const byId = Object.fromEntries(selectedItems.value.map((f) => [f.id, f]))
+    applyFileTagUpdatesToRecord(byId, updates)
+}
+
 // REFS
 
 // ZOOM THUMBNAIL SIZE
@@ -42,6 +57,10 @@ function handleWheel(e: WheelEvent) {
         thumbnailScale.value = clamp(thumbnailScale.value, thumbnailScale_min, thumbnailScale_max)
     }
 }
+
+onActivated(() => {
+    refetch()
+})
 
 onMounted(() => {
     initialize()
@@ -85,7 +104,7 @@ onMounted(() => {
                 @click="clearSelection"
             >
                 <div
-                    v-for="(f, index) in mediaFiles"
+                    v-for="(f, index) in Object.values(mediaFiles)"
                     :key="f.id"
                     class="media-file border-surface-200 dark:border-surface-800 bg-surface-0 dark:bg-surface-900 hover:border-surface-400 dark:hover:border-surface-600 group relative flex aspect-square flex-col overflow-hidden border transition-colors select-none"
                     @click.left.stop="handleItemClick($event, f, index)"
@@ -113,7 +132,10 @@ onMounted(() => {
             </div>
         </SplitterPanel>
         <SplitterPanel :min-size="5" :size="15">
-            <TagEditorPanel :selected-files="selectedItems"></TagEditorPanel>
+            <TagEditorPanel
+                :selected-files="selectedItems"
+                @files-updated="onFilesUpdated"
+            ></TagEditorPanel>
         </SplitterPanel>
     </Splitter>
 </template>

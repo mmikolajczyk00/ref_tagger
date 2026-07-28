@@ -2,14 +2,14 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { normalizeTag } from '../utils/tagsUtils'
 
-export interface ITag {
+export interface Tag {
     id: number
     name: string
     color: string
 }
 
 export const useTagStore = defineStore('tags', () => {
-    const tags = ref<ITag[]>([])
+    const tags = ref<Tag[]>([])
     const isLoaded = ref(false)
     const tagNamesSet = ref(new Set<string>())
     const tagIdsSet = ref(new Set<number>())
@@ -40,20 +40,49 @@ export const useTagStore = defineStore('tags', () => {
     }
 
     // 2. Add a newly created tag straight into memory
-    function addTagLocally(tag: ITag) {
+    function addTagLocally(tag: Tag) {
         const normalized = normalizeTag(tag.name)
 
         if (!tagNamesSet.value.has(normalized)) {
             tagNamesSet.value.add(normalized)
             tagIdsSet.value.add(tag.id)
 
-            tags.value.push({ id: tag.id, name: normalized })
+            tag.name = normalized
+            tags.value.push(tag)
         }
+    }
+    function addTagsLocally(tags: Tag[]) {
+        for (const tag of tags) {
+            addTagLocally(tag)
+        }
+    }
+
+    function updateTagLocally(id: number, name: string, color: string) {
+        const idx = tags.value.findIndex((t) => t.id === id)
+        if (idx < 0) return
+        const prev = tags.value[idx]
+        const oldName = prev.name
+        const newName = normalizeTag(name)
+        tags.value[idx] = { id, name, color }
+        if (oldName !== newName) {
+            tagNamesSet.value.delete(oldName)
+            tagNamesSet.value.add(newName)
+        }
+    }
+
+    function removeTagLocally(id: number) {
+        const idx = tags.value.findIndex((t) => t.id === id)
+        if (idx < 0) return
+
+        const removed = tags.value[idx]
+        tagNamesSet.value.delete(normalizeTag(removed.name))
+        tagIdsSet.value.delete(id)
+        tags.value.splice(idx, 1)
     }
 
     // 3. Synchronous search helper for ghost text matching
     // exclude ids: ids of tags to exclude from the search results e.g. tags already selected in the input
-    function getMatchingTags(query: string, excludeIds: Set<number> = new Set()): ITag[] {
+    function getMatchingTags(query: string, excludeIds: Set<number> = new Set()): Tag[] {
         const cleanQuery = normalizeTag(query)
         if (!cleanQuery) return []
 
@@ -67,6 +96,9 @@ export const useTagStore = defineStore('tags', () => {
         isLoaded,
         fetchTags,
         addTagLocally,
+        addTagsLocally,
+        updateTagLocally,
+        removeTagLocally,
         getMatchingTags,
         hasTag
     }

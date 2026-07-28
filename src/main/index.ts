@@ -95,11 +95,14 @@ app.whenReady().then(() => {
     const dbService = new LocalDatabaseService(userDataPath)
 
     ipcMain.handle('api:files:getPaginated', (_event, page: number, limit: number) => {
-        return dbService.getFiles(page, limit)
+        return dbService.getFilesPage(page, limit)
     })
 
     ipcMain.handle('api:files:getById', (_event, id: number) => {
         return dbService.getFileOfId(id)
+    })
+    ipcMain.handle('api:files:getByIds', (_event, ids: number[]) => {
+        return dbService.getFilesOfIds(ids)
     })
 
     ipcMain.handle('api:files:insert', (_event, payload: UploadFilePayload) => {

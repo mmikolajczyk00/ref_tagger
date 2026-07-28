@@ -1,16 +1,28 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onActivated } from 'vue'
 import { useDialog } from 'primevue/usedialog'
 import { normalizeTag } from '@renderer/core/utils/tagsUtils'
 import { Tag } from 'src/shared/types/models'
 import { useTagEditor } from '../ts/useTagEditor'
 import NewTagDialog from './NewTagDialog.vue'
 
-const { isLoading, searchQuery, filteredTags, first, rows, addTag, removeTag, updateTagName } =
-    useTagEditor()
+const {
+    isLoading,
+    searchQuery,
+    filteredTags,
+    first,
+    rows,
+    refetch,
+    addTag,
+    removeTag,
+    updateTagName
+} = useTagEditor()
+
+onActivated(() => {
+    refetch()
+})
 
 const dialog = useDialog()
-const dt = ref()
 
 const editingId = ref<number | null>(null)
 const draftName = ref('')
@@ -146,7 +158,7 @@ async function onDeleteTag(id: number) {
                 >
                     <template #body="{ data }">
                         <button
-                            class="block h-full min-h-[28px] w-full cursor-pointer rounded border-0 transition-[filter] duration-150 hover:brightness-110 hover:contrast-125"
+                            class="block h-full min-h-7 w-full cursor-pointer rounded border-0 transition-[filter] duration-150 hover:brightness-110 hover:contrast-125"
                             :style="{ backgroundColor: data.color }"
                             title="Click to edit color"
                         />
