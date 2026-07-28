@@ -369,4 +369,20 @@ export class LocalDatabaseService {
             }
         }
     }
+
+    async getAllTagColors(): Promise<Result<string[]>> {
+        try {
+            const rows = await this.prisma.tag.findMany({
+                distinct: ['color'],
+                select: { color: true },
+                orderBy: { color: 'asc' }
+            })
+            return { success: true, data: rows.map((r) => r.color) }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to get tag colors.'
+            }
+        }
+    }
 }

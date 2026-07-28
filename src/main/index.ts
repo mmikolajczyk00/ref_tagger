@@ -137,6 +137,10 @@ app.whenReady().then(() => {
         return dbService.updateTagColor(id, color)
     })
 
+    ipcMain.handle('api:tags:getAllColors', () => {
+        return dbService.getAllTagColors()
+    })
+
     createWindow()
 })
 

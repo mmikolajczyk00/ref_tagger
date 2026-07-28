@@ -6,6 +6,13 @@ import { normalizeTag } from '../../../core/utils/tagsUtils'
 import EditorTagInput from '../../tag_input/ui/EditorTagInput.vue'
 import { useTagStore } from '../../../core/stores/useTagStore'
 
+function withAlpha(hex: string, alpha: number): string {
+    const a = Math.round(alpha * 255)
+        .toString(16)
+        .padStart(2, '0')
+    return `${hex}${a}`
+}
+
 const props = defineProps<{
     selectedFiles: MediaFile[]
 }>()
@@ -67,7 +74,12 @@ function handleRemoveTag(tag: any) {
                         :key="tag.id"
                         :label="tag.name"
                         removable
-                        class="bg-primary text-primary-contrast font-semibold"
+                        class="font-semibold"
+                        :style="{
+                            color: tag.color,
+                            backgroundColor: withAlpha(tag.color, 0.2)
+                        }"
+                        :pt="{ removeIcon: { color: tag.color } }"
                         @remove="handleRemoveTag(tag)"
                     />
                 </div>
@@ -80,7 +92,13 @@ function handleRemoveTag(tag: any) {
                         :key="tag.id"
                         :label="tag.name"
                         removable
-                        class="border-primary bg-primary/50 border border-dashed"
+                        class="border border-dashed"
+                        :style="{
+                            color: tag.color,
+                            backgroundColor: withAlpha(tag.color, 0.2),
+                            borderColor: tag.color
+                        }"
+                        :pt="{ removeIcon: { color: tag.color } }"
                         @remove="handleRemoveTag(tag)"
                     />
                 </div>

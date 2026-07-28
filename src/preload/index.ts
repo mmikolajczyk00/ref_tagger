@@ -35,7 +35,8 @@ const api = {
         updateName: (id: number, name: string) =>
             ipcRenderer.invoke('api:tags:updateName', id, name),
         updateColor: (id: number, color: string) =>
-            ipcRenderer.invoke('api:tags:updateColor', id, color)
+            ipcRenderer.invoke('api:tags:updateColor', id, color),
+        getAllColors: () => ipcRenderer.invoke('api:tags:getAllColors')
     }
 }
 

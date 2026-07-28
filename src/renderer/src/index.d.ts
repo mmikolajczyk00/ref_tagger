@@ -21,6 +21,7 @@ type iapi = {
         delete: (id: number) => Promise<Result<void>>
         updateName: (id: number, name: string) => Promise<Result<Tag>>
         updateColor: (id: number, color: string) => Promise<Result<Tag>>
+        getAllColors: () => Promise<Result<string[]>>
     }
 }
 

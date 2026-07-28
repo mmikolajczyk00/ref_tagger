@@ -4,7 +4,7 @@ import { ref, inject } from 'vue'
 const dialogRef = inject<any>('dialogRef')
 
 const tagName = ref('')
-const tagColor = ref('#808080')
+const tagColor = ref('#FFF')
 
 const nameInput = ref()
 
@@ -44,7 +44,7 @@ function onCancel() {
                 <div class="flex items-center gap-2">
                     <InputText
                         v-model="tagColor"
-                        placeholder="#808080"
+                        placeholder="#FFF"
                         class="w-full"
                         @keydown.enter="onSubmit"
                     />

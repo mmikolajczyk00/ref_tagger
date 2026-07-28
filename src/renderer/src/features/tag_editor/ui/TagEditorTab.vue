@@ -5,6 +5,7 @@ import { normalizeTag } from '@renderer/core/utils/tagsUtils'
 import { Tag } from 'src/shared/types/models'
 import { useTagEditor } from '../ts/useTagEditor'
 import NewTagDialog from './NewTagDialog.vue'
+import ColorPickerDialog from './ColorPickerDialog.vue'
 
 const {
     isLoading,
@@ -15,7 +16,8 @@ const {
     refetch,
     addTag,
     removeTag,
-    updateTagName
+    updateTagName,
+    updateTagColor
 } = useTagEditor()
 
 onActivated(() => {
@@ -68,6 +70,18 @@ async function onNewTag() {
 
 async function onDeleteTag(id: number) {
     await removeTag(id)
+}
+
+async function onEditColor(tag: Tag) {
+    const result = await new Promise<string | undefined>((resolve) => {
+        dialog.open(ColorPickerDialog, {
+            data: { currentColor: tag.color },
+            onClose: (options) => resolve(options?.data)
+        })
+    })
+    if (result !== undefined) {
+        await updateTagColor(tag.id, result)
+    }
 }
 </script>
 
@@ -161,6 +175,7 @@ async function onDeleteTag(id: number) {
                             class="block h-full min-h-7 w-full cursor-pointer rounded border-0 transition-[filter] duration-150 hover:brightness-110 hover:contrast-125"
                             :style="{ backgroundColor: data.color }"
                             title="Click to edit color"
+                            @click="onEditColor(data)"
                         />
                     </template>
                 </Column>
