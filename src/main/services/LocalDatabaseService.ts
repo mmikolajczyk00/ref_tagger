@@ -195,7 +195,7 @@ export class LocalDatabaseService {
                 if (op.action === 'add' && op.tagName) {
                     const tag = await this.prisma.tag.upsert({
                         where: { name: op.tagName },
-                        create: { name: op.tagName, color: '#808080' },
+                        create: { name: op.tagName, color: '#FFF' },
                         update: {},
                         select: { id: true, name: true, color: true }
                     })

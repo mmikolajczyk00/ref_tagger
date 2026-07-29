@@ -5,7 +5,7 @@ import InputColor from 'primevue/inputcolor'
 
 const dialogRef = inject<any>('dialogRef')
 
-const initialColor = (dialogRef?.value?.data?.currentColor as string) || '#808080'
+const initialColor = (dialogRef?.value?.data?.currentColor as string) || '#FFF'
 const selectedColor = ref(initialColor)
 const dbColors = ref<string[]>([])
 const isLoading = ref(false)
@@ -44,7 +44,7 @@ function onCancel() {
     >
         <div class="flex flex-row gap-6">
             <div class="shrink-0">
-                <InputColor :format="'hex'" v-model="selectedColor">
+                <InputColor v-model="selectedColor" :format="'hex'">
                     <div class="flex flex-col gap-2 p-2">
                         <InputColorArea>
                             <InputColorAreaBackground />
