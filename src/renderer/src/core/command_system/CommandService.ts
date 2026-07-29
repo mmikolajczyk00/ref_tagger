@@ -1,97 +1,79 @@
-import {
-    CommandRegistry,
-    CommandManager,
-    CommandMap,
-    CommandFactory,
-    CommandMapAdv
-} from './CommandManager'
-import { HotkeysManager, HotkeysMap } from './HotkeysManager'
-import { PromptAddFilesToCanvasCommand, RedoCommand, UndoCommand } from './GenericCommands'
-import { UUID } from 'crypto'
 import { useTabStore } from '../stores/useTabStore'
-
-interface Feature {
-    registerFeature()
-    unregisterFeature()
-}
+import { CommandRegistry, UndoRedoManager } from './UndoRedoManager'
+import { registerTabCommands } from '@renderer/features/tab_system/commands/TabCmd'
+import { registerCanvasCommands } from '@renderer/features/canvas/commands/CanvasCmd'
+import { registerGlobalCommands } from './GlobalCommands'
+import { AppContext } from './AppContext'
 
 class CommandService {
-    constructor(
-        private registry: CommandRegistry,
-        private hotkeysMng: HotkeysManager
-    ) {
-        // undo redo global commands
+    public registry: CommandRegistry | undefined
+    public globalUndoRedoMng: UndoRedoManager | undefined
+    public context: AppContext | undefined
 
-        registry.register('all', 'undo', () => {
-            return new UndoCommand(this.getCurrentCmdManager())
-        })
-        registry.register('all', 'redo', () => {
-            return new RedoCommand(this.getCurrentCmdManager())
-        })
-        this.hotkeysMng.bindHotkey('all', 'ctrl+z', 'undo')
-        this.hotkeysMng.bindHotkey('all', 'ctrl+y', 'redo')
-
-        registry.register('all', 'prompt_add_files_to_canvas', (files: UUID[]) => {
-            return new PromptAddFilesToCanvasCommand(files)
-        })
-    }
-
-    getCurrentCmdManager() {
+    getActiveUndoRedoMng() {
         const tabStore = useTabStore()
-        return tabStore.getActiveTab().cmdManager
+        return tabStore.currentActiveTab.undoRedoMng
     }
 
-    execute(id: string, ...args: any[]): void {
-        const cmd = this.registry.create(id, ...args)
+    setContext(context: AppContext) {
+        this.context = context
+        this.globalUndoRedoMng = context.services.globalUndoRedoManager
+        this.registry = context.services.commandRegistry
+    }
+
+    execute(id: string): void {
+        const cmd = this.registry!.create(id)
         if (cmd) {
-            if (cmd.undoable) {
-                this.getCurrentCmdManager().execute(cmd)
+            cmd.timestamp = Date.now()
+
+            const registration = this.registry!.commands.get(id)
+
+            if (registration?.scope === 'all') {
+                this.globalUndoRedoMng!.execute(cmd)
             } else {
-                cmd.execute()
+                this.getActiveUndoRedoMng().execute(cmd)
             }
         }
     }
 
     undo(): void {
-        this.getCurrentCmdManager().undo()
+        // get active cmd manager and the global one
+        // then decide which one to use
+
+        const activeUndoRedoMng = this.getActiveUndoRedoMng()
+        const [activeMostRecentTimestamp, globalMostRecentTimestamp] = [
+            activeUndoRedoMng.peekUndo()?.timestamp || 0,
+            this.globalUndoRedoMng!.peekUndo()?.timestamp || 0
+        ]
+        if (activeMostRecentTimestamp > globalMostRecentTimestamp) {
+            activeUndoRedoMng.undo()
+        } else {
+            this.globalUndoRedoMng!.undo()
+        }
     }
 
     redo(): void {
-        this.getCurrentCmdManager().redo()
-    }
-
-    registerFeature(
-        scope: string,
-        cmdMap: CommandMapAdv,
-        hotkeysMap: HotkeysMap,
-        hotkeysScope: string = ''
-    ) {
-        hotkeysScope = hotkeysScope == '' ? scope : hotkeysScope
-        cmdMap.forEach((v, id) => {
-            this.registry.register(scope, id, v.factory, v.showInPalette)
-        })
-
-        this.hotkeysMng.bindHotkeys(hotkeysScope, hotkeysMap)
-    }
-
-    unregisterFeature(
-        scope: string,
-        cmdMap: CommandMapAdv,
-        hotkeysMap: HotkeysMap,
-        hotkeysScope: string = ''
-    ) {
-        hotkeysScope = hotkeysScope == '' ? scope : hotkeysScope
-        cmdMap.forEach((v, id) => {
-            this.registry.unregister(scope, id, v.factory, v.showInPalette)
-        })
-
-        this.hotkeysMng.unbindHotkeys(hotkeysScope, hotkeysMap)
+        const activeUndoRedoMng = this.getActiveUndoRedoMng()
+        const [activeMostRecentTimestamp, globalMostRecentTimestamp] = [
+            activeUndoRedoMng.peekRedo()?.timestamp || 0,
+            this.globalUndoRedoMng!.peekRedo()?.timestamp || 0
+        ]
+        if (activeMostRecentTimestamp > globalMostRecentTimestamp) {
+            activeUndoRedoMng.redo()
+        } else {
+            this.globalUndoRedoMng!.redo()
+        }
     }
 
     getShownInPalette() {
-        return this.registry.getShownInPalette()
+        return this.registry!.getShownInPalette()
+    }
+
+    registerAllFeatures() {
+        registerGlobalCommands(this.registry!)
+        registerTabCommands(this.registry!)
+        registerCanvasCommands(this.registry!)
     }
 }
 
 export { CommandService }
-export type { Feature }

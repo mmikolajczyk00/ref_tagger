@@ -2,19 +2,15 @@ import { app, shell, BrowserWindow, ipcMain, globalShortcut, protocol, net } fro
 import path, { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import axios from 'axios'
-import axiosApi from '../shared/axios'
 import { LocalDatabaseService } from './services/LocalDatabaseService'
-import { UploadFilePayload } from '../shared/types/models'
+import { TagOperation, TagSearchQuery, UploadFilePayload } from '../shared/types/models'
 import { pathToFileURL } from 'url'
-import { TagOperation } from '../renderer/src/features/explorer/ts/useTagEditorPanel'
 
 protocol.registerSchemesAsPrivileged([
     { scheme: 'media', privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ])
 
 function createWindow(): void {
-    // Create the browser window.
     const mainWindow = new BrowserWindow({
         width: 900,
         height: 670,
@@ -23,7 +19,7 @@ function createWindow(): void {
         ...(process.platform === 'linux' ? { icon } : {}),
         webPreferences: {
             webSecurity: true,
-            preload: join(__dirname, '../preload/index.js'),
+            preload: join(__dirname, '../preload/index.mjs'),
             sandbox: false
         }
     })
@@ -37,8 +33,6 @@ function createWindow(): void {
         return { action: 'deny' }
     })
 
-    // HMR for renderer base on electron-vite cli.
-    // Load the remote URL for development or the local html file for production.
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
         mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
     } else {
@@ -47,35 +41,35 @@ function createWindow(): void {
 
     mainWindow.webContents.openDevTools({ mode: 'right' })
 
+    mainWindow.setAutoHideMenuBar(false)
+    mainWindow.setMenuBarVisibility(false)
+
+    mainWindow.webContents.on('before-input-event', (_event, input) => {
+        const isMod = input.control || input.meta
+        if (isMod && input.code === 'KeyW') {
+            mainWindow.webContents.setIgnoreMenuShortcuts(true)
+        } else {
+            mainWindow.webContents.setIgnoreMenuShortcuts(false)
+        }
+    })
+
     globalShortcut.register('CommandOrControl+Shift+I', () => {
         mainWindow.webContents.openDevTools({ mode: 'right' })
     })
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-    // Set app user model id for windows
     electronApp.setAppUserModelId('com.electron')
 
-    // Default open or close DevTools by F12 in development
-    // and ignore CommandOrControl + R in production.
-    // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
     app.on('browser-window-created', (_, window) => {
         optimizer.watchWindowShortcuts(window)
     })
 
-    // IPC test
     ipcMain.on('ping', () => console.log('pong'))
 
     app.on('activate', function () {
-        // On macOS it's common to re-create a window in the app when the
-        // dock icon is clicked and there are no other windows open.
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
-
-    // media
 
     protocol.handle('media', (request) => {
         try {
@@ -97,43 +91,61 @@ app.whenReady().then(() => {
         }
     })
 
-    // database
-
     const userDataPath = app.getPath('userData')
-
-    // Launch the database setup
     const dbService = new LocalDatabaseService(userDataPath)
 
     ipcMain.handle('api:files:getPaginated', (_event, page: number, limit: number) => {
-        return dbService.getFiles(page, limit)
+        return dbService.getFilesPage(page, limit)
     })
 
     ipcMain.handle('api:files:getById', (_event, id: number) => {
-        let file = dbService.getFileOfId(id)
-        console.log(file)
-
-        return file
+        return dbService.getFileOfId(id)
+    })
+    ipcMain.handle('api:files:getByIds', (_event, ids: number[]) => {
+        return dbService.getFilesOfIds(ids)
     })
 
-    ipcMain.handle('api:files:insert', async (_event, payload: UploadFilePayload) => {
+    ipcMain.handle('api:files:insert', (_event, payload: UploadFilePayload) => {
         return dbService.insertFile(payload)
     })
 
-    ipcMain.handle('api:files:updateTags', async (_event, ops: TagOperation[]) => {
+    ipcMain.handle('api:files:updateTags', (_event, ops: TagOperation[]) => {
         return dbService.processTagOperations(ops)
+    })
+
+    ipcMain.handle('api:files:search', (_event, query: TagSearchQuery) => {
+        return dbService.searchFiles(query)
+    })
+
+    ipcMain.handle('api:tags:getAll', () => {
+        return dbService.getAllTags()
+    })
+
+    ipcMain.handle('api:tags:create', (_event, name: string, color: string) => {
+        return dbService.createTag(name, color)
+    })
+
+    ipcMain.handle('api:tags:delete', (_event, id: number) => {
+        return dbService.deleteTag(id)
+    })
+
+    ipcMain.handle('api:tags:updateName', (_event, id: number, name: string) => {
+        return dbService.updateTagName(id, name)
+    })
+
+    ipcMain.handle('api:tags:updateColor', (_event, id: number, color: string) => {
+        return dbService.updateTagColor(id, color)
+    })
+
+    ipcMain.handle('api:tags:getAllColors', () => {
+        return dbService.getAllTagColors()
     })
 
     createWindow()
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit()
     }
 })
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.

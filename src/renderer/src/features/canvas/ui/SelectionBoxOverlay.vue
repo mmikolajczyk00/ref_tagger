@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useTransformStyle } from '../composables/useTransformStyle'
-import { TransformBox } from '../ts/scene/TransformBox'
+import { useTransformStyleUnzoomed } from '../composables/useTransformStyle'
 import SelectionBox from '../ts/scene/SelectionBox'
 
 const props = defineProps<{
     selectionBox: SelectionBox
+    zoom: number
 }>()
 
-const transformStyle = useTransformStyle(computed(() => props.selectionBox.transform))
+const transformStyle = useTransformStyleUnzoomed(
+    computed(() => props.selectionBox.transform),
+    computed(() => props.zoom)
+)
 
 // const emit = defineEmits([])
 </script>
@@ -20,7 +23,3 @@ const transformStyle = useTransformStyle(computed(() => props.selectionBox.trans
         :style="transformStyle"
     ></div>
 </template>
-
-<style scoped>
-@reference "#main.css";
-</style>

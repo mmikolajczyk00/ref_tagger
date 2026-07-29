@@ -1,97 +1,93 @@
 import { defineStore } from 'pinia'
 
-import { CommandService } from '@renderer/core/command_system/CommandService'
-import {
-    generate_tab_commands_factories,
-    TAB_HOTKEYS_MAP
-} from '@renderer/features/tab_system/commands/TabCmd'
-import { AppTab, AppTabType } from '@renderer/features/tab_system/Tabs'
 import { computed, ref } from 'vue'
+import { AppTab, AppTabType } from '@renderer/features/tab_system/Tabs'
+import { UndoRedoManager } from '../command_system/UndoRedoManager'
 
-interface State {
-    openTabs: Array<AppTab>
-    tabHistory: Array<AppTab>
-    activeTabId: number
+interface CanvasTabPayload {
+    canvasId: number
 }
 
+interface ExplorerTabPayload {}
+
+interface UploadTabPayload {}
+
+const TAB_LIMIT = 50
+
 export const useTabStore = defineStore('tabStore', () => {
+    const idCounter = ref(0)
     const openTabs = ref<AppTab[]>([])
     const tabHistory = ref<AppTab[]>([])
-    const activeTabId = ref(1)
+    const activeTabIndex = ref(0)
 
     const currentActiveTab = computed(() => {
-        return openTabs.value[activeTabId.value]
+        return openTabs.value[activeTabIndex.value]
     })
 
-    function useCommandService(commandService: CommandService) {
-        commandService.registerFeature(
-            'tab_system',
-            generate_tab_commands_factories(),
-            TAB_HOTKEYS_MAP,
-            'all'
-        )
+    function setActiveTab(index: number) {
+        if (activeTabIndex.value == index) return
+
+        console.log(index)
+
+        activeTabIndex.value = index
     }
 
-    function setActiveTab(id: number) {
-        if (activeTabId.value == id) return
-
-        currentActiveTab.value.onInactive()
-
-        console.log(id)
-
-        activeTabId.value = id
-        currentActiveTab.value.onActive()
-    }
-    function openTab(type: AppTabType, title?: string, data?: any) {
-        let tab: AppTab
-        let len = openTabs.value.length
-
-        tab = new AppTab(len, title)
-        tab.tabType = type
-        tab.data = data
-
-        openTabs.value.push(tab!)
-    }
-    function openEmptyTab() {
-        openTab(AppTabType.Empty)
-    }
-    function closeTab(id: number) {
-        let tab = openTabs.value[id]
-        tab.onInactive()
-
-        for (let i = id + 1; i < openTabs.value.length; i++) {
-            const tab = openTabs.value[i]
-            tab.id -= 1
+    function openTab(type: AppTabType, title?: string, data?: any): number {
+        if (openTabs.value.length >= TAB_LIMIT) {
+            console.log('tab limit reached')
+            return -1
         }
 
+        const tab: AppTab = {
+            id: newId(),
+            title: title ?? 'untitled',
+            type: type as any,
+            data,
+            undoRedoMng: new UndoRedoManager()
+        }
+
+        openTabs.value.push(tab)
+        return openTabs.value.length - 1
+    }
+
+    function openTab(type: AppTabType.Canvas, title?: string, data?: CanvasTabPayload): number
+    function openTab(type: AppTabType.Explorer, title?: string, data?: ExplorerTabPayload): number
+    function openTab(type: AppTabType.Upload, title?: string, data?: UploadTabPayload): number
+    function openTab(type: AppTabType.Empty, title?: string): number
+
+    function closeTab(index: number) {
+        const tab = openTabs.value[index]
+
+        console.log('closing tab', index)
+
         tabHistory.value.push(tab)
-        openTabs.value.splice(id, 1)
+        openTabs.value.splice(index, 1)
 
-        activeTabId.value = Math.min(activeTabId.value, openTabs.value.length - 1)
-
-        currentActiveTab.value.onActive()
+        activeTabIndex.value = Math.min(index, openTabs.value.length - 1)
     }
     function closeActiveTab() {
-        closeTab(activeTabId.value)
+        closeTab(activeTabIndex.value)
     }
     function reopenTab() {
-        let tab = tabHistory.value.pop()
+        const tab = tabHistory.value.pop()
 
         if (!tab) return
 
-        tab.id = openTabs.value.length
+        tab.id = newId()
         openTabs.value.push(tab)
+    }
+
+    function newId(): number {
+        return ++idCounter.value
     }
 
     return {
         openTabs,
         tabHistory,
-        activeTabId,
+        activeTabIndex,
         currentActiveTab,
-        useCommandService,
         setActiveTab,
         openTab,
-        openEmptyTab,
         closeTab,
         open,
         closeActiveTab,

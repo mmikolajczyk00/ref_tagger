@@ -3,21 +3,21 @@ import 'primeicons/primeicons.css'
 
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import Aura from '@primeuix/themes/aura'
 import FocusTrap from 'primevue/focustrap'
 import VueLazyload from 'vue-lazyload'
 
-import { createApp, reactive, ref } from 'vue'
+import { createApp } from 'vue'
 import App from './App.vue'
-import { CommandManager, CommandRegistry } from './core/command_system/CommandManager'
-import hotkeys from 'hotkeys-js'
+import { CommandRegistry, UndoRedoManager } from './core/command_system/UndoRedoManager'
 import { HotkeysManager } from './core/command_system/HotkeysManager'
 import { CommandService } from './core/command_system/CommandService'
 import DialogService from 'primevue/dialogservice'
 import { useCanvasStore } from './features/canvas/ts/canvasStore'
 import { useTabStore } from './core/stores/useTabStore'
 import { AppTabType } from './features/tab_system/Tabs'
-import { UUID } from 'crypto'
+import { ApplicationContext } from './core/command_system/AppContext'
+import { RefSheeterPreset } from './core/theme/presets'
+import { primeVuePassThrough } from './core/theme/primeVuePassThrough'
 
 const PRIMEUI_LICENSE = import.meta.env.VITE_PRIMEUI_LICENSE_KEY
 
@@ -49,8 +49,9 @@ app.use(VueLazyload, {
 
 app.use(PrimeVue, {
     theme: {
-        preset: Aura,
+        preset: RefSheeterPreset,
         options: {
+            darkModeSelector: '.app-dark',
             cssLayer: {
                 name: 'primevue',
                 order: 'theme, base, primevue'
@@ -58,59 +59,49 @@ app.use(PrimeVue, {
             inputVariant: 'filled'
         }
     },
-    pt: {
-        global: {
-            css: `
-              .p-datatable-tbody > tr > td {
-               overflow: visible;
-              }
-              .p-datatable-flex-scrollable > .p-datatable-table-container {
-                  display: flex;
-                  flex-direction: column;
-                  flex: 1;
-                  height: 100%;
-              }
-            `
-        },
-        datatable: {
-            bodycell: {
-                class: 'bg-red'
-            },
-            tbody: {
-                class: 'bg-red'
-            }
-        }
-    },
+    pt: primeVuePassThrough,
     license: PRIMEUI_LICENSE
 })
 
 app.directive('focustrap', FocusTrap)
 
-//
+// command system
 
-// const commandManager = new CommandManager()
-const commandRegistry = new CommandRegistry()
+const globalUndoRedoManager = new UndoRedoManager()
 const hotkeysManager = new HotkeysManager()
-const commandService = new CommandService(commandRegistry, hotkeysManager)
-hotkeysManager.commandService = commandService
+const commandRegistry = new CommandRegistry()
+const commandService = new CommandService()
+
+const appContext = new ApplicationContext({
+    commandRegistry,
+    globalUndoRedoManager,
+    commandService,
+    hotkeysManager
+})
+
+commandService.setContext(appContext)
+hotkeysManager.setContext(appContext)
+commandRegistry.setContext(appContext)
 
 const canvasStore = useCanvasStore()
-
 const tabStore = useTabStore()
-tabStore.useCommandService(commandService)
 
-tabStore.openTab(AppTabType.UploadQueue)
+tabStore.openTab(AppTabType.Upload)
 tabStore.openTab(AppTabType.Explorer)
 tabStore.openTab(AppTabType.Explorer)
 
-// app.provide('commandRegistry', commandRegistry)
-// app.provide('commandManager', commandManager)
+commandService.registerAllFeatures()
+
+// provides
+
 app.provide('commandService', commandService)
-
-const defaultImgs = [10, 5] as number[]
+app.provide('appContext', appContext)
 
 app.mount('#app')
 
+// testing
+
+const defaultImgs = [1, 2] as number[]
 setTimeout(() => {
     canvasStore.addOpenCanvas(defaultImgs)
 }, 300)

@@ -1,45 +1,52 @@
 <script setup lang="ts">
-import Chip from 'primevue/chip'
-import InputText from 'primevue/inputtext'
-import Panel from 'primevue/panel'
-import type { MediaFile, TagOperation } from 'src/shared/types/models'
+import { ref } from 'vue'
+import { FileTagResult, MediaFile, TagOperation, TagOperationResult } from '@shared/types/models'
 import { useTagEditor } from '../ts/useTagEditorPanel'
-import { normalizeTag } from '@renderer/core/utils/tagsUtils'
-import { eventBus } from '@renderer/events/bus'
+import { normalizeTag } from '../../../core/utils/tagsUtils'
+import EditorTagInput from '../../tag_input/ui/EditorTagInput.vue'
+import { useTagStore } from '../../../core/stores/useTagStore'
+
+function withAlpha(hex: string, alpha: number): string {
+    const a = Math.round(alpha * 255)
+        .toString(16)
+        .padStart(2, '0')
+    return `${hex}${a}`
+}
 
 const props = defineProps<{
     selectedFiles: MediaFile[]
 }>()
 
-// Your existing normalization logic
-normalizeTag
+const emit = defineEmits<{
+    (e: 'files-updated', updates: FileTagResult[]): void
+}>()
 
-const { inputText, allGroup, someGroup, submitTags, removeTag } = useTagEditor(
+const { allGroup, someGroup, existingTagIds, submitTags, removeTag } = useTagEditor(
     () => props.selectedFiles,
     normalizeTag
 )
 
-async function applyOperations(ops: TagOperation[]) {
-    const result = await window.api.applyTagOperations(ops)
+const pendingTags = ref<string[]>([])
 
-    console.log('result', result)
+const tagStore = useTagStore()
+
+async function applyOperations(ops: TagOperation[]) {
+    const result = await window.api.files.applyTagOperations(ops)
 
     if (result.success) {
-        console.log(result.data)
+        const { files, tags } = result.data as TagOperationResult
 
-        const changed = result.data
+        tagStore.addTagsLocally(tags)
+        emit('files-updated', files)
 
-        eventBus.emit('files:updated', {
-            ids: new Set(changed.map((f) => f.id)),
-            files: new Map(changed.map((f) => [f.id, f]))
-        })
+        pendingTags.value = []
     } else {
         console.error(result.error)
     }
 }
 
 function handleAddTags() {
-    const operations = submitTags()
+    const operations = submitTags(pendingTags.value)
     if (!operations.length) return
 
     applyOperations(operations)
@@ -54,8 +61,10 @@ function handleRemoveTag(tag: any) {
 </script>
 
 <template>
-    <div class="flex h-full w-full flex-col rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-        <h3 class="mb-3 text-lg font-bold text-zinc-100">Edit Tags</h3>
+    <div
+        class="border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 flex h-full w-full flex-col rounded-lg border p-4"
+    >
+        <h3 class="text-surface-950 dark:text-surface-0 mb-3 text-lg font-bold">Edit Tags</h3>
 
         <div class="flex-1 overflow-y-auto pr-1">
             <div v-if="allGroup.length" class="mb-4">
@@ -65,8 +74,13 @@ function handleRemoveTag(tag: any) {
                         :key="tag.id"
                         :label="tag.name"
                         removable
+                        class="font-semibold"
+                        :style="{
+                            color: tag.color,
+                            backgroundColor: withAlpha(tag.color, 0.2)
+                        }"
+                        :pt="{ removeIcon: { color: tag.color } }"
                         @remove="handleRemoveTag(tag)"
-                        class="bg-primary font-semibold text-zinc-950"
                     />
                 </div>
             </div>
@@ -78,8 +92,14 @@ function handleRemoveTag(tag: any) {
                         :key="tag.id"
                         :label="tag.name"
                         removable
+                        class="border border-dashed"
+                        :style="{
+                            color: tag.color,
+                            backgroundColor: withAlpha(tag.color, 0.2),
+                            borderColor: tag.color
+                        }"
+                        :pt="{ removeIcon: { color: tag.color } }"
                         @remove="handleRemoveTag(tag)"
-                        class="border-primary bg-primary/50 border border-dashed"
                     />
                 </div>
             </div>
@@ -88,12 +108,12 @@ function handleRemoveTag(tag: any) {
         <Divider class="my-3" />
 
         <div>
-            <InputText
-                v-model="inputText"
-                placeholder="Add tags (space or comma separated)..."
-                class="w-full"
-                @keydown.enter="handleAddTags"
+            <EditorTagInput
+                v-model="pendingTags"
+                :existing-tag-ids="existingTagIds"
+                @submit="handleAddTags"
             />
+            <Button label="Add Tags" class="mt-2 w-full" @click="handleAddTags" />
         </div>
     </div>
 </template>

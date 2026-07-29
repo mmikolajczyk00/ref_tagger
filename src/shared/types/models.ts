@@ -4,9 +4,9 @@ export interface MediaFile {
     id: number
     fileName: string
     filePath: string
-    type: MediaType
+    mediaType: MediaType
     createdAt: string
-    tags: Array<Tag>
+    tags: Tag[]
 }
 
 export interface Tag {
@@ -23,6 +23,13 @@ export interface PaginatedResult<T> {
     limit: number
 }
 
+export interface PaginatedMediaFiles {
+    data: Record<number, MediaFile>
+    total: number
+    page: number
+    limit: number
+}
+
 export interface UploadFilePayload {
     filePath: string
     fileName: string
@@ -34,4 +41,23 @@ export interface TagOperation {
     fileId: number
     tagName?: string // Used for adds
     tagId?: number // Used for removals
+}
+
+export interface FileTagResult {
+    id: number
+    tags: Tag[]
+}
+
+export interface TagOperationResult {
+    filesIds?: Set<number>
+    files: FileTagResult[]
+    tags: Tag[]
+}
+
+export interface TagSearchQuery {
+    requiredTags?: string[]
+    excludedTags?: string[]
+    normalTags?: string[]
+    page?: number
+    limit?: number
 }

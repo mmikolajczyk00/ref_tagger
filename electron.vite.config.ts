@@ -6,39 +6,40 @@ import { PrimeVueResolver } from '@primevue/auto-import-resolver'
 import { defineConfig } from 'electron-vite'
 
 export default defineConfig({
-  main: {
-    server: {
-      headers: {
-        'Content-Security-Policy': "default-src * 'unsafe-inline' 'unsafe-eval'; connect-src *;"
-      }
+    main: {
+        server: {
+            headers: {
+                'Content-Security-Policy':
+                    "default-src * 'unsafe-inline' 'unsafe-eval'; connect-src *;"
+            }
+        },
+        resolve: {
+            alias: {
+                '@shared': resolve(__dirname, 'src/shared')
+            }
+        }
     },
-    resolve: {
-      alias: {
-        '@shared': resolve(__dirname, 'src/shared')
-      }
-    }
-  },
-  preload: {
-    resolve: {
-      alias: {
-        '@shared': resolve(__dirname, 'src/shared')
-      }
-    }
-  },
-  renderer: {
-    resolve: {
-      alias: {
-        '@renderer': resolve('src/renderer/src'),
-        '@shared': resolve(__dirname, 'src/shared')
-      }
+    preload: {
+        resolve: {
+            alias: {
+                '@shared': resolve(__dirname, 'src/shared')
+            }
+        }
     },
-    plugins: [
-      vue(),
-      tailwindcss(),
-      Components({
-        resolvers: [PrimeVueResolver()],
-        dirs: ['src/renderer/src/*/ui/*']
-      })
-    ]
-  }
+    renderer: {
+        resolve: {
+            alias: {
+                '@renderer': resolve(__dirname, 'src/renderer/src'),
+                '@shared': resolve(__dirname, 'src/shared')
+            }
+        },
+        plugins: [
+            vue(),
+            tailwindcss(),
+            Components({
+                resolvers: [PrimeVueResolver()],
+                dirs: ['src/renderer/src/*/ui/*']
+            })
+        ]
+    }
 })

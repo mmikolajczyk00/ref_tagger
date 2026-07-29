@@ -1,0 +1,43 @@
+generator client {
+    provider = "prisma-client"
+    output   = "../src/generated/prisma"
+}
+
+datasource db {
+    provider = "sqlite"
+}
+
+model File {
+    id        Int      @id @default(autoincrement())
+    filePath  String   @map("file_path") @unique
+    fileName  String   @map("file_name")
+    mediaType String   @map("media_type")
+    createdAt DateTime @default(now()) @map("created_at")
+
+    tags FileTag[]
+
+    @@map("files")
+}
+
+model Tag {
+    id    Int    @id @default(autoincrement())
+    name  String @unique
+    color String
+
+    files FileTag[]
+
+    @@map("tags")
+}
+
+model FileTag {
+    fileId Int @map("file_id")
+    tagId  Int @map("tag_id")
+
+    file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+    tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+    @@id([fileId, tagId])
+    @@index([fileId])
+    @@index([tagId])
+    @@map("file_tags")
+}

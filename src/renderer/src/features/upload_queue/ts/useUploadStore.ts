@@ -1,7 +1,7 @@
 // stores/useUploadStore.ts
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { QueuedFile, UploadStatus } from '../../upload_queue/ts/UploadQueue'
+import { QueuedFile } from '../../upload_queue/ts/UploadQueue'
 
 export const useUploadStore = defineStore('upload', () => {
     // State
@@ -30,7 +30,7 @@ export const useUploadStore = defineStore('upload', () => {
             item.status = 'uploading'
 
             try {
-                await window.api.insertMediaFile({
+                await window.api.files.insertMediaFile({
                     filePath: item.path,
                     fileName: item.name,
                     mediaType: item.type

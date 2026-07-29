@@ -1,25 +1,42 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { ProtocolPayload, ScrapeResult } from '../shared/shared'
-import { MediaType, UploadFilePayload } from '../shared/types/models'
-import { TagOperation } from '../renderer/src/features/explorer/ts/useTagEditorPanel'
+import { ScrapeResult } from '../shared/shared'
+import { TagOperation, TagSearchQuery, UploadFilePayload } from '../shared/types/models'
 
 // Custom APIs for renderer
 const api = {
-    scrapeTwitter: (url: string): Promise<ScrapeResult> => ipcRenderer.invoke('scrape-twt', url),
-    scrapeR34: (url: string): Promise<ScrapeResult> => ipcRenderer.invoke('scrape-r34', url),
-    downloadFromUrl_YTDLP: (url: string): Promise<string[]> =>
-        ipcRenderer.invoke('download-yt-dlp', url),
-    getMediaFileOfId: (id: number) => ipcRenderer.invoke('api:files:getById', id),
-    getMediaFiles: (page: number, limit: number) =>
-        ipcRenderer.invoke('api:files:getPaginated', page, limit),
-    insertMediaFile: (payload: UploadFilePayload) =>
-        ipcRenderer.invoke('api:files:insert', payload),
-    getFilePath: (file: File) => {
-        return webUtils.getPathForFile(file)
+    scrape: {
+        scrapeTwitter: (url: string): Promise<ScrapeResult> =>
+            ipcRenderer.invoke('scrape-twt', url),
+        scrapeR34: (url: string): Promise<ScrapeResult> => ipcRenderer.invoke('scrape-r34', url),
+        downloadFromUrl_YTDLP: (url: string): Promise<string[]> =>
+            ipcRenderer.invoke('download-yt-dlp', url)
     },
-    applyTagOperations: (operations: TagOperation[]) => {
-        return ipcRenderer.invoke('api:files:updateTags', operations)
+
+    files: {
+        getMediaFileOfId: (id: number) => ipcRenderer.invoke('api:files:getById', id),
+        getMediaFiles: (page: number, limit: number) =>
+            ipcRenderer.invoke('api:files:getPaginated', page, limit),
+        insertMediaFile: (payload: UploadFilePayload) =>
+            ipcRenderer.invoke('api:files:insert', payload),
+        getFilePath: (file: File) => {
+            return webUtils.getPathForFile(file)
+        },
+        applyTagOperations: (operations: TagOperation[]) =>
+            ipcRenderer.invoke('api:files:updateTags', operations),
+        searchFiles: (query: TagSearchQuery) => ipcRenderer.invoke('api:files:search', query),
+        getFilesOfIds: (ids: number[]) => ipcRenderer.invoke('api:files:getByIds', ids)
+    },
+
+    tags: {
+        getAll: () => ipcRenderer.invoke('api:tags:getAll'),
+        create: (name: string, color: string) => ipcRenderer.invoke('api:tags:create', name, color),
+        delete: (id: number) => ipcRenderer.invoke('api:tags:delete', id),
+        updateName: (id: number, name: string) =>
+            ipcRenderer.invoke('api:tags:updateName', id, name),
+        updateColor: (id: number, color: string) =>
+            ipcRenderer.invoke('api:tags:updateColor', id, color),
+        getAllColors: () => ipcRenderer.invoke('api:tags:getAllColors')
     }
 }
 

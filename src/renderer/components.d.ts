@@ -11,16 +11,27 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    Badge: typeof import('primevue/badge')['default']
     Button: typeof import('primevue/button')['default']
-    ButtonGroup: typeof import('primevue/buttongroup')['default']
-    ContextMenu: typeof import('primevue/contextmenu')['default']
+    Chip: typeof import('primevue/chip')['default']
+    Column: typeof import('primevue/column')['default']
+    DataTable: typeof import('primevue/datatable')['default']
+    Dialog: typeof import('primevue/dialog')['default']
     Divider: typeof import('primevue/divider')['default']
-    Slider: typeof import('primevue/slider')['default']
-  }
-  export interface GlobalDirectives {
-    FocusTrap: typeof import('primevue/focustrap')['default']
-    Ripple: typeof import('primevue/ripple')['default']
-    Tooltip: typeof import('primevue/tooltip')['default']
+    IconField: typeof import('primevue/iconfield')['default']
+    InputColor: typeof import('primevue/inputcolor')['default']
+    InputColorArea: typeof import('primevue/inputcolorarea')['default']
+    InputColorAreaBackground: typeof import('primevue/inputcolorareabackground')['default']
+    InputColorAreaHandle: typeof import('primevue/inputcolorareahandle')['default']
+    InputColorEyeDropper: typeof import('primevue/inputcoloreyedropper')['default']
+    InputColorInput: typeof import('primevue/inputcolorinput')['default']
+    InputColorSlider: typeof import('primevue/inputcolorslider')['default']
+    InputColorSliderHandle: typeof import('primevue/inputcolorsliderhandle')['default']
+    InputColorSliderTrack: typeof import('primevue/inputcolorslidertrack')['default']
+    InputColorSwatch: typeof import('primevue/inputcolorswatch')['default']
+    InputColorSwatchBackground: typeof import('primevue/inputcolorswatchbackground')['default']
+    InputColorTransparencyGrid: typeof import('primevue/inputcolortransparencygrid')['default']
+    InputIcon: typeof import('primevue/inputicon')['default']
+    InputText: typeof import('primevue/inputtext')['default']
+    Popover: typeof import('primevue/popover')['default']
   }
 }

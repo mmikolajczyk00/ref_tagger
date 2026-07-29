@@ -1,66 +1,55 @@
-import { CommandManager } from '@renderer/core/command_system/CommandManager'
 import EmptyTab from './ui/EmptyTab.vue'
 import UploadQueueTab from '../upload_queue/ui/UploadQueueTab.vue'
 import ExplorerTab from '../explorer/ui/ExplorerTab.vue'
-import CanvasTab from '../canvas/ui/CanvasTab.vue'
+import CanvasTab, { CanvasTabProps } from '../canvas/ui/CanvasTab.vue'
+import { UndoRedoManager } from '@renderer/core/command_system/UndoRedoManager'
 import TagEditorTab from '../tag_editor/ui/TagEditorTab.vue'
 
-enum AppTabType {
-    Empty,
-    UploadQueue,
-    Explorer,
-    Canvas,
-    TagEditor
+export enum AppTabType {
+    Empty = 'Empty',
+    Upload = 'Upload',
+    Explorer = 'Explorer',
+    Canvas = 'Canvas',
+    UploadQueue = 'UploadQueue',
+    TagEditor = 'TagEditor'
 }
 
-const AppTabComponents = [EmptyTab, UploadQueueTab, ExplorerTab, CanvasTab, TagEditorTab]
-const AppTabIcons = ['', 'download_2', 'files', 'gallery_thumbnail', 'sell']
+export const AppTabComponents = {
+    [AppTabType.Empty]: EmptyTab,
+    [AppTabType.Upload]: UploadQueueTab,
+    [AppTabType.Explorer]: ExplorerTab,
+    [AppTabType.Canvas]: CanvasTab,
+    [AppTabType.UploadQueue]: UploadQueueTab,
+    [AppTabType.TagEditor]: TagEditorTab
+}
 
-class AppTab {
-    title: string = 'untitled'
+export interface BaseTab {
     id: number
-    tabType: AppTabType = AppTabType.Empty
-    cmdManager = new CommandManager()
+    title: string
+    undoRedoMng: UndoRedoManager
     data: any
-
-    constructor(id: number, title?: string) {
-        this.id = id
-
-        if (title) this.title = title
-    }
-
-    onActive() {}
-    onInactive() {}
 }
 
-class Empty_Tab extends AppTab {
-    tabType = AppTabType.Empty
+export interface EmptyTab extends BaseTab {
+    type: AppTabType.Empty
 }
 
-// class UploadQueue_Tab extends AppTab {
-//   tabType = AppTabType.Explorer
-// }
-
-// class Explorer_Tab extends AppTab {
-//   tabType = AppTabType.Explorer
-// }
-
-// class CanvasEditor_Tab extends AppTab {
-//   tabType = AppTabType.Canvas
-// }
-
-// class TagEditor_Tab extends AppTab {
-//   tabType = AppTabType.TagEditor
-// }
-
-export {
-    AppTab,
-    AppTabType,
-    Empty_Tab,
-    // UploadQueue_Tab,
-    // Explorer_Tab,
-    // CanvasEditor_Tab,
-    // TagEditor_Tab,
-    AppTabComponents,
-    AppTabIcons
+export interface CanvasTab extends BaseTab {
+    type: AppTabType.Canvas
+    data: CanvasTabProps
 }
+
+export interface ExplorerTab extends BaseTab {
+    type: AppTabType.Explorer
+}
+
+export interface UploadQueueTab extends BaseTab {
+    type: AppTabType.Upload
+}
+export interface TagEditorTab extends BaseTab {
+    type: AppTabType.Upload
+}
+
+export const AppTabIcons = ['', 'download_2', 'files', 'gallery_thumbnail', 'sell']
+
+export type AppTab = CanvasTab | ExplorerTab | UploadQueueTab

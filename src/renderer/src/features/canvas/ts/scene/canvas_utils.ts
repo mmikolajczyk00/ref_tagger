@@ -94,7 +94,7 @@ export class Vector2 implements Coordinates {
         if (this.x == 0 && this.y == 0) {
             return new Vector2(0, 0)
         }
-        let l = this.magnitude()
+        const l = this.magnitude()
         return new Vector2(this.x / l, this.y / l)
     }
 
@@ -103,14 +103,14 @@ export class Vector2 implements Coordinates {
             return this
         }
 
-        let l = this.magnitude()
+        const l = this.magnitude()
         this.x = this.x / l
         this.y = this.y / l
         return this
     }
 
     rotate(r: number) {
-        let tx = this.x * Math.cos(r) - this.y * Math.sin(r)
+        const tx = this.x * Math.cos(r) - this.y * Math.sin(r)
         this.y = this.x * Math.sin(r) + this.y * Math.cos(r)
         this.x = tx
         return this
@@ -165,7 +165,7 @@ export class Transform {
 
     setPos(newPos: Coordinates) {
         if (this.children.length > 0) {
-            let difference = { x: newPos.x - this.position.x, y: newPos.y - this.position.y }
+            const difference = { x: newPos.x - this.position.x, y: newPos.y - this.position.y }
             this.move(difference)
         } else {
             this.position.setV(newPos)
@@ -190,10 +190,10 @@ export class Transform {
     }
 
     getBoundingBox(): Rectangle {
-        let bl = this.getBottomLeft()
-        let br = this.getBottomRight()
-        let tl = this.getTopLeft()
-        let tr = this.getTopRight()
+        const bl = this.getBottomLeft()
+        const br = this.getBottomRight()
+        const tl = this.getTopLeft()
+        const tr = this.getTopRight()
         return {
             top: Math.max(bl.y, br.y, tl.y, tr.y),
             right: Math.max(bl.x, br.x, tl.x, tr.x),
@@ -306,21 +306,21 @@ export function rotateVectorAroundOrigin(v: Vector2, pivot: Vector2, angleRad: n
 }
 
 export function doPolygonsIntersect(a: Array<Vector2>, b: Array<Vector2>) {
-    var polygons = [a, b]
-    var minA, maxA, projected, i, i1, j, minB, maxB
+    const polygons = [a, b]
+    let minA, maxA, projected, i, i1, j, minB, maxB
 
     for (i = 0; i < polygons.length; i++) {
         // for each polygon, look at each edge of the polygon, and determine if it separates
         // the two shapes
-        var polygon = polygons[i]
+        const polygon = polygons[i]
         for (i1 = 0; i1 < polygon.length; i1++) {
             // grab 2 vertices to create an edge
-            var i2 = (i1 + 1) % polygon.length
-            var p1 = polygon[i1]
-            var p2 = polygon[i2]
+            const i2 = (i1 + 1) % polygon.length
+            const p1 = polygon[i1]
+            const p2 = polygon[i2]
 
             // find the line perpendicular to this edge
-            var normal = { x: p2.y - p1.y, y: p1.x - p2.x }
+            const normal = { x: p2.y - p1.y, y: p1.x - p2.x }
 
             minA = maxA = undefined
             // for each vertex in the first shape, project it onto the line perpendicular to the edge

@@ -9,7 +9,6 @@ import SelectionBox from './SelectionBox'
 import { TransformBox } from './TransformBox'
 
 import potpack from 'potpack'
-import { UUID } from 'crypto'
 import { Coordinates, Transform, Vector2 } from './canvas_utils'
 
 export default class CanvasScene {
@@ -49,7 +48,7 @@ export default class CanvasScene {
     }
 
     addImage(fileId: number, position?: Coordinates) {
-        let imageEl = new ImageCanvasElement(this, this.transform, fileId)
+        const imageEl = new ImageCanvasElement(this, this.transform, fileId)
 
         if (typeof position !== 'undefined') imageEl.transform.setPos(position)
 
@@ -68,7 +67,7 @@ export default class CanvasScene {
     }
 
     addNote(text: string, position?: Vector2) {
-        let noteEl = new NoteCanvasElement(this, this.transform, text)
+        const noteEl = new NoteCanvasElement(this, this.transform, text)
 
         this.incrementZIndex()
 
@@ -126,7 +125,7 @@ export default class CanvasScene {
         this.clearSelection()
 
         if (Array.isArray(el)) {
-            let array = el as Array<CanvasElement>
+            const array = el as Array<CanvasElement>
             this.selectedElements = array
             this.selectedElements.forEach((element) => {
                 element.isSelected = true
@@ -156,7 +155,7 @@ export default class CanvasScene {
     appendSelection(el: CanvasElement | Array<CanvasElement>) {
         //array of elements
         if (Array.isArray(el)) {
-            let array = el as Array<CanvasElement>
+            const array = el as Array<CanvasElement>
             array.forEach((i) => {
                 this.appendSelection(i)
             })
@@ -176,7 +175,7 @@ export default class CanvasScene {
     removeSelection(el: CanvasElement | Array<CanvasElement>) {
         //array of elements
         if (Array.isArray(el)) {
-            let array = el as Array<CanvasElement>
+            const array = el as Array<CanvasElement>
             array.forEach((i) => {
                 this.removeSelection(i)
             })
@@ -233,18 +232,17 @@ export default class CanvasScene {
         this.panOffset.add(v)
         this.transform.move(v)
     }
+
     panEnd() {}
 
     zoomUpdate(delta: number, localMouse: Coordinates) {
         // this.zoom += delta
 
-        let oldZoom = this.zoom
-        let targetZoom = this.zoom - (this.zoom * delta) / 1000
+        const oldZoom = this.zoom
+        const targetZoom = this.zoom - (this.zoom * delta) / 1000
         this.zoom = Math.max(0.1, Math.min(targetZoom, 10))
 
         if (this.zoom == oldZoom) return
-
-        this.mousePos
 
         this.transform.position.x = localMouse.x - this.mousePos.x * this.zoom
         this.transform.position.y = localMouse.y - this.mousePos.y * this.zoom
@@ -255,14 +253,14 @@ export default class CanvasScene {
     }
 
     arrange(elements: Array<CanvasElement>) {
-        let boxes = [] as any
+        const boxes = [] as any
 
-        let pivot = this.transformBox.transform.getBottomLeft()
+        const pivot = this.transformBox.transform.getBottomLeft()
 
         for (let i = 0; i < elements.length; i++) {
             const element = elements[i]
 
-            let bbox = element.transform.getBoundingBox()
+            const bbox = element.transform.getBoundingBox()
 
             boxes.push({
                 w: bbox.right - bbox.left,
@@ -274,7 +272,7 @@ export default class CanvasScene {
             })
         }
 
-        const { w, h, fill } = potpack(boxes)
+        potpack(boxes)
 
         for (let i = 0; i < boxes.length; i++) {
             const box = boxes[i] as any

@@ -1,78 +1,96 @@
 <template>
     <div ref="note-html-element" :style="noteStyle" :class="noteClasses" class="noteStyle">
         <pre
+            v-show="!noteData.editMode"
+            ref="text-container"
             class="size-fit"
             :style="textContainerStyle"
-            ref="text-container"
-            v-show="!noteData.editMode"
             >{{ noteData.noteText }}</pre>
         <textarea
             v-show="noteData.editMode"
-            :style="textAreaStyle"
-            style="field-sizing: content"
             ref="text-area"
             v-model="noteData.noteText"
+            :style="textAreaStyle"
+            style="field-sizing: content"
         ></textarea>
 
         <!-- resize buttons -->
 
-        <div id="resize-btns-container" class="absolute size-full" v-show="noteData.editMode">
+        <div v-show="noteData.editMode" id="resize-btns-container" class="absolute size-full">
             <div
                 ref="resize-n"
                 class="absolute -top-8 flex w-full cursor-n-resize items-center justify-center"
             >
-                <div class="size-full bg-gray-900 text-center">--</div>
+                <div class="bg-surface-200 dark:bg-surface-900 size-full text-center">--</div>
             </div>
             <div
                 ref="resize-e"
                 class="absolute -right-8 flex h-full cursor-e-resize items-center justify-center"
             >
-                <div class="flex size-full items-center bg-gray-900 px-1 py-2">||</div>
+                <div
+                    class="bg-surface-200 dark:bg-surface-900 flex size-full items-center px-1 py-2"
+                >
+                    ||
+                </div>
             </div>
             <div
                 ref="resize-s"
                 class="absolute -bottom-8 flex w-full cursor-s-resize items-center justify-center"
             >
-                <div class="size-full bg-gray-900 text-center">--</div>
+                <div class="bg-surface-200 dark:bg-surface-900 size-full text-center">--</div>
             </div>
             <div
                 ref="resize-w"
                 class="absolute -left-8 flex h-full cursor-w-resize items-center justify-center"
             >
-                <div class="flex size-full items-center bg-gray-900 px-1 py-2">||</div>
+                <div
+                    class="bg-surface-200 dark:bg-surface-900 flex size-full items-center px-1 py-2"
+                >
+                    ||
+                </div>
             </div>
             <div
                 ref="resize-ne"
                 class="absolute -top-8 -right-8 flex cursor-ne-resize items-center justify-center"
             >
-                <div class="size-7 justify-center bg-gray-900 text-center">\</div>
+                <div class="bg-surface-200 dark:bg-surface-900 size-7 justify-center text-center">
+                    \
+                </div>
             </div>
             <div
                 ref="resize-nw"
                 class="absolute -top-8 -left-8 flex cursor-nw-resize items-center justify-center"
             >
-                <div class="size-7 justify-center bg-gray-900 text-center">/</div>
+                <div class="bg-surface-200 dark:bg-surface-900 size-7 justify-center text-center">
+                    /
+                </div>
             </div>
             <div
                 ref="resize-se"
                 class="absolute -right-8 -bottom-8 flex cursor-se-resize items-center justify-center"
             >
-                <div class="flex size-7 items-center justify-center bg-gray-900">/</div>
+                <div
+                    class="bg-surface-200 dark:bg-surface-900 flex size-7 items-center justify-center"
+                >
+                    /
+                </div>
             </div>
             <div
                 ref="resize-sw"
                 class="absolute -bottom-8 -left-8 flex cursor-sw-resize items-center justify-center"
             >
-                <div class="flex size-7 items-center justify-center bg-gray-900">\</div>
+                <div
+                    class="bg-surface-200 dark:bg-surface-900 flex size-7 items-center justify-center"
+                >
+                    \
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { useTemplateRef, ref, reactive, onMounted, watchEffect, computed, watch } from 'vue'
-import type { HtmlHTMLAttributes, Ref } from 'vue'
-import { onClickOutside } from '@vueuse/core'
+import { useTemplateRef, reactive, onMounted, computed } from 'vue'
 import { NoteCanvasElement } from '../ts/scene/CanvasElements'
 
 const { canvasNoteData } = defineProps({
@@ -163,25 +181,25 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@reference "tailwindcss";
+@reference "#main.css";
 
 /* no matter the state */
 .noteStyle {
-    @apply absolute z-0 box-border flex bg-gray-950 text-white;
+    @apply border-surface-300 dark:border-surface-700 bg-surface-0 dark:bg-surface-950 text-surface-950 dark:text-surface-0 absolute z-0 box-border flex;
 }
 
 /* edit mode */
 .editModeStyle_Off {
-    @apply w-fit border border-gray-700 text-nowrap;
+    @apply w-fit border text-nowrap;
 }
 
 .editModeStyle_On {
-    @apply w-fit border border-gray-700 text-nowrap;
+    @apply w-fit border text-nowrap;
 }
 
 /* selected */
 .selectedNoteStyle {
-    @apply ring-2 ring-yellow-500;
+    @apply ring-primary-500 ring-2;
 }
 
 pre {
@@ -189,7 +207,7 @@ pre {
 }
 
 textarea {
-    @apply box-border resize-none overflow-hidden bg-gray-950 font-mono text-nowrap focus-visible:outline-none;
+    @apply bg-surface-0 dark:bg-surface-950 box-border resize-none overflow-hidden font-mono text-nowrap focus-visible:outline-none;
 }
 
 #resize-btns-container {

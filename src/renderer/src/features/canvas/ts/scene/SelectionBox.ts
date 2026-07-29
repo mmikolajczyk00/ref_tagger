@@ -22,12 +22,12 @@ export default class SelectionBox {
     }
 
     update(isShift: boolean) {
-        let mousePos = this.canvas.mousePos
+        const mousePos = this.canvas.mousePos
 
-        let sX = Math.min(mousePos.x, this.firstTouch.x)
-        let sY = Math.min(mousePos.y, this.firstTouch.y)
-        let width = Math.abs(mousePos.x - this.firstTouch.x)
-        let height = Math.abs(mousePos.y - this.firstTouch.y)
+        const sX = Math.min(mousePos.x, this.firstTouch.x)
+        const sY = Math.min(mousePos.y, this.firstTouch.y)
+        const width = Math.abs(mousePos.x - this.firstTouch.x)
+        const height = Math.abs(mousePos.y - this.firstTouch.y)
 
         if (width > SIZE_THRESHOLD || height > SIZE_THRESHOLD) {
             this.hidden = false
@@ -43,15 +43,15 @@ export default class SelectionBox {
 
         // //handle selection
 
-        let newSelection: Array<CanvasElement> = []
-        let allElements = this.canvas.getAllElements()
-        let rectangle = {
+        const newSelection: Array<CanvasElement> = []
+        const allElements = this.canvas.getAllElements()
+        const rectangle = {
             top: sY + height,
             right: sX + width,
             bottom: sY,
             left: sX
         }
-        let polygon = [
+        const polygon = [
             new Vector2(rectangle.left, rectangle.bottom),
             new Vector2(rectangle.right, rectangle.bottom),
             new Vector2(rectangle.left, rectangle.top),
