@@ -108,6 +108,12 @@ export class LocalDatabaseService {
 
     async getFilesPage(page: number, limit: number): Promise<Result<PaginatedMediaFiles>> {
         try {
+            // Uncomment to clear all data:
+            // const res = await this.prisma.file.deleteMany({})
+            // const res2 = await this.prisma.tag.deleteMany({})
+            // const res3 = await this.prisma.fileTag.deleteMany({})
+            // console.log(res, res2, res3)
+
             const skip = (page - 1) * limit
             const [files, total] = await Promise.all([
                 this.prisma.file.findMany({

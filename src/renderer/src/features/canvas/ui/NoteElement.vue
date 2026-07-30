@@ -159,8 +159,6 @@ const resizeButtons = {
 }
 
 onMounted(() => {
-    console.log(textAreaHtmlEl.value)
-
     canvasNoteData?.setHtmlElement(noteHtmlEl.value as HTMLDivElement)
     canvasNoteData?.setTextContainer(textContainer.value as HTMLPreElement)
     canvasNoteData?.setTextAreaEl(textAreaHtmlEl.value as HTMLTextAreaElement)

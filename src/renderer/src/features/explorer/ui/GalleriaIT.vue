@@ -71,8 +71,6 @@ function close(): void {
 useEventListener(document, 'keydown', (e) => {
     if (!open.value) return
 
-    console.log(e)
-
     if (e.key == 'd') offsetActiveId(1)
     else if (e.key == 'a') offsetActiveId(-1)
     else if (e.key == 'r') resetTransform()

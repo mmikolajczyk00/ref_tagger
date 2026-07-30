@@ -47,7 +47,6 @@ class UndoRedoManager {
     undo() {
         if (this.undoStack.length > 0) {
             const cmd = this.undoStack.pop() as ICommand
-            console.log(cmd)
             cmd.undo()
             this.redoStack.push(cmd)
         }
@@ -56,7 +55,6 @@ class UndoRedoManager {
     redo() {
         if (this.redoStack.length > 0) {
             const cmd = this.redoStack.pop() as ICommand
-            console.log(cmd)
             cmd.execute()
             this.undoStack.push(cmd)
         }
