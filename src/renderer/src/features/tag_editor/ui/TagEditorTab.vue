@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, nextTick, onActivated } from 'vue'
 import { useDialog } from 'primevue/usedialog'
-import { normalizeTag } from '@renderer/core/utils/tagsUtils'
-import { Tag } from 'src/shared/types/models'
 import { useTagEditor } from '../ts/useTagEditor'
 import NewTagDialog from './NewTagDialog.vue'
 import ColorPickerDialog from './ColorPickerDialog.vue'
+import { Tag } from '@shared/types/models'
+import { normalizeTag } from '../../../core/utils/tagsUtils'
 
 const {
     isLoading,
