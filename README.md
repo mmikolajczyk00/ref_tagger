@@ -54,6 +54,39 @@ The core architecture, tag indexing system, and initial canvas workspace are imp
 
 ---
 
+## Getting Started
+
+### 1. Prerequisites
+* **Node.js**: `v22.2.2` or higher
+* **npm**: `v10.9.7` or higher
+
+### 2. Installation & Setup
+
+1. **Clone the repository:**
+  ```bash
+  git clone https://github.com/mmikolajczyk00/ref_tagger.git
+  cd ref_tagger
+  ```
+2. Install dependencies
+  ```bash
+  npm install
+  ```
+3. Configure Environment Variables:
+Copy the example environment file and add your free PrimeUI community API key:
+  ```bash
+  cp .env.example .env
+  ```
+4. Open .env and set your key:
+  ```
+  VITE_PRIMEUI_LICENSE_KEY=your_free_api_key_here
+  ```
+5. Start the development server:
+  ```
+  npm run dev
+  ```
+
+---
+
 ## License
 
 Distributed under the [MIT License](LICENSE).
