@@ -83,7 +83,7 @@ export default class CanvasScene {
         const index = this.selectedElements.findIndex((el) => el.elementId === element.elementId)
         const isSelected = element.isSelected
 
-        console.log('this.selectedElements.length ', this.selectedElements.length)
+        // console.log('this.selectedElements.length ', this.selectedElements.length)
 
         if (shiftPressed) {
             if (isSelected) {
@@ -240,7 +240,7 @@ export default class CanvasScene {
 
         const oldZoom = this.zoom
         const targetZoom = this.zoom - (this.zoom * delta) / 1000
-        this.zoom = Math.max(0.1, Math.min(targetZoom, 10))
+        this.zoom = Math.max(0.0005, Math.min(targetZoom, 10))
 
         if (this.zoom == oldZoom) return
 

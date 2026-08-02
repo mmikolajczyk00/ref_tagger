@@ -19,7 +19,6 @@ export class SelectionHandler {
 
         this.allObjects.value[index].selected = true
         this.selectedObjects.value = [this.allObjects.value[index]]
-        console.log(this.allObjects.value[index])
 
         this.lastSelected = index
     }

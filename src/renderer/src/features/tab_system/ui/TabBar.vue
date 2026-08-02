@@ -14,7 +14,8 @@
             >
                 <span class="material-symbols-outlined mr-2">{{ AppTabIcons[tab.type] }}</span>
                 <p class="overflow-hidden text-nowrap text-ellipsis select-none">
-                    {{ tab.title }} : {{ index }}
+                    <!-- {{ tab.title }} : {{ index }} -->
+                    {{ tab.title }}
                 </p>
 
                 <Button
@@ -52,7 +53,6 @@ function closeTab(id: number) {
     tabStore.closeTab(id)
 }
 function newEmptyTab() {
-    console.log('open_empty_tab')
     commandService.execute(TAB_COMMANDS.NEW_EMPTY_TAB)
 }
 </script>

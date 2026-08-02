@@ -17,10 +17,10 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         else return openCanvases.value.get(activeTab.data.canvasId)
     })
 
-    function addOpenCanvas(files: number[] = []) {
+    function addOpenCanvas(files: number[] = [], title = 'new canvas') {
         const scene = new CanvasScene(Date.now())
         const tabStore = useTabStore()
-        tabStore.openTab(AppTabType.Canvas, 'new canvas', { canvasId: scene.id })
+        tabStore.openTab(AppTabType.Canvas, title, { canvasId: scene.id })
         openCanvases.value.set(scene.id, scene)
         scene.addImages(files, { x: 100, y: 100 } as Coordinates)
     }

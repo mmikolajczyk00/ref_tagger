@@ -14,7 +14,6 @@ async function handleDrop(event: DragEvent) {
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i]
-        console.log('event', event)
 
         const absolutePath = await window.api.files.getFilePath(file)
         if (!absolutePath) continue
@@ -25,8 +24,6 @@ async function handleDrop(event: DragEvent) {
         if (file.type.startsWith('video/')) mediaType = 'video'
 
         if (mediaType === 'unknown') continue // Skip unsupported files
-
-        console.log(file)
 
         uploadStore.addToQueue([
             {

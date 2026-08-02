@@ -1,10 +1,19 @@
 node_modules
 dist
 out
+build
 .DS_Store
 .eslintcache
 *.log*
 resources/assets/cookies.txt
 .env
+.agents
+.claude
+.windsurf
+PLAN.md
+PLAN_TAG_CATEGORIES
+PLAN_TAG_SUBTAGS.md
+.vscode
+
 
 /src/generated/prisma

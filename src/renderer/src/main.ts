@@ -86,10 +86,6 @@ commandRegistry.setContext(appContext)
 const canvasStore = useCanvasStore()
 const tabStore = useTabStore()
 
-tabStore.openTab(AppTabType.Upload)
-tabStore.openTab(AppTabType.Explorer)
-tabStore.openTab(AppTabType.Explorer)
-
 commandService.registerAllFeatures()
 
 // provides
@@ -97,11 +93,20 @@ commandService.registerAllFeatures()
 app.provide('commandService', commandService)
 app.provide('appContext', appContext)
 
+// tabs demo
+tabStore.openTab(AppTabType.Upload, 'Upload')
+tabStore.openTab(AppTabType.Explorer, 'Explorer')
+tabStore.openTab(AppTabType.TagEditor, 'Tag Editor')
+
+// canvas demo
+
+window.api.files.getMediaFiles(1, 50).then((result) => {
+    if (result.success) {
+        canvasStore.addOpenCanvas(
+            Object.values(result.data.data).map((f) => f.id),
+            'CanvasDemo'
+        )
+    }
+})
+
 app.mount('#app')
-
-// testing
-
-const defaultImgs = [1, 2] as number[]
-setTimeout(() => {
-    canvasStore.addOpenCanvas(defaultImgs)
-}, 300)

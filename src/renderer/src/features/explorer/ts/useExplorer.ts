@@ -36,13 +36,14 @@ export function useExplorer() {
         if (isLoading.value) return
         isLoading.value = true
 
-        console.log('refetch')
-
         try {
             const result = await window.api.files.getFilesOfIds(
                 Object.keys(mediaFiles.value).map((k) => Number(k))
             )
+<<<<<<< HEAD
             console.log('objkeys', Object.keys(mediaFiles.value))
+=======
+>>>>>>> main
 
             if (!result.success) {
                 console.error('Failed to fetch files:', result.error)

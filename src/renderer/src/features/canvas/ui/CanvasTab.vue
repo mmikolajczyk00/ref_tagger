@@ -34,8 +34,6 @@ const handleGlobalMouseMove = (event: MouseEvent) => {
 }
 
 onActivated(() => {
-    console.log('onActivated')
-
     window.addEventListener('mousemove', handleGlobalMouseMove)
 })
 

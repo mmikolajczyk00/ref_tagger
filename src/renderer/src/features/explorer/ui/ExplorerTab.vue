@@ -125,7 +125,8 @@ onMounted(() => {
                             {{ f.fileName }}
                         </span>
                         <span class="text-surface-400 dark:text-surface-500 truncate text-[10px]">
-                            #{{ f.id }} — {{ f.filePath }}
+                            <!-- #{{ f.id }} — {{ f.filePath }} -->
+                            #{{ f.id }}
                         </span>
                     </div>
                 </div>

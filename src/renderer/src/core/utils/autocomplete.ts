@@ -16,8 +16,6 @@ export function autocompleteFilter(
 
     if (!input || input.length == 0) return suggestions.slice(0, autocompleteSize)
 
-    console.log({ input })
-
     const matches = Array.from(''.repeat(autocompleteSize))
 
     const inputLower = input.toLowerCase()
@@ -146,8 +144,6 @@ export function autocompleteFilterObjects(
     autocompleteSize = Math.min(suggestionObjects.length, autocompleteSize)
 
     if (!input || input.length == 0) return suggestionObjects.slice(0, autocompleteSize)
-
-    console.log({ input })
 
     let matches = Array.from(''.repeat(autocompleteSize))
 

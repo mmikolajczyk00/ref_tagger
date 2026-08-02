@@ -61,7 +61,6 @@ export class ResizeAction {
                 pivot: e.transform.getCenter().clone(),
                 rotOrScale: e.transform.scale
             })
-            console.log(e.transform.position)
         })
     }
 

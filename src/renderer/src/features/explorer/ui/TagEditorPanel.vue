@@ -110,7 +110,7 @@ function handleRemoveTag(tag: any) {
         <div>
             <EditorTagInput
                 v-model="pendingTags"
-                :existing-tag-ids="existingTagIds"
+                :existing-tag-ids="allGroup.map((t) => t.id)"
                 @submit="handleAddTags"
             />
             <Button label="Add Tags" class="mt-2 w-full" @click="handleAddTags" />

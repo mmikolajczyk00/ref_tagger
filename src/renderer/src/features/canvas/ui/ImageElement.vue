@@ -54,8 +54,6 @@ onMounted(async () => {
 
     const imageUrl = `media://load?path=${mediaFile.filePath}`
 
-    console.log('imageUrl', imageUrl)
-
     image.src = imageUrl!
 
     // draw on canvas
@@ -77,8 +75,6 @@ onMounted(async () => {
         //update image container size
         imageData.transform.width = image.width
         imageData.transform.height = image.height
-
-        console.log(image)
     }
 })
 </script>

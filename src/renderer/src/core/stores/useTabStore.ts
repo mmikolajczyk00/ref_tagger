@@ -27,14 +27,16 @@ export const useTabStore = defineStore('tabStore', () => {
     function setActiveTab(index: number) {
         if (activeTabIndex.value == index) return
 
-        console.log(index)
-
         activeTabIndex.value = index
     }
 
     function openTab(type: AppTabType, title?: string, data?: any): number {
         if (openTabs.value.length >= TAB_LIMIT) {
+<<<<<<< HEAD
             console.log('tab limit reached')
+=======
+            console.error('tab limit reached')
+>>>>>>> main
             return -1
         }
 
@@ -58,8 +60,11 @@ export const useTabStore = defineStore('tabStore', () => {
     function closeTab(index: number) {
         const tab = openTabs.value[index]
 
+<<<<<<< HEAD
         console.log('closing tab', index)
 
+=======
+>>>>>>> main
         tabHistory.value.push(tab)
         openTabs.value.splice(index, 1)
 

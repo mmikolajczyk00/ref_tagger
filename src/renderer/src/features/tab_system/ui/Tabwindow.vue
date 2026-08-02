@@ -13,8 +13,4 @@ import { AppTabComponents } from '../Tabs'
 import { useTabStore } from '../../../core/stores/useTabStore'
 import { watchEffect } from 'vue'
 const tabStore = useTabStore()
-
-watchEffect(() => {
-    console.log(tabStore, tabStore.currentActiveTab.id)
-})
 </script>
