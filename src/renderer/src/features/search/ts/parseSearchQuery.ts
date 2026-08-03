@@ -17,16 +17,16 @@ export function parseSearchChips(chips: string[]): {
 
         if (t.startsWith('!!')) {
             const name = t.slice(2).trim()
-            if (name) requiredExpanded.add(name)
+            if (name) requiredExact.add(name)
         } else if (t.startsWith('--')) {
             const name = t.slice(2).trim()
-            if (name) excludedExpanded.add(name)
+            if (name) excludedExact.add(name)
         } else if (t.startsWith('!')) {
             const name = t.slice(1).trim()
-            if (name) requiredExact.add(name)
+            if (name) requiredExpanded.add(name)
         } else if (t.startsWith('-')) {
             const name = t.slice(1).trim()
-            if (name) excludedExact.add(name)
+            if (name) excludedExpanded.add(name)
         } else {
             normal.add(t)
         }

@@ -295,18 +295,18 @@ export class LocalDatabaseService {
                 }
             }
 
-            const normalTags = [...new Set(query.normalTags || [])]
-            if (normalTags.length > 0) {
+            const hasRequiredChips = requiredExactTags.length > 0 || requiredExpandedTags.length > 0
+
+            if (!hasRequiredChips) {
                 const normalIds = new Set<number>()
+                const normalTags = [...new Set(query.normalTags || [])]
                 for (const chip of normalTags) {
                     const ids = await this.expandChipToTagIds(chip)
                     for (const id of ids) normalIds.add(id)
                 }
-                conditions.push(
-                    normalIds.size > 0
-                        ? { tags: { some: { tag: { id: { in: [...normalIds] } } } } }
-                        : { id: -1 }
-                )
+                if (normalIds.size > 0) {
+                    conditions.push({ tags: { some: { tag: { id: { in: [...normalIds] } } } } })
+                }
             }
 
             const where = conditions.length > 0 ? { AND: conditions } : {}
