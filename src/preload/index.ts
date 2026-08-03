@@ -36,7 +36,13 @@ const api = {
             ipcRenderer.invoke('api:tags:updateName', id, name),
         updateColor: (id: number, color: string) =>
             ipcRenderer.invoke('api:tags:updateColor', id, color),
-        getAllColors: () => ipcRenderer.invoke('api:tags:getAllColors')
+        getAllColors: () => ipcRenderer.invoke('api:tags:getAllColors'),
+        getSubtags: (parentId: number) =>
+            ipcRenderer.invoke('api:tags:getSubtags', parentId),
+        addSubtags: (parentId: number, childIds: number[]) =>
+            ipcRenderer.invoke('api:tags:addSubtags', parentId, childIds),
+        removeSubtags: (parentId: number, childIds: number[]) =>
+            ipcRenderer.invoke('api:tags:removeSubtags', parentId, childIds)
     }
 }
 

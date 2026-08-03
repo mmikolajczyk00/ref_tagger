@@ -139,6 +139,24 @@ app.whenReady().then(() => {
         return dbService.getAllTagColors()
     })
 
+    ipcMain.handle('api:tags:getSubtags', (_event, parentId: number) => {
+        return dbService.getDirectSubtagIds(parentId)
+    })
+
+    ipcMain.handle(
+        'api:tags:addSubtags',
+        (_event, parentId: number, childIds: number[]) => {
+            return dbService.addSubtags(parentId, childIds)
+        }
+    )
+
+    ipcMain.handle(
+        'api:tags:removeSubtags',
+        (_event, parentId: number, childIds: number[]) => {
+            return dbService.removeSubtags(parentId, childIds)
+        }
+    )
+
     createWindow()
 })
 

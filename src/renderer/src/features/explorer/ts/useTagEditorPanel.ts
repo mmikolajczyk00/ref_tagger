@@ -1,7 +1,7 @@
 import { MediaFile, Tag, TagOperation } from 'src/shared/types/models'
 import { computed, MaybeRefOrGetter, toValue } from 'vue'
 
-export function useTagEditor(
+export function useTagEditorPanel(
     selectedFilesSource: MaybeRefOrGetter<MediaFile[]>,
     normalizeFn: (input: string) => string
 ) {

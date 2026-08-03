@@ -7,14 +7,18 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { Tag } from 'src/shared/types/models'
 import { useTagStore } from '@renderer/core/stores/useTagStore'
+import { normalizeTag } from '@renderer/core/utils/tagsUtils'
 
-export function useTagEditor() {
+export function useTagEditorTab() {
     const tagStore = useTagStore()
     const tags = ref<Record<number, Tag>>({})
     const isLoading = ref(false)
     const searchQuery = ref('')
     const first = ref(0)
     const rows = ref(10)
+    const expandedTags = ref<number[]>([])
+    const subtags = ref<Record<number, Tag[]>>({})
+    const subtagInputBuffers = ref<Record<number, string[]>>({})
 
     const filteredTags = computed(() => {
         const q = searchQuery.value.toLowerCase().trim()
@@ -87,6 +91,60 @@ export function useTagEditor() {
 
     onMounted(refetch)
 
+    async function loadSubtags(parentId: number) {
+        const res = await window.api.tags.getSubtags(parentId)
+        if (res.success) {
+            const byId = new Map(tagStore.tags.map((t) => [t.id, t]))
+            subtags.value[parentId] = res.data
+                .map((id) => byId.get(id))
+                .filter((t): t is Tag => t !== undefined)
+        } else {
+            console.error('Failed to load subtags:', res.error)
+        }
+    }
+
+    async function addSubtagsByName(parentId: number, names: string[]) {
+        const ids: number[] = []
+        const existingIds = new Set<number>()
+        for (const raw of names) {
+            const name = normalizeTag(raw)
+            if (!name) continue
+            const existing = tagStore.tags.find((t) => t.name === name)
+            if (existing) {
+                if (!existingIds.has(existing.id)) {
+                    existingIds.add(existing.id)
+                    ids.push(existing.id)
+                }
+                continue
+            }
+            const created = await window.api.tags.create(name, '#FFF')
+            if (created.success) {
+                tagStore.addTagLocally(created.data)
+                tags.value[created.data.id] = created.data
+                ids.push(created.data.id)
+            } else {
+                console.error('Failed to create tag:', created.error)
+            }
+        }
+        if (ids.length === 0) return
+        const res = await window.api.tags.addSubtags(parentId, ids)
+        if (res.success) {
+            await loadSubtags(parentId)
+        } else {
+            console.error('Failed to add subtag relation:', res.error)
+        }
+    }
+
+    async function removeSubtag(parentId: number, childId: number) {
+        const res = await window.api.tags.removeSubtags(parentId, [childId])
+        if (res.success) {
+            const list = subtags.value[parentId]
+            if (list) subtags.value[parentId] = list.filter((t) => t.id !== childId)
+        } else {
+            console.error('Failed to remove subtag:', res.error)
+        }
+    }
+
     return {
         tags,
         isLoading,
@@ -98,6 +156,12 @@ export function useTagEditor() {
         addTag,
         removeTag,
         updateTagName,
-        updateTagColor
+        updateTagColor,
+        expandedTags,
+        subtags,
+        subtagInputBuffers,
+        loadSubtags,
+        addSubtagsByName,
+        removeSubtag
     }
 }

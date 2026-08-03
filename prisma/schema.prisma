@@ -1,43 +1,56 @@
 generator client {
-    provider = "prisma-client"
-    output   = "../src/generated/prisma"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
-    provider = "sqlite"
+  provider = "sqlite"
 }
 
 model File {
-    id        Int      @id @default(autoincrement())
-    filePath  String   @map("file_path") @unique
-    fileName  String   @map("file_name")
-    mediaType String   @map("media_type")
-    createdAt DateTime @default(now()) @map("created_at")
+  id        Int      @id @default(autoincrement())
+  filePath  String   @unique @map("file_path")
+  fileName  String   @map("file_name")
+  mediaType String   @map("media_type")
+  createdAt DateTime @default(now()) @map("created_at")
 
-    tags FileTag[]
+  tags FileTag[]
 
-    @@map("files")
+  @@map("files")
 }
 
 model Tag {
-    id    Int    @id @default(autoincrement())
-    name  String @unique
-    color String
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  color String
 
-    files FileTag[]
+  files    FileTag[]
+  parents  TagRelation[] @relation("ChildRelation")
+  children TagRelation[] @relation("ParentRelation")
 
-    @@map("tags")
+  @@map("tags")
+}
+
+model TagRelation {
+  parentId   Int      @map("parent_id")
+  childId    Int      @map("child_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  parent     Tag      @relation("ParentRelation", fields: [parentId], references: [id])
+  child      Tag      @relation("ChildRelation", fields: [childId], references: [id])
+
+  @@id([parentId, childId])
+  @@map("tag_relations")
 }
 
 model FileTag {
-    fileId Int @map("file_id")
-    tagId  Int @map("tag_id")
+  fileId Int @map("file_id")
+  tagId  Int @map("tag_id")
 
-    file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
-    tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
-    @@id([fileId, tagId])
-    @@index([fileId])
-    @@index([tagId])
-    @@map("file_tags")
+  @@id([fileId, tagId])
+  @@index([fileId])
+  @@index([tagId])
+  @@map("file_tags")
 }

@@ -38,6 +38,18 @@ const initDDL = `
     );
 
     CREATE INDEX IF NOT EXISTS idx_files_media_type ON files(media_type);
+
+    CREATE TABLE IF NOT EXISTS tag_relations (
+        parent_id INTEGER NOT NULL,
+        child_id INTEGER NOT NULL,
+        assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (parent_id, child_id),
+        FOREIGN KEY (parent_id) REFERENCES tags (id) ON DELETE CASCADE,
+        FOREIGN KEY (child_id) REFERENCES tags (id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_tag_relations_parent ON tag_relations(parent_id);
+    CREATE INDEX IF NOT EXISTS idx_tag_relations_child ON tag_relations(child_id);
 `
 
 type FileRow = {
@@ -100,6 +112,7 @@ export class LocalDatabaseService {
         initDb.pragma('journal_mode = WAL')
         initDb.pragma('foreign_keys = ON')
         initDb.exec(initDDL)
+
         initDb.close()
 
         const adapterFactory = new PrismaBetterSqlite3({ url: dbPath })
@@ -388,6 +401,111 @@ export class LocalDatabaseService {
             return {
                 success: false,
                 error: err instanceof Error ? err.message : 'Failed to get tag colors.'
+            }
+        }
+    }
+
+    async getDirectSubtagIds(parentId: number): Promise<Result<number[]>> {
+        try {
+            const rows = await this.prisma.tagRelation.findMany({
+                where: { parentId },
+                select: { childId: true }
+            })
+            return { success: true, data: rows.map((r) => r.childId) }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to get direct subtags.'
+            }
+        }
+    }
+
+    async getAllSubtagIds(parentId: number): Promise<Result<number[]>> {
+        try {
+            const rows = await this.prisma.$queryRaw<{ id: number }[]>`
+                WITH RECURSIVE descendants(id) AS (
+                    SELECT child_id AS id FROM tag_relations WHERE parent_id = ${parentId}
+                    UNION
+                    SELECT tr.child_id FROM tag_relations tr
+                    JOIN descendants d ON tr.parent_id = d.id
+                )
+                SELECT id FROM descendants
+            `
+            return { success: true, data: rows.map((r) => r.id) }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to get all subtags.'
+            }
+        }
+    }
+
+    async addSubtags(parentId: number, childIds: number[]): Promise<Result<{ added: number[] }>> {
+        try {
+            const unique = [...new Set(childIds)]
+            const valid = unique.filter((id) => id !== parentId)
+
+            if (valid.length === 0 && unique.length > 0) {
+                return {
+                    success: false,
+                    error: 'A tag cannot be a subtag of itself.'
+                }
+            }
+
+            await this.prisma.$transaction(async (tx) => {
+                for (const childId of valid) {
+                    const cycles = await tx.$queryRaw<{ id: number }[]>`
+                        WITH RECURSIVE descendants(id) AS (
+                            SELECT child_id AS id FROM tag_relations WHERE parent_id = ${childId}
+                            UNION
+                            SELECT tr.child_id FROM tag_relations tr
+                            JOIN descendants d ON tr.parent_id = d.id
+                        )
+                        SELECT id FROM descendants WHERE id = ${parentId}
+                    `
+                    if (cycles.length > 0) {
+                        throw new Error(
+                            `Cycle detected: tag ${parentId} is an ancestor of tag ${childId}`
+                        )
+                    }
+                    await tx.tagRelation.upsert({
+                        where: {
+                            parentId_childId: { parentId, childId }
+                        },
+                        create: { parentId, childId },
+                        update: {}
+                    })
+                }
+            })
+
+            return { success: true, data: { added: valid } }
+        } catch (err) {
+            if (err instanceof Error && err.message.startsWith('Cycle detected:')) {
+                return { success: false, error: err.message }
+            }
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to add subtags.'
+            }
+        }
+    }
+
+    async removeSubtags(
+        parentId: number,
+        childIds: number[]
+    ): Promise<Result<{ removed: number }>> {
+        try {
+            const { count } = await this.prisma.tagRelation.deleteMany({
+                where: {
+                    parentId,
+                    childId: { in: childIds }
+                }
+            })
+            return { success: true, data: { removed: count } }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to remove subtags.'
             }
         }
     }

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, nextTick, onActivated } from 'vue'
 import { useDialog } from 'primevue/usedialog'
-import { useTagEditor } from '../ts/useTagEditor'
+import { useTagEditorTab } from '../ts/useTagEditorTab'
 import NewTagDialog from './NewTagDialog.vue'
 import ColorPickerDialog from './ColorPickerDialog.vue'
 import { Tag } from '@shared/types/models'
 import { normalizeTag } from '../../../core/utils/tagsUtils'
+import { withAlpha } from '../../../core/utils/colorUtils'
+import EditorTagInput from '../../tag_input/ui/EditorTagInput.vue'
 
 const {
     isLoading,
@@ -17,8 +19,14 @@ const {
     addTag,
     removeTag,
     updateTagName,
-    updateTagColor
-} = useTagEditor()
+    updateTagColor,
+    expandedTags,
+    subtags,
+    subtagInputBuffers,
+    loadSubtags,
+    addSubtagsByName,
+    removeSubtag
+} = useTagEditorTab()
 
 onActivated(() => {
     refetch()
@@ -83,6 +91,23 @@ async function onEditColor(tag: Tag) {
         await updateTagColor(tag.id, result)
     }
 }
+
+async function onTagExpand(event: { data: Tag }) {
+    const parentId = event.data.id
+    if (subtags.value[parentId]) return
+    await loadSubtags(parentId)
+}
+
+async function handleRemoveSubtag(parentId: number, childId: number) {
+    await removeSubtag(parentId, childId)
+}
+
+async function flushSubtagInput(parentId: number) {
+    const buf = subtagInputBuffers.value[parentId] ?? []
+    if (!buf.length) return
+    subtagInputBuffers.value[parentId] = []
+    await addSubtagsByName(parentId, buf)
+}
 </script>
 
 <template>
@@ -122,6 +147,7 @@ async function onEditColor(tag: Tag) {
             <DataTable
                 ref="dt"
                 v-model:first="first"
+                v-model:expanded-rows="expandedTags"
                 :value="filteredTags"
                 :loading="isLoading"
                 :paginator="true"
@@ -134,6 +160,7 @@ async function onEditColor(tag: Tag) {
                 scrollable
                 scroll-height="flex"
                 size="small"
+                @row-expand="onTagExpand"
             >
                 <Column
                     field="id"
@@ -163,6 +190,7 @@ async function onEditColor(tag: Tag) {
                         </span>
                     </template>
                 </Column>
+                <Column expander style="width: 5rem"></Column>
                 <Column
                     field="color"
                     header="Color"
@@ -204,6 +232,36 @@ async function onEditColor(tag: Tag) {
                         <p v-else class="text-surface-400 text-sm">
                             No tags yet. Create one to get started.
                         </p>
+                    </div>
+                </template>
+                <template #expansion="slotProps">
+                    <div class="bg-surface-0 dark:bg-surface-900 space-y-3 p-3">
+                        <div v-if="subtags[slotProps.data.id]?.length" class="flex flex-wrap gap-2">
+                            <Chip
+                                v-for="sub in subtags[slotProps.data.id]"
+                                :key="sub.id"
+                                :label="sub.name"
+                                removable
+                                class="border border-dashed"
+                                :style="{
+                                    color: sub.color,
+                                    backgroundColor: withAlpha(sub.color, 0.2),
+                                    borderColor: sub.color
+                                }"
+                                :pt="{ removeIcon: { color: sub.color } }"
+                                @remove="handleRemoveSubtag(slotProps.data.id, sub.id)"
+                            />
+                        </div>
+                        <p v-else class="text-surface-400 text-sm italic">No subtags yet</p>
+
+                        <EditorTagInput
+                            :model-value="subtagInputBuffers[slotProps.data.id] ??= []"
+                            :existing-tag-ids="[slotProps.data.id]"
+                            @update:model-value="
+                                (v: string[]) => (subtagInputBuffers[slotProps.data.id] = v)
+                            "
+                            @submit="flushSubtagInput(slotProps.data.id)"
+                        />
                     </div>
                 </template>
             </DataTable>

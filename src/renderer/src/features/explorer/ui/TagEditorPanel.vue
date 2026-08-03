@@ -1,17 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { FileTagResult, MediaFile, TagOperation, TagOperationResult } from '@shared/types/models'
-import { useTagEditor } from '../ts/useTagEditorPanel'
+import { useTagEditorPanel } from '../ts/useTagEditorPanel'
 import { normalizeTag } from '../../../core/utils/tagsUtils'
+import { withAlpha } from '../../../core/utils/colorUtils'
 import EditorTagInput from '../../tag_input/ui/EditorTagInput.vue'
 import { useTagStore } from '../../../core/stores/useTagStore'
-
-function withAlpha(hex: string, alpha: number): string {
-    const a = Math.round(alpha * 255)
-        .toString(16)
-        .padStart(2, '0')
-    return `${hex}${a}`
-}
 
 const props = defineProps<{
     selectedFiles: MediaFile[]
@@ -21,7 +15,7 @@ const emit = defineEmits<{
     (e: 'files-updated', updates: FileTagResult[]): void
 }>()
 
-const { allGroup, someGroup, existingTagIds, submitTags, removeTag } = useTagEditor(
+const { allGroup, someGroup, existingTagIds, submitTags, removeTag } = useTagEditorPanel(
     () => props.selectedFiles,
     normalizeTag
 )
