@@ -8,17 +8,20 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { Tag } from 'src/shared/types/models'
 import { useTagStore } from '@renderer/core/stores/useTagStore'
 import { normalizeTag } from '@renderer/core/utils/tagsUtils'
+import type { TagRelations } from '../types'
 
 export function useTagEditorTab() {
     const tagStore = useTagStore()
     const tags = ref<Record<number, Tag>>({})
+    const childrenIdsByTag = ref<Record<number, number[]>>({})
+    const parentIdsByTag = ref<Record<number, number[]>>({})
     const isLoading = ref(false)
     const searchQuery = ref('')
     const first = ref(0)
     const rows = ref(10)
     const expandedTags = ref<number[]>([])
-    const subtags = ref<Record<number, Tag[]>>({})
-    const subtagInputBuffers = ref<Record<number, string[]>>({})
+    const childInputBuffers = ref<Record<number, string[]>>({})
+    const parentInputBuffers = ref<Record<number, string[]>>({})
 
     const filteredTags = computed(() => {
         const q = searchQuery.value.toLowerCase().trim()
@@ -33,10 +36,50 @@ export function useTagEditorTab() {
 
     async function refetch() {
         isLoading.value = true
-        const res = await window.api.tags.getAll()
-        if (res.success) tags.value = Object.fromEntries(res.data.map((t) => [t.id, t]))
-        else console.error('Failed to load tags:', res.error)
+        const [tagsRes, relRes] = await Promise.all([
+            window.api.tags.getAll(),
+            window.api.tags.getAllRelations()
+        ])
+        if (tagsRes.success) tags.value = Object.fromEntries(tagsRes.data.map((t) => [t.id, t]))
+        else console.error('Failed to load tags:', tagsRes.error)
+        applyRelations(relRes)
         isLoading.value = false
+    }
+
+    async function refetchRelations() {
+        const res = await window.api.tags.getAllRelations()
+        applyRelations(res)
+    }
+
+    function applyRelations(res: { success: boolean; data?: TagRelations; error?: string }) {
+        if (res.success && res.data) {
+            childrenIdsByTag.value = res.data.childrenByTag
+            parentIdsByTag.value = res.data.parentsByTag
+        } else {
+            console.error('Failed to load relations:', res.error)
+        }
+    }
+
+    function getChildren(parentId: number): Tag[] {
+        const ids = childrenIdsByTag.value[parentId]
+        if (!ids) return []
+        const byId = new Map(tagStore.tags.map((t) => [t.id, t]))
+        return ids.map((id) => byId.get(id)).filter((t): t is Tag => t !== undefined)
+    }
+
+    function getParents(childId: number): Tag[] {
+        const ids = parentIdsByTag.value[childId]
+        if (!ids) return []
+        const byId = new Map(tagStore.tags.map((t) => [t.id, t]))
+        return ids.map((id) => byId.get(id)).filter((t): t is Tag => t !== undefined)
+    }
+
+    function childCount(parentId: number): number {
+        return childrenIdsByTag.value[parentId]?.length ?? 0
+    }
+
+    function parentCount(childId: number): number {
+        return parentIdsByTag.value[childId]?.length ?? 0
     }
 
     async function addTag(name: string, color: string) {
@@ -55,6 +98,7 @@ export function useTagEditorTab() {
         if (res.success) {
             delete tags.value[id]
             tagStore.removeTagLocally(id)
+            await refetchRelations()
         } else {
             console.error('Failed to delete tag:', res.error)
         }
@@ -89,21 +133,7 @@ export function useTagEditorTab() {
         return res
     }
 
-    onMounted(refetch)
-
-    async function loadSubtags(parentId: number) {
-        const res = await window.api.tags.getSubtags(parentId)
-        if (res.success) {
-            const byId = new Map(tagStore.tags.map((t) => [t.id, t]))
-            subtags.value[parentId] = res.data
-                .map((id) => byId.get(id))
-                .filter((t): t is Tag => t !== undefined)
-        } else {
-            console.error('Failed to load subtags:', res.error)
-        }
-    }
-
-    async function addSubtagsByName(parentId: number, names: string[]) {
+    async function resolveOrCreateIds(names: string[]): Promise<number[]> {
         const ids: number[] = []
         const existingIds = new Set<number>()
         for (const raw of names) {
@@ -126,24 +156,50 @@ export function useTagEditorTab() {
                 console.error('Failed to create tag:', created.error)
             }
         }
+        return ids
+    }
+
+    async function addChildByName(parentId: number, names: string[]) {
+        const ids = await resolveOrCreateIds(names)
         if (ids.length === 0) return
         const res = await window.api.tags.addSubtags(parentId, ids)
         if (res.success) {
-            await loadSubtags(parentId)
+            await refetchRelations()
         } else {
-            console.error('Failed to add subtag relation:', res.error)
+            console.error('Failed to add child relation:', res.error)
         }
     }
 
-    async function removeSubtag(parentId: number, childId: number) {
-        const res = await window.api.tags.removeSubtags(parentId, [childId])
+    async function addParentByName(childId: number, names: string[]) {
+        const ids = await resolveOrCreateIds(names)
+        if (ids.length === 0) return
+        const res = await window.api.tags.addParents(childId, ids)
         if (res.success) {
-            const list = subtags.value[parentId]
-            if (list) subtags.value[parentId] = list.filter((t) => t.id !== childId)
+            await refetchRelations()
         } else {
-            console.error('Failed to remove subtag:', res.error)
+            console.error('Failed to add parent relation:', res.error)
         }
     }
+
+    async function removeChild(parentId: number, childId: number) {
+        const res = await window.api.tags.removeSubtags(parentId, [childId])
+        if (res.success) {
+            await refetchRelations()
+        } else {
+            console.error('Failed to remove child:', res.error)
+        }
+    }
+
+    async function removeParent(childId: number, parentId: number) {
+        const res = await window.api.tags.removeParents(childId, [parentId])
+        if (res.success) {
+            await refetchRelations()
+        } else {
+            console.error('Failed to remove parent:', res.error)
+        }
+    }
+
+    onMounted(refetch)
 
     return {
         tags,
@@ -158,10 +214,17 @@ export function useTagEditorTab() {
         updateTagName,
         updateTagColor,
         expandedTags,
-        subtags,
-        subtagInputBuffers,
-        loadSubtags,
-        addSubtagsByName,
-        removeSubtag
+        childrenIdsByTag,
+        parentIdsByTag,
+        childInputBuffers,
+        parentInputBuffers,
+        getChildren,
+        getParents,
+        childCount,
+        parentCount,
+        addChildByName,
+        addParentByName,
+        removeChild,
+        removeParent
     }
 }

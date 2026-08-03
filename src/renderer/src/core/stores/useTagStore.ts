@@ -1,12 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { normalizeTag } from '../utils/tagsUtils'
-
-export interface Tag {
-    id: number
-    name: string
-    color: string
-}
+import { Tag } from '@shared/types/models'
 
 export const useTagStore = defineStore('tags', () => {
     const tags = ref<Tag[]>([])

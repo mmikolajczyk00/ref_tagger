@@ -509,4 +509,106 @@ export class LocalDatabaseService {
             }
         }
     }
+
+    async getAllRelations(): Promise<
+        Result<{ childrenByTag: Record<number, number[]>; parentsByTag: Record<number, number[]> }>
+    > {
+        try {
+            const rows = await this.prisma.tagRelation.findMany({
+                select: { parentId: true, childId: true }
+            })
+            const childrenByTag: Record<number, number[]> = {}
+            const parentsByTag: Record<number, number[]> = {}
+            for (const { parentId, childId } of rows) {
+                ;(childrenByTag[parentId] ??= []).push(childId)
+                ;(parentsByTag[childId] ??= []).push(parentId)
+            }
+            return { success: true, data: { childrenByTag, parentsByTag } }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to get all relations.'
+            }
+        }
+    }
+
+    async getDirectParentIds(childId: number): Promise<Result<number[]>> {
+        try {
+            const rows = await this.prisma.tagRelation.findMany({
+                where: { childId },
+                select: { parentId: true }
+            })
+            return { success: true, data: rows.map((r) => r.parentId) }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to get parent ids.'
+            }
+        }
+    }
+
+    async addParents(childId: number, parentIds: number[]): Promise<Result<{ added: number[] }>> {
+        try {
+            const unique = [...new Set(parentIds)]
+            const valid = unique.filter((id) => id !== childId)
+
+            if (valid.length === 0 && unique.length > 0) {
+                return { success: false, error: 'A tag cannot be a parent of itself.' }
+            }
+
+            await this.prisma.$transaction(async (tx) => {
+                for (const parentId of valid) {
+                    const cycles = await tx.$queryRaw<{ id: number }[]>`
+                        WITH RECURSIVE descendants(id) AS (
+                            SELECT child_id AS id FROM tag_relations WHERE parent_id = ${childId}
+                            UNION
+                            SELECT tr.child_id FROM tag_relations tr
+                            JOIN descendants d ON tr.parent_id = d.id
+                        )
+                        SELECT id FROM descendants WHERE id = ${parentId}
+                    `
+                    if (cycles.length > 0) {
+                        throw new Error(
+                            `Cycle detected: tag ${childId} is an ancestor of tag ${parentId}`
+                        )
+                    }
+                    await tx.tagRelation.upsert({
+                        where: { parentId_childId: { parentId, childId } },
+                        create: { parentId, childId },
+                        update: {}
+                    })
+                }
+            })
+
+            return { success: true, data: { added: valid } }
+        } catch (err) {
+            if (err instanceof Error && err.message.startsWith('Cycle detected:')) {
+                return { success: false, error: err.message }
+            }
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to add parents.'
+            }
+        }
+    }
+
+    async removeParents(
+        childId: number,
+        parentIds: number[]
+    ): Promise<Result<{ removed: number }>> {
+        try {
+            const { count } = await this.prisma.tagRelation.deleteMany({
+                where: {
+                    childId,
+                    parentId: { in: parentIds }
+                }
+            })
+            return { success: true, data: { removed: count } }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to remove parents.'
+            }
+        }
+    }
 }

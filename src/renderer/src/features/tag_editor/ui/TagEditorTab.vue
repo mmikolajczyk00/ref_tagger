@@ -21,11 +21,18 @@ const {
     updateTagName,
     updateTagColor,
     expandedTags,
-    subtags,
-    subtagInputBuffers,
-    loadSubtags,
-    addSubtagsByName,
-    removeSubtag
+    childrenIdsByTag,
+    parentIdsByTag,
+    childInputBuffers,
+    parentInputBuffers,
+    getChildren,
+    getParents,
+    childCount,
+    parentCount,
+    addChildByName,
+    addParentByName,
+    removeChild,
+    removeParent
 } = useTagEditorTab()
 
 onActivated(() => {
@@ -92,21 +99,33 @@ async function onEditColor(tag: Tag) {
     }
 }
 
-async function onTagExpand(event: { data: Tag }) {
-    const parentId = event.data.id
-    if (subtags.value[parentId]) return
-    await loadSubtags(parentId)
+async function handleRemoveChild(parentId: number, childId: number) {
+    await removeChild(parentId, childId)
 }
 
-async function handleRemoveSubtag(parentId: number, childId: number) {
-    await removeSubtag(parentId, childId)
+async function handleRemoveParent(childId: number, parentId: number) {
+    await removeParent(childId, parentId)
 }
 
-async function flushSubtagInput(parentId: number) {
-    const buf = subtagInputBuffers.value[parentId] ?? []
+async function flushChildInput(parentId: number) {
+    const buf = childInputBuffers.value[parentId] ?? []
     if (!buf.length) return
-    subtagInputBuffers.value[parentId] = []
-    await addSubtagsByName(parentId, buf)
+    childInputBuffers.value[parentId] = []
+    await addChildByName(parentId, buf)
+}
+
+async function flushParentInput(childId: number) {
+    const buf = parentInputBuffers.value[childId] ?? []
+    if (!buf.length) return
+    parentInputBuffers.value[childId] = []
+    await addParentByName(childId, buf)
+}
+
+function sortByCount(
+    e: { data: Tag[]; field: string; order: 1 | -1 },
+    countFn: (id: number) => number
+) {
+    e.data.sort((a, b) => (countFn(a.id) - countFn(b.id)) * e.order)
 }
 </script>
 
@@ -160,7 +179,6 @@ async function flushSubtagInput(parentId: number) {
                 scrollable
                 scroll-height="flex"
                 size="small"
-                @row-expand="onTagExpand"
             >
                 <Column
                     field="id"
@@ -187,6 +205,38 @@ async function flushSubtagInput(parentId: number) {
                             @click="startEdit(data)"
                         >
                             {{ data.name }}
+                        </span>
+                    </template>
+                </Column>
+                <Column
+                    header="Parents"
+                    header-class="w-20"
+                    body-class="text-center"
+                    :sortable="true"
+                    :sort-function="(e: any) => sortByCount(e, parentCount)"
+                >
+                    <template #body="{ data }">
+                        <span
+                            class="text-surface-500 font-mono text-sm"
+                            :title="`${parentCount(data.id)} parent(s)`"
+                        >
+                            {{ parentCount(data.id) }}
+                        </span>
+                    </template>
+                </Column>
+                <Column
+                    header="Children"
+                    header-class="w-20"
+                    body-class="text-center"
+                    :sortable="true"
+                    :sort-function="(e: any) => sortByCount(e, childCount)"
+                >
+                    <template #body="{ data }">
+                        <span
+                            class="text-surface-500 font-mono text-sm"
+                            :title="`${childCount(data.id)} child(ren)`"
+                        >
+                            {{ childCount(data.id) }}
                         </span>
                     </template>
                 </Column>
@@ -235,33 +285,90 @@ async function flushSubtagInput(parentId: number) {
                     </div>
                 </template>
                 <template #expansion="slotProps">
-                    <div class="bg-surface-0 dark:bg-surface-900 space-y-3 p-3">
-                        <div v-if="subtags[slotProps.data.id]?.length" class="flex flex-wrap gap-2">
-                            <Chip
-                                v-for="sub in subtags[slotProps.data.id]"
-                                :key="sub.id"
-                                :label="sub.name"
-                                removable
-                                class="border border-dashed"
-                                :style="{
-                                    color: sub.color,
-                                    backgroundColor: withAlpha(sub.color, 0.2),
-                                    borderColor: sub.color
-                                }"
-                                :pt="{ removeIcon: { color: sub.color } }"
-                                @remove="handleRemoveSubtag(slotProps.data.id, sub.id)"
+                    <div class="flex flex-row p-4">
+                        <div class="flex flex-1 flex-col">
+                            <h4
+                                class="text-surface-500 mb-2 text-xs font-semibold tracking-wide uppercase"
+                            >
+                                Parents
+                            </h4>
+                            <div
+                                v-if="getParents(slotProps.data.id).length"
+                                class="mb-2 flex flex-wrap gap-2"
+                            >
+                                <Chip
+                                    v-for="p in getParents(slotProps.data.id)"
+                                    :key="p.id"
+                                    :label="p.name"
+                                    removable
+                                    class="border border-dashed"
+                                    :style="{
+                                        color: p.color,
+                                        backgroundColor: withAlpha(p.color, 0.2),
+                                        borderColor: p.color
+                                    }"
+                                    :pt="{ removeIcon: { color: p.color } }"
+                                    @remove="handleRemoveParent(slotProps.data.id, p.id)"
+                                />
+                            </div>
+                            <p v-else class="text-surface-400 mb-2 text-sm italic">
+                                No parents yet
+                            </p>
+                            <EditorTagInput
+                                class="mt-auto"
+                                :model-value="parentInputBuffers[slotProps.data.id] ??= []"
+                                :existing-tag-ids="[
+                                    slotProps.data.id,
+                                    ...(parentIdsByTag[slotProps.data.id] ?? [])
+                                ]"
+                                @update:model-value="
+                                    (v: string[]) => (parentInputBuffers[slotProps.data.id] = v)
+                                "
+                                @submit="flushParentInput(slotProps.data.id)"
                             />
                         </div>
-                        <p v-else class="text-surface-400 text-sm italic">No subtags yet</p>
-
-                        <EditorTagInput
-                            :model-value="subtagInputBuffers[slotProps.data.id] ??= []"
-                            :existing-tag-ids="[slotProps.data.id]"
-                            @update:model-value="
-                                (v: string[]) => (subtagInputBuffers[slotProps.data.id] = v)
-                            "
-                            @submit="flushSubtagInput(slotProps.data.id)"
-                        />
+                        <Divider layout="vertical"></Divider>
+                        <div class="flex flex-1 flex-col">
+                            <h4
+                                class="text-surface-500 mb-2 text-xs font-semibold tracking-wide uppercase"
+                            >
+                                Children
+                            </h4>
+                            <div
+                                v-if="getChildren(slotProps.data.id).length"
+                                class="mb-2 flex flex-wrap gap-2"
+                            >
+                                <Chip
+                                    v-for="c in getChildren(slotProps.data.id)"
+                                    :key="c.id"
+                                    :label="c.name"
+                                    removable
+                                    class="border border-dashed"
+                                    :style="{
+                                        color: c.color,
+                                        backgroundColor: withAlpha(c.color, 0.2),
+                                        borderColor: c.color
+                                    }"
+                                    :pt="{ removeIcon: { color: c.color } }"
+                                    @remove="handleRemoveChild(slotProps.data.id, c.id)"
+                                />
+                            </div>
+                            <p v-else class="text-surface-400 mb-2 text-sm italic">
+                                No children yet
+                            </p>
+                            <EditorTagInput
+                                class="mt-auto"
+                                :model-value="childInputBuffers[slotProps.data.id] ??= []"
+                                :existing-tag-ids="[
+                                    slotProps.data.id,
+                                    ...(childrenIdsByTag[slotProps.data.id] ?? [])
+                                ]"
+                                @update:model-value="
+                                    (v: string[]) => (childInputBuffers[slotProps.data.id] = v)
+                                "
+                                @submit="flushChildInput(slotProps.data.id)"
+                            />
+                        </div>
                     </div>
                 </template>
             </DataTable>

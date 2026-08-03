@@ -143,19 +143,29 @@ app.whenReady().then(() => {
         return dbService.getDirectSubtagIds(parentId)
     })
 
-    ipcMain.handle(
-        'api:tags:addSubtags',
-        (_event, parentId: number, childIds: number[]) => {
-            return dbService.addSubtags(parentId, childIds)
-        }
-    )
+    ipcMain.handle('api:tags:addSubtags', (_event, parentId: number, childIds: number[]) => {
+        return dbService.addSubtags(parentId, childIds)
+    })
 
-    ipcMain.handle(
-        'api:tags:removeSubtags',
-        (_event, parentId: number, childIds: number[]) => {
-            return dbService.removeSubtags(parentId, childIds)
-        }
-    )
+    ipcMain.handle('api:tags:removeSubtags', (_event, parentId: number, childIds: number[]) => {
+        return dbService.removeSubtags(parentId, childIds)
+    })
+
+    ipcMain.handle('api:tags:getAllRelations', () => {
+        return dbService.getAllRelations()
+    })
+
+    ipcMain.handle('api:tags:getParents', (_event, childId: number) => {
+        return dbService.getDirectParentIds(childId)
+    })
+
+    ipcMain.handle('api:tags:addParents', (_event, childId: number, parentIds: number[]) => {
+        return dbService.addParents(childId, parentIds)
+    })
+
+    ipcMain.handle('api:tags:removeParents', (_event, childId: number, parentIds: number[]) => {
+        return dbService.removeParents(childId, parentIds)
+    })
 
     createWindow()
 })
