@@ -46,7 +46,7 @@ The core architecture, tag indexing system, and initial canvas workspace are imp
 
 ## Roadmap
 
-- [ ] **Hierarchical Tagging:** Support for tag categories and nested subtags.
+- [x] **Hierarchical Tagging:** Support for tag categories and nested subtags.
 - [ ] **Extended Format Support:** Video files (`.mp4`, `.webm`) and 3D assets.
 - [ ] **Canvas Enhancements:** Notes, drawing, auto-arrange, groups.
 - [ ] **Smart Canvas:** Automatically add files based on tags.
