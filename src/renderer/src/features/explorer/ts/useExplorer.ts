@@ -22,10 +22,13 @@ export function useExplorer() {
         if (!chips.length) {
             query.value = null
         } else {
-            const { required, excluded, normal } = parseSearchChips(chips)
+            const { requiredExact, requiredExpanded, excludedExact, excludedExpanded, normal } =
+                parseSearchChips(chips)
             query.value = {
-                requiredTags: required,
-                excludedTags: excluded,
+                requiredExactTags: requiredExact,
+                requiredExpandedTags: requiredExpanded,
+                excludedExactTags: excludedExact,
+                excludedExpandedTags: excludedExpanded,
                 normalTags: normal
             }
         }
@@ -59,8 +62,10 @@ export function useExplorer() {
         try {
             const result = query.value
                 ? await window.api.files.searchFiles({
-                      requiredTags: [...(query.value.requiredTags ?? [])],
-                      excludedTags: [...(query.value.excludedTags ?? [])],
+                      requiredExactTags: [...(query.value.requiredExactTags ?? [])],
+                      requiredExpandedTags: [...(query.value.requiredExpandedTags ?? [])],
+                      excludedExactTags: [...(query.value.excludedExactTags ?? [])],
+                      excludedExpandedTags: [...(query.value.excludedExpandedTags ?? [])],
                       normalTags: [...(query.value.normalTags ?? [])],
                       page: currentPage.value,
                       limit: 50

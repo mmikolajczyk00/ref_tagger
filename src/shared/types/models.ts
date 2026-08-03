@@ -55,8 +55,10 @@ export interface TagOperationResult {
 }
 
 export interface TagSearchQuery {
-    requiredTags?: string[]
-    excludedTags?: string[]
+    requiredExactTags?: string[]
+    requiredExpandedTags?: string[]
+    excludedExactTags?: string[]
+    excludedExpandedTags?: string[]
     normalTags?: string[]
     page?: number
     limit?: number

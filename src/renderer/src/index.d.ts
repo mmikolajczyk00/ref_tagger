@@ -22,6 +22,11 @@ type iapi = {
         updateName: (id: number, name: string) => Promise<Result<Tag>>
         updateColor: (id: number, color: string) => Promise<Result<Tag>>
         getAllColors: () => Promise<Result<string[]>>
+        getAllRelations: () => Promise<Result<void>>
+        addSubtags: (id: number, subtags: number[]) => Promise<Result<void>>
+        addParents: (id: number, parents: number[]) => Promise<Result<void>>
+        removeSubtags: (id: number, subtags: number[]) => Promise<Result<void>>
+        removeParents: (id: number, parents: number[]) => Promise<Result<void>>
     }
 }
 

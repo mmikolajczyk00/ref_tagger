@@ -16,9 +16,21 @@ const selectedIndex = ref(-1)
 
 function unprefix(text: string): { prefix: string; name: string } {
     const t = text.trim()
+    if (t.startsWith('!!')) return { prefix: '!!', name: t.slice(2) }
+    if (t.startsWith('--')) return { prefix: '--', name: t.slice(2) }
     if (t.startsWith('!')) return { prefix: '!', name: t.slice(1) }
     if (t.startsWith('-')) return { prefix: '-', name: t.slice(1) }
     return { prefix: '', name: t }
+}
+
+function sanitizeDraft(raw: string): string {
+    const trimmed = raw.trim().toLowerCase()
+    const hasModifier =
+        trimmed.startsWith('!!') ||
+        trimmed.startsWith('!') ||
+        trimmed.startsWith('--') ||
+        trimmed.startsWith('-')
+    return hasModifier ? raw.replace(/\*/g, '_') : raw
 }
 
 const suggestions = computed(() => {
@@ -64,7 +76,7 @@ function commitTag(tagName: string, prefix: string) {
 }
 
 function onInput(value: string) {
-    inputText.value = value.toLowerCase()
+    inputText.value = sanitizeDraft(value.toLowerCase())
 }
 
 function handleKeydown(event: KeyboardEvent) {
@@ -116,7 +128,7 @@ function handleKeydown(event: KeyboardEvent) {
         :suggestions="suggestions"
         :selected-index="selectedIndex"
         :ghost-text="ghostText"
-        placeholder="!required -excluded tag*..."
+        placeholder="!!required-expanded !required -excluded --excluded-expanded tag*..."
         @keydown="handleKeydown"
         @update:input-value="onInput"
         @select-suggestion="

@@ -37,7 +37,7 @@ function removeChip(tagValue: string) {
                 @remove="removeChip(tag)"
             />
 
-            <div class="relative inline-flex min-w-[80px] flex-1">
+            <div class="relative inline-flex min-w-20 flex-1">
                 <span
                     class="pointer-events-none absolute inset-0 flex items-center text-sm"
                     aria-hidden="true"

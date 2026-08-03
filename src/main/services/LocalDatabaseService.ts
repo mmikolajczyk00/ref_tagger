@@ -84,24 +84,6 @@ function filesToRecord(files: FileRow[]): Record<number, MediaFile> {
     return result
 }
 
-function buildNormalTagFilter(tag: string): Record<string, unknown> {
-    if (!tag.includes('*')) return { name: tag }
-
-    const parts = tag.split('*')
-    const conds: Record<string, unknown>[] = []
-
-    if (parts[0]) conds.push({ name: { startsWith: parts[0] } })
-    const last = parts[parts.length - 1]
-    if (last) conds.push({ name: { endsWith: last } })
-    for (let i = 1; i < parts.length - 1; i++) {
-        if (parts[i]) conds.push({ name: { contains: parts[i] } })
-    }
-
-    if (conds.length === 0) return { name: { contains: '' } }
-    if (conds.length === 1) return conds[0]
-    return { AND: conds }
-}
-
 export class LocalDatabaseService {
     private prisma: PrismaClient
 
@@ -260,28 +242,70 @@ export class LocalDatabaseService {
         try {
             const { page = 1, limit = 50 } = query
             const offset = (page - 1) * limit
-            const requiredTags = [...new Set(query.requiredTags || [])]
-            const excludedTags = [...new Set(query.excludedTags || [])]
-            const normalTags = [...new Set(query.normalTags || [])]
 
             const conditions: Record<string, unknown>[] = []
 
-            if (excludedTags.length > 0) {
-                conditions.push({
-                    NOT: { tags: { some: { tag: { name: { in: excludedTags } } } } }
+            const requiredExactTags = [...new Set(query.requiredExactTags || [])]
+            const requiredExpandedTags = [...new Set(query.requiredExpandedTags || [])]
+
+            for (const chip of requiredExactTags) {
+                const tag = await this.prisma.tag.findFirst({
+                    where: { name: chip },
+                    select: { id: true }
                 })
+                if (tag) {
+                    conditions.push({ tags: { some: { tag: { id: tag.id } } } })
+                } else {
+                    conditions.push({ id: -1 })
+                }
             }
 
-            for (const name of requiredTags) {
-                conditions.push({ tags: { some: { tag: { name } } } })
+            for (const chip of requiredExpandedTags) {
+                const ids = await this.expandChipToTagIds(chip)
+                if (ids.length > 0) {
+                    conditions.push({ tags: { some: { tag: { id: { in: ids } } } } })
+                } else {
+                    conditions.push({ id: -1 })
+                }
             }
 
+            const excludedExactTags = [...new Set(query.excludedExactTags || [])]
+            const excludedExpandedTags = [...new Set(query.excludedExpandedTags || [])]
+
+            if (excludedExactTags.length > 0 || excludedExpandedTags.length > 0) {
+                const excludedIds = new Set<number>()
+
+                for (const chip of excludedExactTags) {
+                    const tag = await this.prisma.tag.findFirst({
+                        where: { name: chip },
+                        select: { id: true }
+                    })
+                    if (tag) excludedIds.add(tag.id)
+                }
+
+                for (const chip of excludedExpandedTags) {
+                    const ids = await this.expandChipToTagIds(chip)
+                    for (const id of ids) excludedIds.add(id)
+                }
+
+                if (excludedIds.size > 0) {
+                    conditions.push({
+                        NOT: { tags: { some: { tag: { id: { in: [...excludedIds] } } } } }
+                    })
+                }
+            }
+
+            const normalTags = [...new Set(query.normalTags || [])]
             if (normalTags.length > 0) {
-                const normalFilters = normalTags.map((tag) => ({
-                    tags: { some: { tag: buildNormalTagFilter(tag) } }
-                }))
+                const normalIds = new Set<number>()
+                for (const chip of normalTags) {
+                    const ids = await this.expandChipToTagIds(chip)
+                    for (const id of ids) normalIds.add(id)
+                }
                 conditions.push(
-                    normalFilters.length === 1 ? normalFilters[0] : { OR: normalFilters }
+                    normalIds.size > 0
+                        ? { tags: { some: { tag: { id: { in: [...normalIds] } } } } }
+                        : { id: -1 }
                 )
             }
 
@@ -438,6 +462,59 @@ export class LocalDatabaseService {
                 error: err instanceof Error ? err.message : 'Failed to get all subtags.'
             }
         }
+    }
+
+    async getAllParentIds(childId: number): Promise<Result<number[]>> {
+        try {
+            const rows = await this.prisma.$queryRaw<{ id: number }[]>`
+                WITH RECURSIVE ancestors(id) AS (
+                    SELECT parent_id AS id FROM tag_relations WHERE child_id = ${childId}
+                    UNION
+                    SELECT tr.parent_id FROM tag_relations tr
+                    JOIN ancestors a ON tr.child_id = a.id
+                )
+                SELECT id FROM ancestors
+            `
+            return { success: true, data: rows.map((r) => r.id) }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to get all parents.'
+            }
+        }
+    }
+
+    private async expandChipToTagIds(chip: string): Promise<number[]> {
+        if (chip.includes('*')) {
+            const likePattern = chip.replaceAll('*', '%')
+            const rows = await this.prisma.$queryRaw<{ id: number }[]>`
+                WITH RECURSIVE ancestors(id) AS (
+                    SELECT id FROM tags WHERE name LIKE ${likePattern}
+                    UNION
+                    SELECT tr.parent_id FROM tag_relations tr
+                    JOIN ancestors a ON tr.child_id = a.id
+                )
+                SELECT id FROM ancestors
+            `
+            return rows.map((r) => r.id)
+        }
+
+        const tag = await this.prisma.tag.findFirst({
+            where: { name: chip },
+            select: { id: true }
+        })
+        if (!tag) return []
+
+        const ancestors = await this.prisma.$queryRaw<{ id: number }[]>`
+            WITH RECURSIVE ancestors(id) AS (
+                SELECT parent_id AS id FROM tag_relations WHERE child_id = ${tag.id}
+                UNION
+                SELECT tr.parent_id FROM tag_relations tr
+                JOIN ancestors a ON tr.child_id = a.id
+            )
+            SELECT id FROM ancestors
+        `
+        return [tag.id, ...ancestors.map((r) => r.id)]
     }
 
     async addSubtags(parentId: number, childIds: number[]): Promise<Result<{ added: number[] }>> {
