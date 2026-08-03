@@ -24,7 +24,7 @@ export interface PaginatedResult<T> {
 }
 
 export interface PaginatedMediaFiles {
-    data: Record<number, MediaFile>
+    data: Array<[number, MediaFile]>
     total: number
     page: number
     limit: number

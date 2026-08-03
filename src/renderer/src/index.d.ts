@@ -12,7 +12,7 @@ type iapi = {
         insertMediaFile: (payload: UploadFilePayload) => Promise<Result<void>>
         applyTagOperations: (operations: TagOperation[]) => Promise<Result<TagOperationResult>>
         searchFiles: (query: TagSearchQuery) => Promise<Result<PaginatedMediaFiles>>
-        getFilesOfIds: (ids: number[]) => Promise<Result<Record<number, MediaFile>>>
+        getFilesOfIds: (ids: number[]) => Promise<Result<Array<[number, MediaFile]>>>
     }
 
     tags: {

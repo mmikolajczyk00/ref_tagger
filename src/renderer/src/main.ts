@@ -103,7 +103,7 @@ tabStore.openTab(AppTabType.TagEditor, 'Tag Editor')
 window.api.files.getMediaFiles(1, 50).then((result) => {
     if (result.success) {
         canvasStore.addOpenCanvas(
-            Object.values(result.data.data).map((f) => f.id),
+            result.data.data.map(([id]) => id),
             'CanvasDemo'
         )
     }

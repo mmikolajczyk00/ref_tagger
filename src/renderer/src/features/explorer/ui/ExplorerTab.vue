@@ -17,11 +17,11 @@ const {
     initialize,
     search,
     applyFileTagUpdates,
-    applyFileTagUpdatesToRecord
+    applyFileTagUpdatesToMap
 } = useExplorer()
 
 const { selectedItems, handleItemClick, clearSelection, isSelected } = useSelectionManager(() => {
-    return Object.values(mediaFiles.value)
+    return Array.from(mediaFiles.value.values())
 })
 
 const searchChips = ref<string[]>([])
@@ -40,8 +40,8 @@ function clearSearch() {
 
 function onFilesUpdated(updates: FileTagResult[]) {
     applyFileTagUpdates(updates)
-    const byId = Object.fromEntries(selectedItems.value.map((f) => [f.id, f]))
-    applyFileTagUpdatesToRecord(byId, updates)
+    const byId = new Map(selectedItems.value.map((f) => [f.id, f] as [number, MediaFile]))
+    applyFileTagUpdatesToMap(byId, updates)
 }
 
 // REFS
@@ -104,7 +104,7 @@ onMounted(() => {
                 @click="clearSelection"
             >
                 <div
-                    v-for="(f, index) in Object.values(mediaFiles)"
+                    v-for="(f, index) in Array.from(mediaFiles.values())"
                     :key="f.id"
                     class="media-file border-surface-200 dark:border-surface-800 bg-surface-0 dark:bg-surface-900 hover:border-surface-400 dark:hover:border-surface-600 group relative flex aspect-square flex-col overflow-hidden border transition-colors select-none"
                     @click.left.stop="handleItemClick($event, f, index)"

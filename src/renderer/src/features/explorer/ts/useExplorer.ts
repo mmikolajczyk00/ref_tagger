@@ -4,7 +4,7 @@ import { parseSearchChips } from '../../search/ts/parseSearchQuery'
 import { FileTagResult, MediaFile, TagSearchQuery } from 'src/shared/types/models'
 
 export function useExplorer() {
-    const mediaFiles = ref<Record<number, MediaFile>>({})
+    const mediaFiles = ref<Map<number, MediaFile>>(new Map())
     const isLoading = ref(false)
     const isInitialized = ref(false)
     const currentPage = ref(1)
@@ -40,16 +40,13 @@ export function useExplorer() {
         isLoading.value = true
 
         try {
-            const result = await window.api.files.getFilesOfIds(
-                Object.keys(mediaFiles.value).map((k) => Number(k))
-            )
+            const result = await window.api.files.getFilesOfIds(Array.from(mediaFiles.value.keys()))
 
             if (!result.success) {
                 console.error('Failed to fetch files:', result.error)
                 return
             }
-
-            mediaFiles.value = result.data
+            mediaFiles.value = new Map(result.data)
         } finally {
             isLoading.value = false
         }
@@ -79,7 +76,11 @@ export function useExplorer() {
 
             if (result.data.total < 50) hasMoreData.value = false
 
-            mediaFiles.value = { ...mediaFiles.value, ...result.data.data }
+            mediaFiles.value = new Map([...mediaFiles.value, ...result.data.data])
+
+            console.log(result.data)
+            console.log(mediaFiles.value)
+
             currentPage.value++
         } catch (error) {
             console.error('Unexpected error:', error)
@@ -89,7 +90,7 @@ export function useExplorer() {
     }
 
     function resetAndRefresh() {
-        mediaFiles.value = {}
+        mediaFiles.value = new Map()
         currentPage.value = 1
         hasMoreData.value = true
         fetchNextPage()
@@ -97,21 +98,21 @@ export function useExplorer() {
 
     function applyFileTagUpdates(updates: FileTagResult[]) {
         for (const u of updates) {
-            const existing = mediaFiles.value[u.id]
+            const existing = mediaFiles.value.get(u.id)
             if (existing) {
-                mediaFiles.value[u.id] = { ...existing, tags: u.tags }
+                mediaFiles.value.set(u.id, { ...existing, tags: u.tags })
             }
         }
     }
 
-    function applyFileTagUpdatesToRecord(
-        record: Record<number, MediaFile>,
+    function applyFileTagUpdatesToMap(
+        map: Map<number, MediaFile>,
         updates: FileTagResult[]
-    ): Record<number, MediaFile> {
-        const next = { ...record }
+    ): Map<number, MediaFile> {
+        const next = new Map(map)
         for (const u of updates) {
-            const existing = next[u.id]
-            if (existing) next[u.id] = { ...existing, tags: u.tags }
+            const existing = next.get(u.id)
+            if (existing) next.set(u.id, { ...existing, tags: u.tags })
         }
         return next
     }
@@ -126,6 +127,6 @@ export function useExplorer() {
         search,
         refetch,
         applyFileTagUpdates,
-        applyFileTagUpdatesToRecord
+        applyFileTagUpdatesToMap
     }
 }
