@@ -2,7 +2,7 @@ import type CanvasScene from './CanvasScene'
 import {
     Coordinates,
     doPolygonsIntersect,
-    getBoundingBox,
+    calculateBBoxByChildren as calculateBBoxWithChildren,
     Rectangle,
     Transform,
     Vector2
@@ -97,11 +97,13 @@ export class GroupCanvasElement extends CanvasElement {
     }
 
     localizeTransform(transform: Transform) {
+        return
         console.log('before', transform.position, this.transform.position)
         transform.move(this.transform.position.multiplied(-1))
         console.log('after', transform.position, this.transform.position)
     }
     unlocalizeTransform(transform: Transform) {
+        return
         console.log('before', transform.position, this.transform.position)
         transform.move(this.transform.position.clone())
         console.log('after', transform.position, this.transform.position)
@@ -139,17 +141,25 @@ export class GroupCanvasElement extends CanvasElement {
 
     updateBoundingBox() {
         if (this.children.length === 0) return
-        const bbox = getBoundingBox(this.children)
+
+        const oldRotation = this.transform.rotation
+        this.transform.setRotation(0)
+
+        const bbox = calculateBBoxWithChildren(this.children)
         this.transform.position.x = bbox.left - GroupCanvasElement.PADDING
         this.transform.position.y = bbox.top - GroupCanvasElement.PADDING
-        this.transform.width = Math.max(
-            GroupCanvasElement.MIN_SIZE,
-            bbox.right - bbox.left + GroupCanvasElement.PADDING * 2
-        )
-        this.transform.height = Math.max(
-            GroupCanvasElement.MIN_SIZE,
-            bbox.bottom - bbox.top + GroupCanvasElement.PADDING * 2
-        )
+        this.transform.width =
+            Math.max(
+                GroupCanvasElement.MIN_SIZE,
+                bbox.right - bbox.left + GroupCanvasElement.PADDING * 2
+            ) / this.transform.scale
+        this.transform.height =
+            Math.max(
+                GroupCanvasElement.MIN_SIZE,
+                bbox.bottom - bbox.top + GroupCanvasElement.PADDING * 2
+            ) / this.transform.scale
+
+        this.transform.setRotation(oldRotation)
     }
 
     ungroupAll() {
@@ -280,21 +290,4 @@ export class NoteCanvasElement extends CanvasElement {
         }
         return axisMask
     }
-}
-
-// removes by looking at their ids
-export function removeCanvElFromArray(array: Array<CanvasElement>, el: CanvasElement) {
-    for (let i = 0; i < array.length; i++) {
-        const t = array[i]
-        if (t.elementId == el.elementId) {
-            array.splice(i, 0)
-            return
-        }
-    }
-}
-
-// pushes without duplicates
-export function pushCanvElToArray(array: Array<CanvasElement>, el: CanvasElement) {
-    if (array.some((e) => e.elementId == el.elementId)) return
-    array.push(el)
 }

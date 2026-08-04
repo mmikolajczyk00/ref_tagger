@@ -4,7 +4,7 @@
         :class="groupContainerClasses"
         class="group bg-primary-200/80 dark:bg-primary-950/80 absolute size-full"
     >
-        <CanvasElementWrapper
+        <!-- <CanvasElementWrapper
             v-for="child in canvasGroupData!.children"
             :key="child.elementId"
             :transform="child.transform"
@@ -17,7 +17,7 @@
                 v-else-if="child instanceof GroupCanvasElement"
                 :canvas-group-data="child"
             ></GroupElement>
-        </CanvasElementWrapper>
+        </CanvasElementWrapper> -->
         <p class="absolute bottom-5 left-0 bg-black text-white opacity-0 group-hover:opacity-100">
             {{ groupData.transform.position }}
         </p>
@@ -25,14 +25,8 @@
 </template>
 
 <script setup lang="ts">
-import {
-    CanvasElement,
-    GroupCanvasElement,
-    MediaFileCanvasElement
-} from '../ts/scene/CanvasElements'
+import { GroupCanvasElement } from '../ts/scene/CanvasElements'
 import { reactive, computed } from 'vue'
-import CanvasElementWrapper from './CanvasElementWrapper.vue'
-import MediaFileElement from './MediaFileElement.vue'
 
 const { canvasGroupData } = defineProps({
     canvasGroupData: GroupCanvasElement

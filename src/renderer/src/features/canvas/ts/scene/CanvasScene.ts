@@ -2,15 +2,19 @@ import {
     CanvasElement,
     MediaFileCanvasElement,
     NoteCanvasElement,
-    removeCanvElFromArray,
-    pushCanvElToArray,
     GroupCanvasElement
 } from './CanvasElements'
 import SelectionBox from './SelectionBox'
 import { TransformBox } from './TransformBox'
 
 import potpack from 'potpack'
-import { Coordinates, Transform, Vector2 } from './CanvasUtils'
+import {
+    Coordinates,
+    pushCanvElToArray,
+    removeCanvElFromArray,
+    Transform,
+    Vector2
+} from './CanvasUtils'
 
 export default class CanvasScene {
     id: number
@@ -199,7 +203,6 @@ export default class CanvasScene {
         //one element
         else {
             el = el as CanvasElement
-
             removeCanvElFromArray(this.selectedElements, el)
             el.isSelected = false
         }

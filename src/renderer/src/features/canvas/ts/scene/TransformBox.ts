@@ -1,4 +1,10 @@
-import { Coordinates, Transform, Vector2, getBoundingBox } from './CanvasUtils'
+import {
+    Coordinates,
+    Transform,
+    Vector2,
+    calculateBBoxByChildren,
+    isInsideRect
+} from './CanvasUtils'
 import type CanvasScene from './CanvasScene'
 import { GroupCanvasElement } from './CanvasElements'
 
@@ -136,7 +142,7 @@ export class TransformBox {
 
         // fit box to content
         else {
-            const bbox = getBoundingBox(selArr)
+            const bbox = calculateBBoxByChildren(selArr)
 
             this.transform.position.x = bbox.left
             this.transform.position.y = bbox.top
@@ -160,8 +166,6 @@ export class TransformBox {
             .magnitude()
     }
     resizeUpdate(axis: CARDINAL_DIRECTIONS, isAlt: boolean) {
-        const parentsToNotify = new Set<string>()
-
         const tboxPivot = this.axisToPivot.get(axis)!()
 
         const currentMouseToPivotDistance = tboxPivot
@@ -182,25 +186,14 @@ export class TransformBox {
                 const pivotToPos = pos.clone().subtract(activePivot).multiply(moveScale)
                 el.transform.setPos(pivotToPos.added(pos))
 
-                el.transform.scale = rotOrScale * scaleDifference
-                el.transform.scale = rotOrScale * scaleDifference
-
-                if (el.transform.parentTransform)
-                    parentsToNotify.add(el.transform.parentTransform.elementId)
+                el.transform.setScale(rotOrScale * scaleDifference)
             }
         })
 
         this.onSelectionChange()
-
-        parentsToNotify.forEach((id) => {
-            const parent = this.canvas.elementsDict.get(id)
-            if (parent instanceof GroupCanvasElement) {
-                parent.updateBoundingBox()
-            }
-        })
     }
     resizeEnd() {
-        // this.resizeAction.saveNew(this.canvas)
+        this.notifyParents()
     }
 
     rotateStart() {
@@ -211,8 +204,6 @@ export class TransformBox {
         this.initialPos = this.transform.position.clone()
     }
     rotateUpdate(isAlt: boolean) {
-        const parentsToNotify = new Set<string>()
-
         const center = this.transform.getCenter()
         const v = center.subtracted(this.canvas.mousePos)
         const angle = this.initialAngle - Math.atan2(v.x, v.y)
@@ -227,9 +218,19 @@ export class TransformBox {
                 diff.rotate(angle)
 
                 el.transform.setPos(diff.add(activePivot))
+            }
+        })
 
-                if (el.transform.parentTransform)
-                    parentsToNotify.add(el.transform.parentTransform.elementId)
+        this.onSelectionChange()
+    }
+
+    notifyParents() {
+        const parentsToNotify = new Set<string>()
+
+        this.canvas.selectedElements.forEach((el) => {
+            const parent = this.canvas.elementsDict.get(el!.transform.parentTransform!.elementId)
+            if (parent instanceof GroupCanvasElement) {
+                parentsToNotify.add(parent.elementId)
             }
         })
 
@@ -239,11 +240,11 @@ export class TransformBox {
                 parent.updateBoundingBox()
             }
         })
-
-        this.onSelectionChange()
     }
 
-    rotateEnd() {}
+    rotateEnd() {
+        this.notifyParents()
+    }
 
     moveStart() {
         this.startMouse.setV(this.canvas.mousePos)
@@ -252,28 +253,38 @@ export class TransformBox {
 
     moveUpdate() {
         const delta = this.startMouse.subtracted(this.canvas.mousePos).multiply(-1)
-        const parentsToNotify = new Set<string>()
 
         this.moveAction.oldPositions.forEach((pos, id) => {
             const el = this.canvas.elementsDict.get(id)
             if (el) {
                 el.transform.setPos(pos.added(delta))
-                if (el.transform.parentTransform)
-                    parentsToNotify.add(el.transform.parentTransform.elementId)
-            }
-        })
-
-        parentsToNotify.forEach((id) => {
-            const parent = this.canvas.elementsDict.get(id)
-            if (parent instanceof GroupCanvasElement) {
-                parent.updateBoundingBox()
             }
         })
 
         this.onSelectionChange()
     }
 
-    moveEnd() {}
+    moveEnd() {
+        //TODO: check if center is inside a GroupCanvasElement, if yes log the element id
+        const center = this.transform.getCenter()
+        const groupIds = new Map<string, number>()
+
+        for (const group of this.canvas.groupElements) {
+            const bbox = group.transform.getBoundingBox()
+            console.log(bbox)
+            if (isInsideRect(center, bbox)) {
+                groupIds.set(group.elementId, center.distanceToSq(group.transform.getCenter()))
+            }
+        }
+
+        const sorted = [...groupIds.entries()].sort((a, b) => a[1] - b[1])
+
+        if (groupIds && sorted[0] && sorted[0][0]) {
+            console.log('center is inside groups', groupIds, 'bestMatch', sorted[0][0])
+        }
+
+        this.notifyParents()
+    }
 
     getResizeAxisMask(axis: CARDINAL_DIRECTIONS) {
         const axisMask = { x: 1, y: 1 }

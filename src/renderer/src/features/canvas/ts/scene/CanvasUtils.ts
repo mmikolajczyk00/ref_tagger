@@ -83,6 +83,10 @@ export class Vector2 implements Coordinates {
         return this
     }
 
+    distanceToSq(other: Coordinates) {
+        return (this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y)
+    }
+
     static clone(other: Coordinates) {
         return new Vector2(other.x, other.y)
     }
@@ -126,7 +130,7 @@ export class Vector2 implements Coordinates {
 }
 
 export class Transform {
-    position = new Vector2(0, 0)
+    position = new Vector2(0, 0) // local position relative to parent
     scale = 1
     rotation = 0
     width = 0
@@ -149,9 +153,9 @@ export class Transform {
     move(vector: Coordinates) {
         this.position.add(vector)
 
-        // this.children.forEach((c) => {
-        //     c.move(vector)
-        // })
+        this.children.forEach((c) => {
+            c.move(vector)
+        })
     }
 
     setPos(newPos: Coordinates) {
@@ -163,17 +167,34 @@ export class Transform {
         }
     }
 
-    setRotation(newAngle: number) {
-        this.rotation = newAngle
+    rotate(diff: number) {
+        this.rotation += diff
         //TODO: rotate the children around the center
+        this.children.forEach((c) => {
+            c.rotate(diff)
+
+            this.rotatedPointAroundOrigin(c.position, diff)
+        })
     }
 
-    resize(scalar: number) {
+    setRotation(newAngle: number) {
+        const diff = newAngle - this.rotation
+        this.rotate(diff)
+    }
+
+    rescale(scalar: number) {
         this.scale *= scalar
 
         this.children.forEach((c) => {
-            c.resize(scalar)
+            let posDiff = c.position.subtract(this.position)
+            c.rescale(scalar)
+            c.setPos(this.position.added(posDiff.multiply(scalar)))
         })
+    }
+
+    setScale(newScale: number) {
+        let scalar = newScale / this.scale
+        this.rescale(scalar)
     }
 
     addChild(childTransform: Transform) {
@@ -250,8 +271,8 @@ export class Transform {
         )
     }
 
-    rotatedPointAroundOrigin(point: Vector2): Vector2 {
-        return rotateVectorAroundOrigin(point, this.getTopLeft(), this.rotation)
+    rotatedPointAroundOrigin(point: Vector2, rotation: number = this.rotation): Vector2 {
+        return rotateVectorAroundOrigin(point, this.getTopLeft(), rotation)
     }
 }
 
@@ -349,7 +370,7 @@ export function doPolygonsIntersect(a: Array<Vector2>, b: Array<Vector2>) {
     return true
 }
 
-export function getBoundingBox(elements: CanvasElement[]): Rectangle {
+export function calculateBBoxByChildren(elements: CanvasElement[]): Rectangle {
     const rectangle = elements[0].transform.getBoundingBox()
 
     for (let i = 1; i < elements.length; i++) {
@@ -365,9 +386,35 @@ export function getBoundingBox(elements: CanvasElement[]): Rectangle {
     return rectangle
 }
 
+export function isInsideRect(point: Coordinates, rect: Rectangle): boolean {
+    return (
+        point.x >= rect.left &&
+        point.x <= rect.right &&
+        point.y >= rect.top &&
+        point.y <= rect.bottom
+    )
+}
+
 export interface Rectangle {
     top: number
     right: number
     bottom: number
     left: number
+}
+
+// removes by looking at their ids
+export function removeCanvElFromArray(array: Array<CanvasElement>, el: CanvasElement) {
+    for (let i = 0; i < array.length; i++) {
+        const t = array[i]
+        if (t.elementId == el.elementId) {
+            array.splice(i, 0)
+            return
+        }
+    }
+}
+
+// pushes without duplicates
+export function pushCanvElToArray(array: Array<CanvasElement>, el: CanvasElement) {
+    if (array.some((e) => e.elementId == el.elementId)) return
+    array.push(el)
 }

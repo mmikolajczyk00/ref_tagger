@@ -19,12 +19,15 @@ const props = defineProps<CanvasTabProps>()
 
 const canvasStore = useCanvasStore()
 const canvasScene = canvasStore.getCanvas(props.canvasId!)!
-const canvasMediaFileElements = computed(() =>
-    canvasScene.mediaFileElements.filter((f) => f.transform.parentTransform?.elementId === 'root')
-)
-const canvasGroupElements = computed(() =>
-    canvasScene.groupElements.filter((f) => f.transform.parentTransform?.elementId === 'root')
-)
+// const canvasMediaFileElements = computed(() =>
+//     canvasScene.mediaFileElements.filter((f) => f.transform.parentTransform?.elementId === 'root')
+// )
+// const canvasGroupElements = computed(() =>
+//     canvasScene.groupElements.filter((f) => f.transform.parentTransform?.elementId === 'root')
+// )
+//
+const canvasMediaFileElements = computed(() => canvasScene.mediaFileElements)
+const canvasGroupElements = computed(() => canvasScene.groupElements)
 
 const canvasBg = useTemplateRef('canvas-bg')
 
@@ -234,6 +237,8 @@ const canvasBgStyle = computed(() => {
                 >
                     <MediaFileElement :canvas-image-data="img"></MediaFileElement>
                 </CanvasElementWrapper>
+            </div>
+            <div class="relative z-0">
                 <CanvasElementWrapper
                     v-for="group in canvasGroupElements"
                     :key="group.elementId"
