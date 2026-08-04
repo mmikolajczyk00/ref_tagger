@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed, onActivated, onDeactivated, useTemplateRef } from 'vue'
 import CanvasElementWrapper from './CanvasElementWrapper.vue'
-import { CanvasElement, ImageCanvasElement } from '../ts/scene/CanvasElements'
-import ImageElement from './ImageElement.vue'
+import { CanvasElement } from '../ts/scene/CanvasElements'
 import TransformBoxOverlay from './TransformBoxOverlay.vue'
 import { CARDINAL_DIRECTIONS, TransformBox } from '../ts/scene/TransformBox'
-import { Transform, Vector2 } from '../ts/scene/canvas_utils'
+import { Vector2 } from '../ts/scene/CanvasUtils'
 import SelectionBoxOverlay from './SelectionBoxOverlay.vue'
 import { useCanvasStore } from '../ts/canvasStore'
 import { MouseButton } from '../../../core/utils/general'
+import GroupElement from './GroupElement.vue'
+import MediaFileElement from './MediaFileElement.vue'
 
 export interface CanvasTabProps {
     canvasId: number
@@ -18,6 +19,12 @@ const props = defineProps<CanvasTabProps>()
 
 const canvasStore = useCanvasStore()
 const canvasScene = canvasStore.getCanvas(props.canvasId!)!
+const canvasMediaFileElements = computed(() =>
+    canvasScene.mediaFileElements.filter((f) => f.transform.parentTransform?.elementId === 'root')
+)
+const canvasGroupElements = computed(() =>
+    canvasScene.groupElements.filter((f) => f.transform.parentTransform?.elementId === 'root')
+)
 
 const canvasBg = useTemplateRef('canvas-bg')
 
@@ -203,24 +210,39 @@ const canvasBgStyle = computed(() => {
         <div class="absolute bottom-0 left-0 z-50">
             {{ canvasScene.mousePos }} || {{ canvasScene.zoom }}
         </div>
-        <div ref="canvas-pivot" :style="canvasBgStyle">
-            <CanvasElementWrapper
-                v-for="img in canvasScene.imageElements"
-                :key="img.elementId"
-                :transform="img.transform as Transform"
-                @mousedown.left.stop="handleElementMouseDown(img, $event)"
-            >
-                <ImageElement :canvas-image-data="img as ImageCanvasElement"></ImageElement>
-            </CanvasElementWrapper>
-            <TransformBoxOverlay
-                class="z-50"
-                :zoom="canvasScene.zoom"
-                :transform-box="canvasScene.transformBox as TransformBox"
-                @resize-start="handleResizeStart($event)"
-                @rotate-start="handleRotateStart()"
-            ></TransformBoxOverlay>
-            <SelectionBoxOverlay :zoom="canvasScene.zoom" :selection-box="canvasScene.selectionBox">
-            </SelectionBoxOverlay>
+        <div ref="canvas-pivot" class="z-0" :style="canvasBgStyle">
+            <div class="relative z-50">
+                <TransformBoxOverlay
+                    class="z-50"
+                    :zoom="canvasScene.zoom"
+                    :transform-box="canvasScene.transformBox as TransformBox"
+                    @resize-start="handleResizeStart($event)"
+                    @rotate-start="handleRotateStart()"
+                ></TransformBoxOverlay>
+                <SelectionBoxOverlay
+                    :zoom="canvasScene.zoom"
+                    :selection-box="canvasScene.selectionBox"
+                >
+                </SelectionBoxOverlay>
+            </div>
+            <div class="relative z-30">
+                <CanvasElementWrapper
+                    v-for="img in canvasMediaFileElements"
+                    :key="img.elementId"
+                    :transform="img.transform"
+                    @mousedown.left.stop="handleElementMouseDown(img, $event)"
+                >
+                    <MediaFileElement :canvas-image-data="img"></MediaFileElement>
+                </CanvasElementWrapper>
+                <CanvasElementWrapper
+                    v-for="group in canvasGroupElements"
+                    :key="group.elementId"
+                    :transform="group.transform"
+                    @mousedown.left.stop="handleElementMouseDown(group, $event)"
+                >
+                    <GroupElement :canvas-group-data="group"></GroupElement>
+                </CanvasElementWrapper>
+            </div>
         </div>
     </div>
 </template>

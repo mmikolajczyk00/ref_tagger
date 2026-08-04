@@ -1,4 +1,4 @@
-import { Transform, Vector2 } from './canvas_utils'
+import { Transform, Vector2 } from './CanvasUtils'
 import { CanvasElement } from './CanvasElements'
 import type CanvasScene from './CanvasScene'
 

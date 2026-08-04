@@ -1,15 +1,16 @@
 import {
     CanvasElement,
-    ImageCanvasElement,
+    MediaFileCanvasElement,
     NoteCanvasElement,
     removeCanvElFromArray,
-    pushCanvElToArray
+    pushCanvElToArray,
+    GroupCanvasElement
 } from './CanvasElements'
 import SelectionBox from './SelectionBox'
 import { TransformBox } from './TransformBox'
 
 import potpack from 'potpack'
-import { Coordinates, Transform, Vector2 } from './canvas_utils'
+import { Coordinates, Transform, Vector2 } from './CanvasUtils'
 
 export default class CanvasScene {
     id: number
@@ -20,8 +21,9 @@ export default class CanvasScene {
     isGrabbed: boolean = false
     panOffset = new Vector2(0, 0)
 
-    imageElements: Array<ImageCanvasElement> = []
+    mediaFileElements: Array<MediaFileCanvasElement> = []
     noteElements: Array<NoteCanvasElement> = []
+    groupElements: Array<GroupCanvasElement> = []
     elementCount: number = 0
 
     transformBox: TransformBox
@@ -47,19 +49,19 @@ export default class CanvasScene {
         return this.transform
     }
 
-    addImage(fileId: number, position?: Coordinates) {
-        const imageEl = new ImageCanvasElement(this, this.transform, fileId)
+    addMediaFile(fileId: number, position?: Coordinates) {
+        const mediaFile = new MediaFileCanvasElement(this, this.transform, fileId)
 
-        if (typeof position !== 'undefined') imageEl.transform.setPos(position)
+        if (typeof position !== 'undefined') mediaFile.transform.setPos(position)
 
-        this.imageElements.push(imageEl)
-        this.elementsDict.set(imageEl.elementId, imageEl)
+        this.mediaFileElements.push(mediaFile)
+        this.elementsDict.set(mediaFile.elementId, mediaFile)
         // this.transform.addChild(imageEl.transform);
         this.elementCount++
     }
-    addImages(files: number[], position?: Coordinates) {
+    addMediaFiles(files: number[], position?: Coordinates) {
         files.forEach((f) => {
-            this.addImage(f, position)
+            this.addMediaFile(f, position)
         })
     }
     incrementZIndex() {
@@ -67,16 +69,29 @@ export default class CanvasScene {
     }
 
     addNote(text: string, position?: Vector2) {
-        const noteEl = new NoteCanvasElement(this, this.transform, text)
+        const note = new NoteCanvasElement(this, this.transform, text)
 
         this.incrementZIndex()
 
-        if (typeof position !== 'undefined') noteEl.transform.position = position
+        if (typeof position !== 'undefined') note.transform.position = position
 
-        this.noteElements.push(noteEl)
-        this.elementsDict.set(noteEl.elementId, noteEl)
+        this.noteElements.push(note)
+        this.elementsDict.set(note.elementId, note)
         // this.transform.addChild(noteEl.transform);
         this.elementCount++
+    }
+
+    addGroup(): GroupCanvasElement {
+        const group = new GroupCanvasElement(this, this.transform)
+        this.groupElements.push(group)
+        this.elementsDict.set(group.elementId, group)
+        return group
+    }
+    removeGroup(groupId: string) {
+        const group = this.elementsDict.get(groupId)
+        if (!group) return
+        this.groupElements = this.groupElements.filter((g) => g.elementId !== groupId)
+        this.elementsDict.delete(groupId)
     }
 
     selectElement(element: CanvasElement, shiftPressed: boolean) {
@@ -209,7 +224,7 @@ export default class CanvasScene {
     getAllElements(): Array<CanvasElement> {
         let t = [] as Array<CanvasElement>
 
-        t = t.concat(this.imageElements)
+        t = t.concat(this.mediaFileElements)
         t = t.concat(this.noteElements)
 
         return t
@@ -266,9 +281,7 @@ export default class CanvasScene {
                 w: bbox.right - bbox.left,
                 h: bbox.top - bbox.bottom,
                 id: element.elementId,
-                offset: element.transform.position
-                    .clone()
-                    .subtract(new Vector2(bbox.left, bbox.bottom))
+                offset: element.transform.position.subtract(new Vector2(bbox.left, bbox.bottom))
             })
         }
 
@@ -297,5 +310,9 @@ export default class CanvasScene {
             (pos.x - this.transform.position.x) / this.zoom,
             (pos.y - this.transform.position.y) / this.zoom
         )
+    }
+
+    getElementsById(elements: string[]) {
+        return elements.map((id) => this.elementsDict.get(id)!)
     }
 }

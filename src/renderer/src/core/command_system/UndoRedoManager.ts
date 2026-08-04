@@ -13,8 +13,8 @@ export interface ICommandRegistration {
     label: string
     scope: string
     showInPalette: boolean
-    keybind?: string
-    when?: (state: AppContext) => boolean
+    keybind: string
+    when: (state: AppContext) => boolean
     create: (state: AppContext) => ICommand | null
 }
 
@@ -85,6 +85,7 @@ class CommandRegistry {
     create(id: string): ICommand | null {
         if (!this.context) return null
         if (this.commands.has(id)) {
+            if (!this.commands.get(id)!.when(this.context)) return null
             return this.commands.get(id)!.create(this.context)
         }
 

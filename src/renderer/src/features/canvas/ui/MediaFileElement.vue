@@ -13,16 +13,16 @@
 
 <script setup lang="ts">
 import { useFileStore } from '../../../core/stores/useFileStore'
-import { ImageCanvasElement } from '../ts/scene/CanvasElements'
+import { MediaFileCanvasElement } from '../ts/scene/CanvasElements'
 import { useTemplateRef, reactive, onMounted, computed } from 'vue'
 
 const fileStore = useFileStore()
 
 const { canvasImageData } = defineProps({
-    canvasImageData: ImageCanvasElement
+    canvasImageData: MediaFileCanvasElement
 })
 
-const imageData = reactive(canvasImageData as ImageCanvasElement)
+const imageData = reactive(canvasImageData as MediaFileCanvasElement)
 
 const imageContainerClasses = computed(() => [
     { selected: imageData.isSelected },

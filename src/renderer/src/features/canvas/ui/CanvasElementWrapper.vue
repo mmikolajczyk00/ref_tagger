@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { HTMLAttributes } from 'vue'
 import { useTransformStyle } from '../composables/useTransformStyle'
-import { Transform } from '../ts/scene/canvas_utils'
+import { Transform } from '../ts/scene/CanvasUtils'
 
 interface Props extends /* @vue-ignore */ HTMLAttributes {
     transform: Transform

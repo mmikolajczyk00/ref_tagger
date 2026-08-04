@@ -90,6 +90,8 @@
 </template>
 
 <script setup lang="ts">
+//@ts-ignore file will be rewritten in the future
+
 import { useTemplateRef, reactive, onMounted, computed } from 'vue'
 import { NoteCanvasElement } from '../ts/scene/CanvasElements'
 

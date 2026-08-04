@@ -1,5 +1,6 @@
-import { Coordinates, Transform, Vector2 } from './canvas_utils'
+import { Coordinates, Transform, Vector2, getBoundingBox } from './CanvasUtils'
 import type CanvasScene from './CanvasScene'
+import { GroupCanvasElement } from './CanvasElements'
 
 export class MoveAction {
     oldPositions = new Map<string, Vector2>()
@@ -135,29 +136,12 @@ export class TransformBox {
 
         // fit box to content
         else {
-            const botLeft = new Vector2(0, 0)
-            const topRight = new Vector2(0, 0)
+            const bbox = getBoundingBox(selArr)
 
-            const firstElRect = selArr[0].transform.getBoundingBox()
-            botLeft.x = firstElRect.left
-            botLeft.y = firstElRect.bottom
-            topRight.x = firstElRect.right
-            topRight.y = firstElRect.top
-
-            for (let i = 1; i < selArr.length; i++) {
-                const element = selArr[i]
-                const rect = element.transform.getBoundingBox()
-
-                botLeft.x = Math.min(rect.left, botLeft.x)
-                botLeft.y = Math.min(rect.bottom, botLeft.y)
-                topRight.x = Math.max(rect.right, topRight.x)
-                topRight.y = Math.max(rect.top, topRight.y)
-            }
-
-            this.transform.position.x = botLeft.x
-            this.transform.position.y = botLeft.y
-            this.transform.width = topRight.x - botLeft.x
-            this.transform.height = topRight.y - botLeft.y
+            this.transform.position.x = bbox.left
+            this.transform.position.y = bbox.top
+            this.transform.width = bbox.right - bbox.left
+            this.transform.height = bbox.bottom - bbox.top
 
             this.hidden = false
         }
@@ -176,6 +160,8 @@ export class TransformBox {
             .magnitude()
     }
     resizeUpdate(axis: CARDINAL_DIRECTIONS, isAlt: boolean) {
+        const parentsToNotify = new Set<string>()
+
         const tboxPivot = this.axisToPivot.get(axis)!()
 
         const currentMouseToPivotDistance = tboxPivot
@@ -198,10 +184,20 @@ export class TransformBox {
 
                 el.transform.scale = rotOrScale * scaleDifference
                 el.transform.scale = rotOrScale * scaleDifference
+
+                if (el.transform.parentTransform)
+                    parentsToNotify.add(el.transform.parentTransform.elementId)
             }
         })
 
         this.onSelectionChange()
+
+        parentsToNotify.forEach((id) => {
+            const parent = this.canvas.elementsDict.get(id)
+            if (parent instanceof GroupCanvasElement) {
+                parent.updateBoundingBox()
+            }
+        })
     }
     resizeEnd() {
         // this.resizeAction.saveNew(this.canvas)
@@ -215,6 +211,8 @@ export class TransformBox {
         this.initialPos = this.transform.position.clone()
     }
     rotateUpdate(isAlt: boolean) {
+        const parentsToNotify = new Set<string>()
+
         const center = this.transform.getCenter()
         const v = center.subtracted(this.canvas.mousePos)
         const angle = this.initialAngle - Math.atan2(v.x, v.y)
@@ -229,6 +227,16 @@ export class TransformBox {
                 diff.rotate(angle)
 
                 el.transform.setPos(diff.add(activePivot))
+
+                if (el.transform.parentTransform)
+                    parentsToNotify.add(el.transform.parentTransform.elementId)
+            }
+        })
+
+        parentsToNotify.forEach((id) => {
+            const parent = this.canvas.elementsDict.get(id)
+            if (parent instanceof GroupCanvasElement) {
+                parent.updateBoundingBox()
             }
         })
 
@@ -244,11 +252,21 @@ export class TransformBox {
 
     moveUpdate() {
         const delta = this.startMouse.subtracted(this.canvas.mousePos).multiply(-1)
+        const parentsToNotify = new Set<string>()
 
         this.moveAction.oldPositions.forEach((pos, id) => {
             const el = this.canvas.elementsDict.get(id)
             if (el) {
                 el.transform.setPos(pos.added(delta))
+                if (el.transform.parentTransform)
+                    parentsToNotify.add(el.transform.parentTransform.elementId)
+            }
+        })
+
+        parentsToNotify.forEach((id) => {
+            const parent = this.canvas.elementsDict.get(id)
+            if (parent instanceof GroupCanvasElement) {
+                parent.updateBoundingBox()
             }
         })
 

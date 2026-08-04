@@ -1,3 +1,4 @@
+import { CanvasElement } from './CanvasElements'
 import CanvasScene from './CanvasScene'
 
 export interface Coordinates {
@@ -127,20 +128,14 @@ export class Vector2 implements Coordinates {
 export class Transform {
     position = new Vector2(0, 0)
     scale = 1
-    flip = false
     rotation = 0
     width = 0
     height = 0
     children: Array<Transform> = []
     parentTransform: Transform | null
     canvas: CanvasScene
-    elementId: string // the element it is a transform of
+    elementId: string
     zIndex: any
-
-    /*
-        parentTransform == null means its the canvas' transform, therefore it shouldnt have
-        a parent above itself, because its first in the hierarchy
-    */
 
     constructor(canvas: CanvasScene, parentTransform: Transform | null, elementId: string) {
         this.canvas = canvas
@@ -148,19 +143,15 @@ export class Transform {
         this.elementId = elementId
     }
 
-    scaledWidth = () => {
-        return this.width * this.scale
-    }
-    scaledHeight = () => {
-        return this.height * this.scale
-    }
+    scaledWidth = () => this.width * this.scale
+    scaledHeight = () => this.height * this.scale
 
     move(vector: Coordinates) {
         this.position.add(vector)
 
-        this.children.forEach((c) => {
-            c.move(vector)
-        })
+        // this.children.forEach((c) => {
+        //     c.move(vector)
+        // })
     }
 
     setPos(newPos: Coordinates) {
@@ -195,9 +186,9 @@ export class Transform {
         const tl = this.getTopLeft()
         const tr = this.getTopRight()
         return {
-            top: Math.max(bl.y, br.y, tl.y, tr.y),
+            top: Math.min(bl.y, br.y, tl.y, tr.y),
             right: Math.max(bl.x, br.x, tl.x, tr.x),
-            bottom: Math.min(bl.y, br.y, tl.y, tr.y),
+            bottom: Math.max(bl.y, br.y, tl.y, tr.y),
             left: Math.min(bl.x, br.x, tl.x, tr.x)
         }
     }
@@ -356,6 +347,22 @@ export function doPolygonsIntersect(a: Array<Vector2>, b: Array<Vector2>) {
         }
     }
     return true
+}
+
+export function getBoundingBox(elements: CanvasElement[]): Rectangle {
+    const rectangle = elements[0].transform.getBoundingBox()
+
+    for (let i = 1; i < elements.length; i++) {
+        const element = elements[i]
+        const rect = element.transform.getBoundingBox()
+
+        rectangle.left = Math.min(rect.left, rectangle.left)
+        rectangle.top = Math.min(rect.top, rectangle.top)
+        rectangle.right = Math.max(rect.right, rectangle.right)
+        rectangle.bottom = Math.max(rect.bottom, rectangle.bottom)
+    }
+
+    return rectangle
 }
 
 export interface Rectangle {

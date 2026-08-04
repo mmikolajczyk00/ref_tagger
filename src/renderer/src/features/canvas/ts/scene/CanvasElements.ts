@@ -1,8 +1,15 @@
 import type CanvasScene from './CanvasScene'
-import { doPolygonsIntersect, Rectangle, Transform, Vector2 } from './canvas_utils'
+import {
+    Coordinates,
+    doPolygonsIntersect,
+    getBoundingBox,
+    Rectangle,
+    Transform,
+    Vector2
+} from './CanvasUtils'
 import { CARDINAL_DIRECTIONS } from './TransformBox'
 
-abstract class CanvasElement {
+export abstract class CanvasElement {
     transform: Transform
     canvas: CanvasScene
     elementId: string
@@ -25,11 +32,12 @@ abstract class CanvasElement {
 
     getHtmlBoundingBox(): Rectangle {
         const rect = this.htmlElement!.getBoundingClientRect()
+        const pos = this.transform.position
         const box = {
-            left: this.transform.position.x,
-            bottom: this.transform.position.y,
-            right: rect.width + this.transform.position.x,
-            top: rect.height + this.transform.position.y
+            left: pos.x,
+            bottom: pos.y,
+            right: rect.width + pos.x,
+            top: rect.height + pos.y
         }
         return box
     }
@@ -51,7 +59,105 @@ abstract class CanvasElement {
     }
 }
 
-class ImageCanvasElement extends CanvasElement {
+export class GroupCanvasElement extends CanvasElement {
+    childrenMap: Map<string, CanvasElement> = new Map()
+    static MIN_SIZE = 100
+    static PADDING = 50
+
+    constructor(canvas: CanvasScene, parentTransform: Transform, position?: Coordinates) {
+        super(canvas, parentTransform)
+        if (position) this.transform.position.setV(position)
+    }
+
+    get children() {
+        return [...this.childrenMap.values()]
+    }
+
+    addElements(children: CanvasElement[]) {
+        const newChildren: string[] = []
+        children.forEach((c) => {
+            if (!this.childrenMap.has(c.elementId)) {
+                this.childrenMap.set(c.elementId, c)
+                this.transform.children.push(c.transform)
+                c.transform.parentTransform = this.transform
+                newChildren.push(c.elementId)
+            }
+        })
+        if (newChildren.length > 0) this.updateBoundingBox()
+        newChildren.forEach((c) => this.localizeTransform(this.childrenMap.get(c)!.transform))
+    }
+
+    addElement(child: CanvasElement) {
+        if (!this.childrenMap.has(child.elementId)) {
+            this.childrenMap.set(child.elementId, child)
+            this.transform.children.push(child.transform)
+            child.transform.parentTransform = this.transform
+            this.updateBoundingBox()
+        }
+    }
+
+    localizeTransform(transform: Transform) {
+        console.log('before', transform.position, this.transform.position)
+        transform.move(this.transform.position.multiplied(-1))
+        console.log('after', transform.position, this.transform.position)
+    }
+    unlocalizeTransform(transform: Transform) {
+        console.log('before', transform.position, this.transform.position)
+        transform.move(this.transform.position.clone())
+        console.log('after', transform.position, this.transform.position)
+    }
+
+    removeElement(child: CanvasElement) {
+        if (this.childrenMap.has(child.elementId)) {
+            this.childrenMap.delete(child.elementId)
+            this.transform.children = this.transform.children.filter(
+                (t) => t.elementId !== child.transform.elementId
+            )
+            child.transform.parentTransform = this.transform.parentTransform
+            this.unlocalizeTransform(child.transform)
+            this.updateBoundingBox()
+        }
+    }
+
+    removeElements(children: Array<CanvasElement>) {
+        let update = false
+
+        children.forEach((c) => {
+            if (this.childrenMap.has(c.elementId)) {
+                this.childrenMap.delete(c.elementId)
+                this.transform.children = this.transform.children.filter(
+                    (t) => t.elementId !== c.transform.elementId
+                )
+                c.transform.parentTransform = this.transform.parentTransform
+                update = true
+                this.unlocalizeTransform(c.transform)
+            }
+        })
+
+        if (update) this.updateBoundingBox()
+    }
+
+    updateBoundingBox() {
+        if (this.children.length === 0) return
+        const bbox = getBoundingBox(this.children)
+        this.transform.position.x = bbox.left - GroupCanvasElement.PADDING
+        this.transform.position.y = bbox.top - GroupCanvasElement.PADDING
+        this.transform.width = Math.max(
+            GroupCanvasElement.MIN_SIZE,
+            bbox.right - bbox.left + GroupCanvasElement.PADDING * 2
+        )
+        this.transform.height = Math.max(
+            GroupCanvasElement.MIN_SIZE,
+            bbox.bottom - bbox.top + GroupCanvasElement.PADDING * 2
+        )
+    }
+
+    ungroupAll() {
+        this.removeElements(this.children)
+    }
+}
+
+export class MediaFileCanvasElement extends CanvasElement {
     constructor(
         canvas: CanvasScene,
         parentTransform: Transform,
@@ -61,7 +167,7 @@ class ImageCanvasElement extends CanvasElement {
     }
 }
 
-class NoteCanvasElement extends CanvasElement {
+export class NoteCanvasElement extends CanvasElement {
     noteText: string
     editMode: boolean = false
     textAreaHtmlEl: HTMLTextAreaElement | undefined = undefined
@@ -91,52 +197,6 @@ class NoteCanvasElement extends CanvasElement {
         requestAnimationFrame(() => {
             this.fitTextContainerToContent()
         })
-    }
-
-    setResizeButtons() {
-        // for (let i = 0; i < 8; i++) {
-        //     const axis = CARDINAL_DIRECTIONS[i] as keyof CARDINAL_DIRECTIONS
-        //     resizeBtns[axis].addEventListener('mousedown', () => {
-        //         this.resizing = true
-        //         this.resizeAxis = i
-        //         this.startMousePos = this.canvas.mouseEventsHandler.mouseWorldPos
-        //         this.sizeOnStart = new Vector2(this.transform.width, this.transform.height)
-        //         this.posOnStart = this.transform.position.clone()
-        //     })
-        // }
-        // document.addEventListener('mousemove', (e) => {
-        //     if (!this.resizing) return
-        //     this.currentMousePos = this.canvas.mouseEventsHandler.mouseWorldPos
-        //     let delta = this.startMousePos.clone().subtract(this.currentMousePos)
-        //     let pivot = this.getResizePivotFromAxisArea()
-        //     let axisMask = this.getResizeAxisMaskFromAxisArea()
-        //     delta.multiplyByVector(axisMask)
-        //     let oldPos = this.posOnStart.clone()
-        //     let posToPivot = pivot.clone().subtract(oldPos)
-        //     let startMouseToPivot = pivot.clone().subtract(this.startMousePos)
-        //     let modifier = new Vector2(
-        //         delta.x == 0 ? 1 : delta.x / startMouseToPivot.x + 1,
-        //         delta.y == 0 ? 1 : delta.y / startMouseToPivot.y + 1
-        //     )
-        //     let absModifier = Math.abs(modifier.x) > Math.abs(modifier.y) ? modifier.x : modifier.y
-        //     let posToPivotScaled = posToPivot
-        //         .clone()
-        //         .multiplyByVector(new Vector2(modifier.x - 1, modifier.y - 1))
-        //     this.transform.setPos(oldPos.clone().subtract(posToPivotScaled))
-        //     this.textAreaMinSize.x = this.sizeOnStart.x * modifier.x
-        //     this.textAreaMinSize.y = this.sizeOnStart.y * modifier.y
-        //     this.transform.width = this.sizeOnStart.x * modifier.x
-        //     this.transform.height = this.sizeOnStart.y * modifier.y
-        //     // console.log(
-        //     //         `m ${modifier.x}  ${modifier.y} .d ${delta.x} ${delta.y} .sm ${startMouseToPivot.x} ${startMouseToPivot.y} .pstp ${posToPivot.x} ${posToPivot.y} .psts ${posToPivotScaled.x} ${posToPivotScaled.y}`
-        //     // );
-        //     console.log(
-        //         `m ${modifier.x}  ${modifier.y} .t ${this.transform.width} ${this.transform.height} .size ${this.sizeOnStart.x} ${this.sizeOnStart.y}`
-        //     )
-        // })
-        // document.addEventListener('mouseup', (e) => {
-        //     this.resizing = false
-        // })
     }
 
     fitTextContainerToContent() {
@@ -223,7 +283,7 @@ class NoteCanvasElement extends CanvasElement {
 }
 
 // removes by looking at their ids
-function removeCanvElFromArray(array: Array<CanvasElement>, el: CanvasElement) {
+export function removeCanvElFromArray(array: Array<CanvasElement>, el: CanvasElement) {
     for (let i = 0; i < array.length; i++) {
         const t = array[i]
         if (t.elementId == el.elementId) {
@@ -234,15 +294,7 @@ function removeCanvElFromArray(array: Array<CanvasElement>, el: CanvasElement) {
 }
 
 // pushes without duplicates
-function pushCanvElToArray(array: Array<CanvasElement>, el: CanvasElement) {
+export function pushCanvElToArray(array: Array<CanvasElement>, el: CanvasElement) {
     if (array.some((e) => e.elementId == el.elementId)) return
     array.push(el)
-}
-
-export {
-    CanvasElement,
-    ImageCanvasElement,
-    NoteCanvasElement,
-    removeCanvElFromArray,
-    pushCanvElToArray
 }
