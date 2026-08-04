@@ -274,6 +274,18 @@ export class Transform {
     rotatedPointAroundOrigin(point: Vector2, rotation: number = this.rotation): Vector2 {
         return rotateVectorAroundOrigin(point, this.getTopLeft(), rotation)
     }
+
+    getOuterParent() {
+        const parentTransform = this.parentTransform
+        if (!parentTransform) return null
+        if (parentTransform.elementId === 'root') {
+            return null
+        } else if (parentTransform.parentTransform?.elementId == 'root') {
+            return parentTransform
+        } else {
+            return parentTransform.getOuterParent()
+        }
+    }
 }
 
 export function isArray(someVar: any) {

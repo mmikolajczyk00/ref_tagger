@@ -78,7 +78,22 @@ let isPotentialTogglableClick = false
 let dragStartMousePos = new Vector2(0, 0)
 const MOVE_THRESHOLD_SQ = 16
 
+function handleDoubleClick(el: CanvasElement, e: MouseEvent) {
+    let outerParent = el.transform.getOuterParent()
+    if (outerParent) {
+        el = canvasScene.elementsDict.get(outerParent.elementId)!
+    }
+    console.log('dbclick')
+}
+
 function handleElementMouseDown(el: CanvasElement, e: MouseEvent) {
+    // find most outer parent and work on that
+    let outerParent = el.transform.getOuterParent()
+    if (outerParent) {
+        console.log(outerParent)
+        el = canvasScene.elementsDict.get(outerParent.elementId)!
+    }
+
     if (el.isSelected) {
         isPotentialTogglableClick = true
         handleMoveStart(el)
@@ -234,6 +249,7 @@ const canvasBgStyle = computed(() => {
                     :key="img.elementId"
                     :transform="img.transform"
                     @mousedown.left.stop="handleElementMouseDown(img, $event)"
+                    @dblclick.left.stop="handleDoubleClick(img, $event)"
                 >
                     <MediaFileElement :canvas-image-data="img"></MediaFileElement>
                 </CanvasElementWrapper>
@@ -244,6 +260,7 @@ const canvasBgStyle = computed(() => {
                     :key="group.elementId"
                     :transform="group.transform"
                     @mousedown.left.stop="handleElementMouseDown(group, $event)"
+                    @dblclick.left.stop="handleDoubleClick(group, $event)"
                 >
                     <GroupElement :canvas-group-data="group"></GroupElement>
                 </CanvasElementWrapper>

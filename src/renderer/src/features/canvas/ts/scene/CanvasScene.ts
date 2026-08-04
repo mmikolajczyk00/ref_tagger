@@ -85,8 +85,8 @@ export default class CanvasScene {
         this.elementCount++
     }
 
-    addGroup(): GroupCanvasElement {
-        const group = new GroupCanvasElement(this, this.transform)
+    addGroup(groupId?: string): GroupCanvasElement {
+        const group = new GroupCanvasElement(this, this.transform, new Vector2(0, 0), groupId)
         this.groupElements.push(group)
         this.elementsDict.set(group.elementId, group)
         return group

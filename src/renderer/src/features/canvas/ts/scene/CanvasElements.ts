@@ -19,8 +19,12 @@ export abstract class CanvasElement {
     isGrabbed = false
     isSelected = false
 
-    constructor(canvas: CanvasScene, parentTransform: Transform) {
-        this.elementId = crypto.randomUUID()
+    constructor(
+        canvas: CanvasScene,
+        parentTransform: Transform,
+        elementId: string = crypto.randomUUID()
+    ) {
+        this.elementId = elementId
         this.canvas = canvas
         this.transform = new Transform(canvas, parentTransform, this.elementId)
     }
@@ -64,8 +68,13 @@ export class GroupCanvasElement extends CanvasElement {
     static MIN_SIZE = 100
     static PADDING = 50
 
-    constructor(canvas: CanvasScene, parentTransform: Transform, position?: Coordinates) {
-        super(canvas, parentTransform)
+    constructor(
+        canvas: CanvasScene,
+        parentTransform: Transform,
+        position?: Coordinates,
+        elementId?: string
+    ) {
+        super(canvas, parentTransform, elementId)
         if (position) this.transform.position.setV(position)
     }
 

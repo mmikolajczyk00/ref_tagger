@@ -265,11 +265,20 @@ export class TransformBox {
     }
 
     moveEnd() {
-        //TODO: check if center is inside a GroupCanvasElement, if yes log the element id
         const center = this.transform.getCenter()
         const groupIds = new Map<string, number>()
 
+        // ignore selected groups
+        const ignoredGroupIds = new Set<string>()
+        this.canvas.selectedElements.forEach((el) => {
+            if (el instanceof GroupCanvasElement) {
+                ignoredGroupIds.add(el.elementId)
+            }
+        })
+
         for (const group of this.canvas.groupElements) {
+            if (ignoredGroupIds.has(group.elementId)) continue
+
             const bbox = group.transform.getBoundingBox()
             console.log(bbox)
             if (isInsideRect(center, bbox)) {
@@ -277,10 +286,10 @@ export class TransformBox {
             }
         }
 
-        const sorted = [...groupIds.entries()].sort((a, b) => a[1] - b[1])
+        const sorted = [...groupIds.entries()].sort((a, b) => a[1] - b[1]) // sort by distance
 
-        if (groupIds && sorted[0] && sorted[0][0]) {
-            console.log('center is inside groups', groupIds, 'bestMatch', sorted[0][0])
+        if (sorted[0] && sorted[0][0]) {
+            // executre command
         }
 
         this.notifyParents()

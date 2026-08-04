@@ -6,10 +6,69 @@ import { GroupCanvasElement } from '../ts/scene/CanvasElements'
 
 export const CANVAS_COMMANDS = {
     ARRANGE: 'arrange',
-    GROUP: 'group'
+    GROUP: 'group',
+    UNGROUP: 'ungroup',
+    MOVE: 'move',
+    MOVE_AND_GROUP: 'move_and_group'
 } as const
 
+class UngroupCommand implements ICommand {
+    undoable: boolean = true
+    timestamp: number | undefined
+    private groupElementsMap: Map<string, string[]> = new Map() // partially removed, the group still exists
+
+    constructor(private canvasScene: CanvasScene) {
+        this.canvasScene.selectedElements.forEach((el) => {
+            if (el instanceof GroupCanvasElement) {
+                this.groupElementsMap.set(
+                    el.elementId,
+                    el.children.map((c) => c.elementId)
+                )
+            } else {
+                const parentEl = this.canvasScene.elementsDict.get(
+                    el!.transform.parentTransform?.elementId ?? '-1'
+                )
+                if (parentEl && parentEl instanceof GroupCanvasElement) {
+                    this.groupElementsMap.set(
+                        parentEl.elementId,
+                        this.groupElementsMap.get(parentEl.elementId)?.concat(el.elementId) ?? [
+                            el.elementId
+                        ]
+                    )
+                }
+            }
+        })
+    }
+
+    execute(): void {
+        this.groupElementsMap.forEach((elementIds, groupId) => {
+            const group = this.canvasScene.elementsDict.get(groupId) as GroupCanvasElement
+
+            console.log('ungroup execute', group, groupId, this.canvasScene)
+
+            group.removeElements(this.canvasScene.getElementsById(elementIds))
+            if (group.children.length === 0) {
+                this.canvasScene.removeGroup(groupId)
+            }
+        })
+    }
+    undo(): void {
+        this.groupElementsMap.forEach((elementIds, groupId) => {
+            const group = this.canvasScene.elementsDict.get(groupId) as
+                GroupCanvasElement | undefined
+
+            if (group) {
+                group.addElements(this.canvasScene.getElementsById(elementIds))
+            } else {
+                const group = this.canvasScene.addGroup(groupId)
+                group.addElements(this.canvasScene.getElementsById(elementIds))
+            }
+        })
+    }
+}
+
 class GroupCommand implements ICommand {
+    // creates and adds elements to the group
     undoable: boolean = true
     timestamp: number | undefined
     private elementIds: Array<string>
@@ -20,11 +79,9 @@ class GroupCommand implements ICommand {
     }
 
     execute(): void {
-        console.log('group elements', this.canvasScene, this.elementIds)
-        const group = this.canvasScene.addGroup()
+        const group = this.canvasScene.addGroup(this.groupId)
         this.groupId = group.elementId
         const el = this.canvasScene.getElementsById(this.elementIds)
-        console.log(el)
         group.addElements(el)
     }
     undo(): void {
@@ -84,5 +141,15 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
         keybind: 'ctrl+g',
         when: hasSelectedElements,
         create: () => new GroupCommand(activeScene()!)
+    })
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.UNGROUP,
+        label: 'Ungroup',
+        scope,
+        showInPalette: true,
+        keybind: 'ctrl+shift+g',
+        when: hasSelectedElements,
+        create: () => new UngroupCommand(activeScene()!)
     })
 }
