@@ -324,12 +324,12 @@ export class TransformBox {
                 ignoredGroupIds.add(el.elementId)
             }
         })
+        const validGroups = this.canvas.groupElements.filter(
+            (e) => !ignoredGroupIds.has(e.elementId) && this.canvas.isSelectable(e)
+        )
 
-        for (const group of this.canvas.groupElements) {
-            if (ignoredGroupIds.has(group.elementId)) continue
-
+        for (const group of validGroups) {
             const bbox = group.transform.getBoundingBox()
-            console.log(bbox)
             if (isInsideRect(mousePos, bbox)) {
                 groupIds.set(group.elementId, mousePos.distanceToSq(group.transform.getCenter()))
             }
@@ -339,6 +339,7 @@ export class TransformBox {
 
         if (sorted[0] && sorted[0][0]) {
             this.moveAction.groupId = sorted[0][0]
+            console.log('moveAction.groupId', this.moveAction.groupId)
         }
 
         this.moveAction.saveNew(this.canvas)

@@ -24,11 +24,7 @@ const { canvasImageData } = defineProps({
 
 const imageData = reactive(canvasImageData as MediaFileCanvasElement)
 
-const imageContainerClasses = computed(() => [
-    { selected: imageData.isSelected },
-    imageData.isGrabbed ? 'grabbing' : 'grab'
-])
-
+const imageContainerClasses = computed(() => [imageData.isGrabbed ? 'grabbing' : 'grab'])
 const htmlEl = useTemplateRef('image-html-element')
 const canvasRef = useTemplateRef('imgCanvas')
 onMounted(async () => {
@@ -78,11 +74,3 @@ onMounted(async () => {
     }
 })
 </script>
-
-<style scoped>
-@reference "#main.css";
-
-.selected {
-    @apply ring-primary-500 ring-2;
-}
-</style>

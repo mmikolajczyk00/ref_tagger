@@ -214,23 +214,26 @@ export default class CanvasScene {
         return this.selectedElements.slice()
     }
     getSelectedOrAll() {
-        return this.selectedElements.length > 0 ? this.getSelected() : this.getAllElements()
+        return this.selectedElements.length > 0 ? this.getSelected() : this.getAllSelectable()
     }
 
     onSelectionChange() {
         this.transformBox.onSelectionChange()
     }
 
-    // freezeEvents() { this.mouseEventsHandler.freezed = true; }
-    // unFreezeEvents() { this.mouseEventsHandler.freezed = false; }
+    getAllSelectable(): Array<CanvasElement> {
+        return [...this.elementsDict.values().filter((e) => this.isSelectable(e))]
+    }
 
-    getAllElements(): Array<CanvasElement> {
-        let t = [] as Array<CanvasElement>
+    isSelectable(element: CanvasElement): boolean {
+        // needs to be a child of root or expanded group
 
-        t = t.concat(this.mediaFileElements)
-        t = t.concat(this.noteElements)
+        const parentT = element.transform.parentTransform
+        if (parentT?.elementId === 'root') return true
 
-        return t
+        const parentEl = this.elementsDict.get(parentT!.elementId)
+        if (!parentEl || !(parentEl instanceof GroupCanvasElement)) return false
+        return parentEl.expanded
     }
 
     moveSelection(vector: Vector2) {

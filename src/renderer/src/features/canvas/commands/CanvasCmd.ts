@@ -25,8 +25,6 @@ class MoveCommand implements ICommand {
         this.oldPositions = oldPositions
         this.newPositions = newPositions
 
-        console.log(this.oldPositions, this.newPositions)
-
         this.groupId = canvasScene.transformBox.moveAction.groupId
     }
 
@@ -101,8 +99,6 @@ class UngroupCommand implements ICommand {
     execute(): void {
         this.groupElementsMap.forEach((elementIds, groupId) => {
             const group = this.canvasScene.elementsDict.get(groupId) as GroupCanvasElement
-
-            console.log('ungroup execute', group, groupId, this.canvasScene)
 
             group.removeElements(this.canvasScene.getElementsById(elementIds))
             if (group.children.length === 0) {

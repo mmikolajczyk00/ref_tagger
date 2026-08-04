@@ -2,7 +2,7 @@
     <div
         ref="image-html-element"
         :class="groupContainerClasses"
-        class="group bg-primary-200/80 dark:bg-primary-950/80 absolute size-full"
+        class="group bg-surface-400/50 dark:bg-surface-600/50 absolute size-full"
     >
         <!-- <CanvasElementWrapper
             v-for="child in canvasGroupData!.children"
@@ -18,8 +18,9 @@
                 :canvas-group-data="child"
             ></GroupElement>
         </CanvasElementWrapper> -->
-        <p class="absolute bottom-5 left-0 bg-black text-white opacity-0 group-hover:opacity-100">
-            {{ groupData.transform.position }}
+        <p class="absolute bottom-5 left-0 bg-black text-white">
+            {{ groupData.elementId }}
+            {{ groupData.transform.parentTransform?.elementId }}
         </p>
     </div>
 </template>
@@ -34,16 +35,11 @@ const { canvasGroupData } = defineProps({
 
 const groupData = reactive(canvasGroupData as GroupCanvasElement)
 
+const isSelectable = computed(() => groupData.canvas.isSelectable(groupData))
+
 const groupContainerClasses = computed(() => [
-    { selected: groupData.isSelected },
-    groupData.isGrabbed ? 'grabbing' : 'grab'
+    { 'border-2 border-dashed border-surface-500 dark:border-surface-400': groupData.expanded },
+    groupData.isGrabbed ? 'grabbing' : 'grab',
+    isSelectable.value ? 'rounded-lg' : ''
 ])
 </script>
-
-<style scoped>
-@reference "#main.css";
-
-.selected {
-    @apply ring-primary-500 ring-2;
-}
-</style>

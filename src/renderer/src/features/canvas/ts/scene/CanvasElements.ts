@@ -61,12 +61,22 @@ export abstract class CanvasElement {
     select() {
         this.canvas.setSelection(this)
     }
+
+    getOrGetSelectableAncestor() {
+        // if im selectable, return me, otherwise return first selectable parent
+
+        if (this.canvas.isSelectable(this)) return this
+        const parentId = this.transform.parentTransform?.elementId
+        if (!parentId || parentId === 'root') return null
+        return this.canvas.elementsDict.get(parentId)?.getOrGetSelectableAncestor()
+    }
 }
 
 export class GroupCanvasElement extends CanvasElement {
     childrenMap: Map<string, CanvasElement> = new Map()
     static MIN_SIZE = 100
     static PADDING = 50
+    expanded: boolean = false
 
     constructor(
         canvas: CanvasScene,
@@ -85,39 +95,49 @@ export class GroupCanvasElement extends CanvasElement {
     addElements(children: CanvasElement[]) {
         const newChildren: string[] = []
         children.forEach((c) => {
-            if (c.elementId == this.elementId) return
-            if (!this.childrenMap.has(c.elementId)) {
+            if (!this.childrenMap.has(c.elementId) && !this.createsCycle(c)) {
+                this.removeFromPreviousParent(c)
+
                 this.childrenMap.set(c.elementId, c)
                 this.transform.children.push(c.transform)
                 c.transform.parentTransform = this.transform
+                console.log('dropping into', this.elementId, c.elementId)
+
                 newChildren.push(c.elementId)
             }
         })
         if (newChildren.length > 0) this.updateBoundingBox()
-        newChildren.forEach((c) => this.localizeTransform(this.childrenMap.get(c)!.transform))
     }
 
-    addElement(child: CanvasElement) {
-        if (c.elementId == this.elementId) return
-        if (!this.childrenMap.has(child.elementId)) {
-            this.childrenMap.set(child.elementId, child)
-            this.transform.children.push(child.transform)
-            child.transform.parentTransform = this.transform
-            this.updateBoundingBox()
+    private removeFromPreviousParent(child: CanvasElement) {
+        const oldParentId = child.transform.parentTransform?.elementId
+        const oldParent = this.canvas.elementsDict.get(oldParentId!)
+
+        if (oldParent instanceof GroupCanvasElement) {
+            oldParent.removeElement(child)
         }
     }
 
-    localizeTransform(transform: Transform) {
-        return
-        console.log('before', transform.position, this.transform.position)
-        transform.move(this.transform.position.multiplied(-1))
-        console.log('after', transform.position, this.transform.position)
+    private createsCycle(child: CanvasElement): boolean {
+        if (child.elementId === this.elementId) return true
+
+        if (child instanceof GroupCanvasElement) {
+            return child.children.some((c) => this.createsCycle(c))
+        }
+        return false
     }
-    unlocalizeTransform(transform: Transform) {
-        return
-        console.log('before', transform.position, this.transform.position)
-        transform.move(this.transform.position.clone())
-        console.log('after', transform.position, this.transform.position)
+
+    addElement(child: CanvasElement) {
+        if (!this.childrenMap.has(child.elementId)) {
+            if (this.createsCycle(child)) return
+
+            this.removeFromPreviousParent(child)
+            this.childrenMap.set(child.elementId, child)
+            this.transform.children.push(child.transform)
+            child.transform.parentTransform = this.transform
+            console.log('dropping into', this.elementId, child.elementId)
+            this.updateBoundingBox()
+        }
     }
 
     removeElement(child: CanvasElement) {
@@ -127,7 +147,6 @@ export class GroupCanvasElement extends CanvasElement {
                 (t) => t.elementId !== child.transform.elementId
             )
             child.transform.parentTransform = this.transform.parentTransform
-            this.unlocalizeTransform(child.transform)
             this.updateBoundingBox()
         }
     }
@@ -143,7 +162,6 @@ export class GroupCanvasElement extends CanvasElement {
                 )
                 c.transform.parentTransform = this.transform.parentTransform
                 update = true
-                this.unlocalizeTransform(c.transform)
             }
         })
 
@@ -152,13 +170,19 @@ export class GroupCanvasElement extends CanvasElement {
 
     updateBoundingBox() {
         if (this.children.length === 0) return
-
+        const oldPos = this.transform.position
         const oldRotation = this.transform.rotation
         this.transform.setRotation(0)
 
         const bbox = calculateBBoxWithChildren(this.children)
-        this.transform.position.x = bbox.left - GroupCanvasElement.PADDING
-        this.transform.position.y = bbox.top - GroupCanvasElement.PADDING
+        const newPos = new Vector2(
+            bbox.left - GroupCanvasElement.PADDING,
+            bbox.top - GroupCanvasElement.PADDING
+        )
+        console.log('diff', newPos.subtracted(oldPos))
+        console.log('rotated diff', newPos.subtracted(oldPos).rotated(oldRotation))
+        const rotatedDiff = newPos.subtracted(oldPos).rotated(oldRotation)
+
         this.transform.width =
             Math.max(
                 GroupCanvasElement.MIN_SIZE,
@@ -171,6 +195,7 @@ export class GroupCanvasElement extends CanvasElement {
             ) / this.transform.scale
 
         this.transform.setRotation(oldRotation)
+        this.transform.position.add(rotatedDiff)
     }
 
     ungroupAll() {

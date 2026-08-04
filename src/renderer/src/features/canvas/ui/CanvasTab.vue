@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onActivated, onDeactivated, useTemplateRef } from 'vue'
 import CanvasElementWrapper from './CanvasElementWrapper.vue'
-import { CanvasElement } from '../ts/scene/CanvasElements'
+import { CanvasElement, GroupCanvasElement } from '../ts/scene/CanvasElements'
 import TransformBoxOverlay from './TransformBoxOverlay.vue'
 import { CARDINAL_DIRECTIONS, TransformBox } from '../ts/scene/TransformBox'
 import { Vector2 } from '../ts/scene/CanvasUtils'
@@ -19,13 +19,6 @@ const props = defineProps<CanvasTabProps>()
 
 const canvasStore = useCanvasStore()
 const canvasScene = canvasStore.getCanvas(props.canvasId!)!
-// const canvasMediaFileElements = computed(() =>
-//     canvasScene.mediaFileElements.filter((f) => f.transform.parentTransform?.elementId === 'root')
-// )
-// const canvasGroupElements = computed(() =>
-//     canvasScene.groupElements.filter((f) => f.transform.parentTransform?.elementId === 'root')
-// )
-//
 const canvasMediaFileElements = computed(() => canvasScene.mediaFileElements)
 const canvasGroupElements = computed(() => canvasScene.groupElements)
 
@@ -79,20 +72,17 @@ let dragStartMousePos = new Vector2(0, 0)
 const MOVE_THRESHOLD_SQ = 16
 
 function handleDoubleClick(el: CanvasElement, e: MouseEvent) {
-    let outerParent = el.transform.getOuterParent()
-    if (outerParent) {
-        el = canvasScene.elementsDict.get(outerParent.elementId)!
+    el = el.getOrGetSelectableAncestor()
+
+    if (el instanceof GroupCanvasElement) {
+        el.expanded = !el.expanded
+        console.log('expanded', el)
     }
-    console.log('dbclick')
+    console.log('dbclick', el)
 }
 
 function handleElementMouseDown(el: CanvasElement, e: MouseEvent) {
-    // find most outer parent and work on that
-    let outerParent = el.transform.getOuterParent()
-    if (outerParent) {
-        console.log(outerParent)
-        el = canvasScene.elementsDict.get(outerParent.elementId)!
-    }
+    el = el.getOrGetSelectableAncestor()
 
     if (el.isSelected) {
         isPotentialTogglableClick = true
@@ -221,7 +211,7 @@ const canvasBgStyle = computed(() => {
 <template>
     <div
         ref="canvas-bg"
-        class="relative size-full"
+        class="relative size-full overflow-clip"
         @mousedown="handleBgClick($event)"
         @wheel="handleWheel($event)"
     >
@@ -248,6 +238,7 @@ const canvasBgStyle = computed(() => {
                     v-for="img in canvasMediaFileElements"
                     :key="img.elementId"
                     :transform="img.transform"
+                    :is-selected="img.isSelected"
                     @mousedown.left.stop="handleElementMouseDown(img, $event)"
                     @dblclick.left.stop="handleDoubleClick(img, $event)"
                 >
@@ -259,6 +250,7 @@ const canvasBgStyle = computed(() => {
                     v-for="group in canvasGroupElements"
                     :key="group.elementId"
                     :transform="group.transform"
+                    :is-selected="group.isSelected"
                     @mousedown.left.stop="handleElementMouseDown(group, $event)"
                     @dblclick.left.stop="handleDoubleClick(group, $event)"
                 >

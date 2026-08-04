@@ -44,7 +44,7 @@ export default class SelectionBox {
         // //handle selection
 
         const newSelection: Array<CanvasElement> = []
-        const allElements = this.canvas.getAllElements()
+        const allElements = this.canvas.getAllSelectable()
         const rectangle = {
             top: sY + height,
             right: sX + width,

@@ -144,7 +144,7 @@ export class Vector2 implements Coordinates {
         return new Vector2(data.x, data.y)
     }
 
-    static reviver(key, value) {
+    static reviver(_key, value) {
         if (value && typeof value === 'object' && value.__type === 'Vector2') {
             return Vector2.fromJSON(value)
         }
@@ -194,13 +194,11 @@ export class Transform {
         }
     }
 
-    rotate(diff: number) {
+    rotate(diff: number, pivot: Vector2 = this.getTopLeft()) {
         this.rotation += diff
-        //TODO: rotate the children around the center
         this.children.forEach((c) => {
-            c.rotate(diff)
-
-            this.rotatedPointAroundOrigin(c.position, diff)
+            c.setPos(rotateVectorAroundOrigin(c.position, pivot, diff))
+            c.rotate(diff, pivot)
         })
     }
 
@@ -213,14 +211,14 @@ export class Transform {
         this.scale *= scalar
 
         this.children.forEach((c) => {
-            let posDiff = c.position.subtract(this.position)
+            const posDiff = c.position.subtracted(this.position)
             c.rescale(scalar)
             c.setPos(this.position.added(posDiff.multiply(scalar)))
         })
     }
 
     setScale(newScale: number) {
-        let scalar = newScale / this.scale
+        const scalar = newScale / this.scale
         this.rescale(scalar)
     }
 
@@ -300,18 +298,6 @@ export class Transform {
 
     rotatedPointAroundOrigin(point: Vector2, rotation: number = this.rotation): Vector2 {
         return rotateVectorAroundOrigin(point, this.getTopLeft(), rotation)
-    }
-
-    getOuterParent() {
-        const parentTransform = this.parentTransform
-        if (!parentTransform) return null
-        if (parentTransform.elementId === 'root') {
-            return null
-        } else if (parentTransform.parentTransform?.elementId == 'root') {
-            return parentTransform
-        } else {
-            return parentTransform.getOuterParent()
-        }
     }
 }
 
