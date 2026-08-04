@@ -70,27 +70,27 @@ app.directive('focustrap', FocusTrap)
 const globalUndoRedoManager = new UndoRedoManager()
 const hotkeysManager = new HotkeysManager()
 const commandRegistry = new CommandRegistry()
-const commandService = new CommandService()
+export const CmdService = new CommandService()
 
 const appContext = new ApplicationContext({
     commandRegistry,
     globalUndoRedoManager,
-    commandService,
+    commandService: CmdService,
     hotkeysManager
 })
 
-commandService.setContext(appContext)
+CmdService.setContext(appContext)
 hotkeysManager.setContext(appContext)
 commandRegistry.setContext(appContext)
 
 const canvasStore = useCanvasStore()
 const tabStore = useTabStore()
 
-commandService.registerAllFeatures()
+CmdService.registerAllFeatures()
 
 // provides
 
-app.provide('commandService', commandService)
+app.provide('commandService', CmdService)
 app.provide('appContext', appContext)
 
 // tabs demo

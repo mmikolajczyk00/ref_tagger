@@ -85,6 +85,7 @@ export class GroupCanvasElement extends CanvasElement {
     addElements(children: CanvasElement[]) {
         const newChildren: string[] = []
         children.forEach((c) => {
+            if (c.elementId == this.elementId) return
             if (!this.childrenMap.has(c.elementId)) {
                 this.childrenMap.set(c.elementId, c)
                 this.transform.children.push(c.transform)
@@ -97,6 +98,7 @@ export class GroupCanvasElement extends CanvasElement {
     }
 
     addElement(child: CanvasElement) {
+        if (c.elementId == this.elementId) return
         if (!this.childrenMap.has(child.elementId)) {
             this.childrenMap.set(child.elementId, child)
             this.transform.children.push(child.transform)

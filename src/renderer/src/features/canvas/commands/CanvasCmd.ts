@@ -3,14 +3,72 @@ import CanvasScene from '../ts/scene/CanvasScene'
 import { useCanvasStore } from '../ts/canvasStore'
 import { AppTabType } from '@renderer/features/tab_system/Tabs'
 import { GroupCanvasElement } from '../ts/scene/CanvasElements'
+import { Coordinates } from '../ts/scene/CanvasUtils'
 
 export const CANVAS_COMMANDS = {
     ARRANGE: 'arrange',
     GROUP: 'group',
     UNGROUP: 'ungroup',
-    MOVE: 'move',
-    MOVE_AND_GROUP: 'move_and_group'
+    MOVE: 'move'
 } as const
+
+class MoveCommand implements ICommand {
+    undoable: boolean = true
+    timestamp: number | undefined
+
+    oldPositions = new Map<string, Coordinates>()
+    newPositions = new Map<string, Coordinates>()
+    groupId: string | undefined
+
+    constructor(private canvasScene: CanvasScene) {
+        const { oldPositions, newPositions } = canvasScene.transformBox.moveAction.copy()
+        this.oldPositions = oldPositions
+        this.newPositions = newPositions
+
+        console.log(this.oldPositions, this.newPositions)
+
+        this.groupId = canvasScene.transformBox.moveAction.groupId
+    }
+
+    execute(): void {
+        this.newPositions.forEach((pos, id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                el.transform.setPos(pos)
+            }
+        })
+
+        if (this.groupId) {
+            const group = this.canvasScene.elementsDict.get(this.groupId) as
+                GroupCanvasElement | undefined
+            if (group) {
+                group.addElements(this.canvasScene.getElementsById([...this.newPositions.keys()]))
+            }
+        }
+
+        this.canvasScene.transformBox.notifyParents()
+    }
+    undo(): void {
+        this.oldPositions.forEach((pos, id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                el.transform.setPos(pos)
+            }
+        })
+
+        if (this.groupId) {
+            const group = this.canvasScene.elementsDict.get(this.groupId) as
+                GroupCanvasElement | undefined
+            if (group) {
+                group.removeElements(
+                    this.canvasScene.getElementsById([...this.newPositions.keys()])
+                )
+            }
+        }
+
+        this.canvasScene.transformBox.notifyParents()
+    }
+}
 
 class UngroupCommand implements ICommand {
     undoable: boolean = true
@@ -151,5 +209,15 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
         keybind: 'ctrl+shift+g',
         when: hasSelectedElements,
         create: () => new UngroupCommand(activeScene()!)
+    })
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.MOVE,
+        label: 'Move',
+        scope,
+        showInPalette: false,
+        keybind: '',
+        when: hasSelectedElements,
+        create: () => new MoveCommand(activeScene()!)
     })
 }

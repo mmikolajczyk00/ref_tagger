@@ -7,28 +7,42 @@ import {
 } from './CanvasUtils'
 import type CanvasScene from './CanvasScene'
 import { GroupCanvasElement } from './CanvasElements'
+import { CANVAS_COMMANDS } from '../../commands/CanvasCmd'
+import { CmdService } from '@renderer/main'
 
 export class MoveAction {
-    oldPositions = new Map<string, Vector2>()
+    oldPositions = new Map<string, Coordinates>()
 
-    newPositions = new Map<string, Vector2>()
+    newPositions = new Map<string, Coordinates>()
+
+    groupId: string | undefined
 
     saveOld(canvas: CanvasScene) {
         this.oldPositions.clear()
         canvas.selectedElements.forEach((e) => {
-            this.oldPositions.set(e.elementId, e.transform.position.clone())
+            this.oldPositions.set(e.elementId, e.transform.position.asCoordinates())
         })
     }
 
     saveNew(canvas: CanvasScene) {
         this.newPositions.clear()
         canvas.selectedElements.forEach((e) => {
-            this.newPositions.set(e.elementId, e.transform.position.clone())
+            this.newPositions.set(e.elementId, e.transform.position.asCoordinates())
         })
+    }
+
+    copy() {
+        const oldPositions = new Map<string, Coordinates>(
+            Array.from(this.oldPositions, ([key, coord]) => [key, { x: coord.x, y: coord.y }])
+        )
+        const newPositions = new Map<string, Coordinates>(
+            Array.from(this.newPositions, ([key, coord]) => [key, { x: coord.x, y: coord.y }])
+        )
+        return { oldPositions, newPositions }
     }
 }
 
-type RotActionTransform = { pos: Vector2; pivot: Vector2; rotOrScale: number }
+type RotActionTransform = { pos: Coordinates; pivot: Coordinates; rotOrScale: number }
 export class RotateAction {
     oldTransforms = new Map<string, RotActionTransform>()
     newTransforms = new Map<string, RotActionTransform>()
@@ -37,8 +51,8 @@ export class RotateAction {
         this.oldTransforms.clear()
         canvas.selectedElements.forEach((e) => {
             this.oldTransforms.set(e.elementId, {
-                pos: e.transform.position.clone(),
-                pivot: e.transform.getCenter().clone(),
+                pos: e.transform.position.asCoordinates(),
+                pivot: e.transform.getCenter().asCoordinates(),
                 rotOrScale: e.transform.rotation
             })
         })
@@ -48,11 +62,27 @@ export class RotateAction {
         this.newTransforms.clear()
         canvas.selectedElements.forEach((e) => {
             this.newTransforms.set(e.elementId, {
-                pos: e.transform.position.clone(),
-                pivot: e.transform.getCenter().clone(),
+                pos: e.transform.position.asCoordinates(),
+                pivot: e.transform.getCenter().asCoordinates(),
                 rotOrScale: e.transform.rotation
             })
         })
+    }
+
+    copy() {
+        const oldTransforms = new Map<string, RotActionTransform>(
+            Array.from(this.oldTransforms, ([key, t]) => [
+                key,
+                { pos: { ...t.pos }, pivot: { ...t.pivot }, rotOrScale: t.rotOrScale }
+            ])
+        )
+        const newTransforms = new Map<string, RotActionTransform>(
+            Array.from(this.newTransforms, ([key, t]) => [
+                key,
+                { pos: { ...t.pos }, pivot: { ...t.pivot }, rotOrScale: t.rotOrScale }
+            ])
+        )
+        return { oldTransforms, newTransforms }
     }
 }
 
@@ -64,8 +94,8 @@ export class ResizeAction {
         this.oldTransforms.clear()
         canvas.selectedElements.forEach((e) => {
             this.oldTransforms.set(e.elementId, {
-                pos: e.transform.position.clone(),
-                pivot: e.transform.getCenter().clone(),
+                pos: e.transform.position.asCoordinates(),
+                pivot: e.transform.getCenter().asCoordinates(),
                 rotOrScale: e.transform.scale
             })
         })
@@ -75,11 +105,27 @@ export class ResizeAction {
         this.newTransforms.clear()
         canvas.selectedElements.forEach((e) => {
             this.newTransforms.set(e.elementId, {
-                pos: e.transform.position.clone(),
-                pivot: e.transform.getCenter().clone(),
+                pos: e.transform.position.asCoordinates(),
+                pivot: e.transform.getCenter().asCoordinates(),
                 rotOrScale: e.transform.scale
             })
         })
+    }
+
+    copy() {
+        const oldTransforms = new Map<string, RotActionTransform>(
+            Array.from(this.oldTransforms, ([key, t]) => [
+                key,
+                { pos: { ...t.pos }, pivot: { ...t.pivot }, rotOrScale: t.rotOrScale }
+            ])
+        )
+        const newTransforms = new Map<string, RotActionTransform>(
+            Array.from(this.newTransforms, ([key, t]) => [
+                key,
+                { pos: { ...t.pos }, pivot: { ...t.pivot }, rotOrScale: t.rotOrScale }
+            ])
+        )
+        return { oldTransforms, newTransforms }
     }
 }
 
@@ -183,7 +229,9 @@ export class TransformBox {
             const el = this.canvas.elementsDict.get(id)
             if (el) {
                 const activePivot = isAlt ? el.transform.getCenter() : tboxPivot
-                const pivotToPos = pos.clone().subtract(activePivot).multiply(moveScale)
+                const pivotToPos = new Vector2(pos.x, pos.y)
+                    .subtract(activePivot)
+                    .multiply(moveScale)
                 el.transform.setPos(pivotToPos.added(pos))
 
                 el.transform.setScale(rotOrScale * scaleDifference)
@@ -214,7 +262,7 @@ export class TransformBox {
                 el.transform.setRotation(rotOrScale + angle)
 
                 const activePivot = isAlt ? pivot : this.initialCenter
-                const diff = pos.subtracted(activePivot)
+                const diff = new Vector2(pos.x, pos.y).subtract(activePivot)
                 diff.rotate(angle)
 
                 el.transform.setPos(diff.add(activePivot))
@@ -249,6 +297,7 @@ export class TransformBox {
     moveStart() {
         this.startMouse.setV(this.canvas.mousePos)
         this.moveAction.saveOld(this.canvas)
+        this.moveAction.groupId = undefined
     }
 
     moveUpdate() {
@@ -257,7 +306,7 @@ export class TransformBox {
         this.moveAction.oldPositions.forEach((pos, id) => {
             const el = this.canvas.elementsDict.get(id)
             if (el) {
-                el.transform.setPos(pos.added(delta))
+                el.transform.setPos(delta.added(pos))
             }
         })
 
@@ -265,7 +314,7 @@ export class TransformBox {
     }
 
     moveEnd() {
-        const center = this.transform.getCenter()
+        const mousePos = this.canvas.mousePos
         const groupIds = new Map<string, number>()
 
         // ignore selected groups
@@ -281,18 +330,20 @@ export class TransformBox {
 
             const bbox = group.transform.getBoundingBox()
             console.log(bbox)
-            if (isInsideRect(center, bbox)) {
-                groupIds.set(group.elementId, center.distanceToSq(group.transform.getCenter()))
+            if (isInsideRect(mousePos, bbox)) {
+                groupIds.set(group.elementId, mousePos.distanceToSq(group.transform.getCenter()))
             }
         }
 
         const sorted = [...groupIds.entries()].sort((a, b) => a[1] - b[1]) // sort by distance
 
         if (sorted[0] && sorted[0][0]) {
-            // executre command
+            this.moveAction.groupId = sorted[0][0]
         }
 
-        this.notifyParents()
+        this.moveAction.saveNew(this.canvas)
+
+        CmdService.execute(CANVAS_COMMANDS.MOVE)
     }
 
     getResizeAxisMask(axis: CARDINAL_DIRECTIONS) {

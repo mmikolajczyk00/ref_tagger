@@ -127,6 +127,33 @@ export class Vector2 implements Coordinates {
             this.x * Math.sin(r) + this.y * Math.cos(r)
         )
     }
+
+    format() {
+        return `(${this.x}, ${this.y})`
+    }
+
+    toJSON() {
+        return {
+            __type: 'Vector2', // Identifier tag for deserialization
+            x: this.x,
+            y: this.y
+        }
+    }
+
+    static fromJSON(data) {
+        return new Vector2(data.x, data.y)
+    }
+
+    static reviver(key, value) {
+        if (value && typeof value === 'object' && value.__type === 'Vector2') {
+            return Vector2.fromJSON(value)
+        }
+        return value
+    }
+
+    asCoordinates(): Coordinates {
+        return { x: this.x, y: this.y }
+    }
 }
 
 export class Transform {
