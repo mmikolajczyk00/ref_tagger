@@ -166,7 +166,7 @@ export class Transform {
     parentTransform: Transform | null
     canvas: CanvasScene
     elementId: string
-    zIndex: any
+    zIndex: number | undefined
 
     constructor(canvas: CanvasScene, parentTransform: Transform | null, elementId: string) {
         this.canvas = canvas

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onActivated, onDeactivated, useTemplateRef } from 'vue'
 import CanvasElementWrapper from './CanvasElementWrapper.vue'
-import { CanvasElement, GroupCanvasElement } from '../ts/scene/CanvasElements'
+import { CanvasElement, GroupCanvasElement, MediaFileCanvasElement } from '../ts/scene/CanvasElements'
 import TransformBoxOverlay from './TransformBoxOverlay.vue'
 import { CARDINAL_DIRECTIONS, TransformBox } from '../ts/scene/TransformBox'
 import { Vector2 } from '../ts/scene/CanvasUtils'
@@ -197,6 +197,12 @@ function handleRotateStart() {
     canvasScene.transformBox.rotateStart()
 }
 
+const sortedCanvasElements = computed(() => {
+    const all = [...canvasMediaFileElements.value, ...canvasGroupElements.value]
+    all.sort((a, b) => (a.transform.zIndex ?? 0) - (b.transform.zIndex ?? 0))
+    return all
+})
+
 const canvasBgStyle = computed(() => {
     return {
         position: 'absolute' as const,
@@ -233,28 +239,23 @@ const canvasBgStyle = computed(() => {
                 >
                 </SelectionBoxOverlay>
             </div>
-            <div class="relative z-30">
+            <div class="relative">
                 <CanvasElementWrapper
-                    v-for="img in canvasMediaFileElements"
-                    :key="img.elementId"
-                    :transform="img.transform"
-                    :is-selected="img.isSelected"
-                    @mousedown.left.stop="handleElementMouseDown(img, $event)"
-                    @dblclick.left.stop="handleDoubleClick(img, $event)"
+                    v-for="el in sortedCanvasElements"
+                    :key="el.elementId"
+                    :transform="el.transform"
+                    :is-selected="el.isSelected"
+                    @mousedown.left.stop="handleElementMouseDown(el, $event)"
+                    @dblclick.left.stop="handleDoubleClick(el, $event)"
                 >
-                    <MediaFileElement :canvas-image-data="img"></MediaFileElement>
-                </CanvasElementWrapper>
-            </div>
-            <div class="relative z-0">
-                <CanvasElementWrapper
-                    v-for="group in canvasGroupElements"
-                    :key="group.elementId"
-                    :transform="group.transform"
-                    :is-selected="group.isSelected"
-                    @mousedown.left.stop="handleElementMouseDown(group, $event)"
-                    @dblclick.left.stop="handleDoubleClick(group, $event)"
-                >
-                    <GroupElement :canvas-group-data="group"></GroupElement>
+                    <MediaFileElement
+                        v-if="el instanceof MediaFileCanvasElement"
+                        :canvas-image-data="el"
+                    />
+                    <GroupElement
+                        v-else-if="el instanceof GroupCanvasElement"
+                        :canvas-group-data="el"
+                    />
                 </CanvasElementWrapper>
             </div>
         </div>

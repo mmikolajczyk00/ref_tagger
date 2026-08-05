@@ -8,6 +8,8 @@ import SelectionBox from './SelectionBox'
 import { TransformBox } from './TransformBox'
 
 import potpack from 'potpack'
+import { CmdService } from '@renderer/main'
+import { CANVAS_COMMANDS } from '../../commands/CanvasCmd'
 import {
     Coordinates,
     pushCanvElToArray,
@@ -15,6 +17,8 @@ import {
     Transform,
     Vector2
 } from './CanvasUtils'
+
+export type ZIndexChange = { elementId: string; oldZ: number; newZ: number }
 
 export default class CanvasScene {
     id: number
@@ -72,10 +76,122 @@ export default class CanvasScene {
         this.highestZIndex++
     }
 
+    private collectSubtree(root: CanvasElement): CanvasElement[] {
+        const out: CanvasElement[] = [root]
+        if (root instanceof GroupCanvasElement) {
+            for (const c of root.children) out.push(...this.collectSubtree(c))
+        }
+        return out
+    }
+
+    private getSelectionRoots(els: CanvasElement[]): CanvasElement[] {
+        const ids = new Set(els.map((e) => e.elementId))
+        return els.filter((e) => {
+            let p = e.transform.parentTransform
+            while (p && p.elementId !== 'root') {
+                if (ids.has(p.elementId)) return false
+                p = p.parentTransform
+            }
+            return true
+        })
+    }
+
+    bringToFront(root: CanvasElement): ZIndexChange[] {
+        const subtree = this.collectSubtree(root)
+        const subtreeIds = new Set(subtree.map((e) => e.elementId))
+        const zOf = (e: CanvasElement) => e.transform.zIndex ?? 0
+
+        let minZ = Infinity
+        for (const el of subtree) {
+            const z = zOf(el)
+            if (z < minZ) minZ = z
+        }
+        if (minZ === Infinity) minZ = 0
+
+        const N = subtree.length
+        const changes: ZIndexChange[] = []
+
+        for (const el of this.elementsDict.values()) {
+            if (subtreeIds.has(el.elementId)) continue
+            const z = zOf(el)
+            if (z >= minZ) {
+                changes.push({ elementId: el.elementId, oldZ: z, newZ: z - N })
+            }
+        }
+
+        const baseZ = this.highestZIndex + 1
+        for (let i = 0; i < N; i++) {
+            const el = subtree[i]
+            changes.push({ elementId: el.elementId, oldZ: zOf(el), newZ: baseZ + i })
+        }
+
+        for (const c of changes) {
+            const el = this.elementsDict.get(c.elementId)
+            if (el) el.transform.zIndex = c.newZ
+        }
+        this.highestZIndex += N
+        return changes
+    }
+
+    bringSelectionToFront(els: CanvasElement[]): ZIndexChange[] {
+        const roots = this.getSelectionRoots(els)
+        if (roots.length === 0) return []
+
+        const allSubtreeIds = new Set<string>()
+        const allSubtree: CanvasElement[] = []
+        for (const root of roots) {
+            for (const el of this.collectSubtree(root)) {
+                if (!allSubtreeIds.has(el.elementId)) {
+                    allSubtreeIds.add(el.elementId)
+                    allSubtree.push(el)
+                }
+            }
+        }
+
+        const zOf = (e: CanvasElement) => e.transform.zIndex ?? 0
+
+        let minZ = Infinity
+        for (const el of allSubtree) {
+            const z = zOf(el)
+            if (z < minZ) minZ = z
+        }
+        if (minZ === Infinity) minZ = 0
+
+        const N = allSubtree.length
+        const changes: ZIndexChange[] = []
+
+        for (const el of this.elementsDict.values()) {
+            if (allSubtreeIds.has(el.elementId)) continue
+            const z = zOf(el)
+            if (z >= minZ) {
+                changes.push({ elementId: el.elementId, oldZ: z, newZ: z - N })
+            }
+        }
+
+        const baseZ = this.highestZIndex + 1
+        for (let i = 0; i < N; i++) {
+            const el = allSubtree[i]
+            changes.push({ elementId: el.elementId, oldZ: zOf(el), newZ: baseZ + i })
+        }
+
+        for (const c of changes) {
+            const tgt = this.elementsDict.get(c.elementId)
+            if (tgt) tgt.transform.zIndex = c.newZ
+        }
+        this.highestZIndex += N
+        return changes
+    }
+
+    revertZIndexChanges(changes: ZIndexChange[], prevHighest: number) {
+        for (const c of changes) {
+            const el = this.elementsDict.get(c.elementId)
+            if (el) el.transform.zIndex = c.oldZ
+        }
+        this.highestZIndex = prevHighest
+    }
+
     addNote(text: string, position?: Vector2) {
         const note = new NoteCanvasElement(this, this.transform, text)
-
-        this.incrementZIndex()
 
         if (typeof position !== 'undefined') note.transform.position = position
 
@@ -112,8 +228,7 @@ export default class CanvasScene {
                 this.selectedElements.push(element)
                 element.isSelected = true
 
-                this.highestZIndex++
-                element.transform.zIndex = this.highestZIndex
+                CmdService.execute(CANVAS_COMMANDS.BRING_TO_FRONT)
             }
         } else {
             if (isSelected) {
@@ -122,8 +237,7 @@ export default class CanvasScene {
                     this.selectedElements = [element]
                     element.isSelected = true
 
-                    this.highestZIndex++
-                    element.transform.zIndex = this.highestZIndex
+                    CmdService.execute(CANVAS_COMMANDS.BRING_TO_FRONT)
                 } else {
                     this.clearSelection()
                 }
@@ -132,8 +246,7 @@ export default class CanvasScene {
                 this.selectedElements = [element]
                 element.isSelected = true
 
-                this.highestZIndex++
-                element.transform.zIndex = this.highestZIndex
+                CmdService.execute(CANVAS_COMMANDS.BRING_TO_FRONT)
             }
         }
 
@@ -153,8 +266,6 @@ export default class CanvasScene {
             el = el as CanvasElement
             this.selectedElements = [el]
             el.isSelected = true
-
-            this.incrementZIndex()
         }
 
         this.onSelectionChange()
