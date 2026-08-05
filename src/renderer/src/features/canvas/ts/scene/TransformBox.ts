@@ -42,7 +42,7 @@ export class MoveAction {
     }
 }
 
-type RotActionTransform = { pos: Coordinates; pivot: Coordinates; rotOrScale: number }
+export type RotActionTransform = { pos: Coordinates; pivot: Coordinates; rotOrScale: number }
 export class RotateAction {
     oldTransforms = new Map<string, RotActionTransform>()
     newTransforms = new Map<string, RotActionTransform>()
@@ -241,7 +241,8 @@ export class TransformBox {
         this.onSelectionChange()
     }
     resizeEnd() {
-        this.notifyParents()
+        this.resizeAction.saveNew(this.canvas)
+        CmdService.execute(CANVAS_COMMANDS.RESIZE)
     }
 
     rotateStart() {
@@ -291,7 +292,8 @@ export class TransformBox {
     }
 
     rotateEnd() {
-        this.notifyParents()
+        this.rotateAction.saveNew(this.canvas)
+        CmdService.execute(CANVAS_COMMANDS.ROTATE)
     }
 
     moveStart() {

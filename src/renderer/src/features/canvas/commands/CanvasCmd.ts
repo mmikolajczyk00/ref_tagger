@@ -4,13 +4,16 @@ import { useCanvasStore } from '../ts/canvasStore'
 import { AppTabType } from '@renderer/features/tab_system/Tabs'
 import { CanvasElement, GroupCanvasElement } from '../ts/scene/CanvasElements'
 import { Coordinates } from '../ts/scene/CanvasUtils'
+import { RotActionTransform } from '../ts/scene/TransformBox'
 
 export const CANVAS_COMMANDS = {
     ARRANGE: 'arrange',
     GROUP: 'group',
     UNGROUP: 'ungroup',
     MOVE: 'move',
-    BRING_TO_FRONT: 'bring_to_front'
+    BRING_TO_FRONT: 'bring_to_front',
+    RESIZE: 'resize',
+    ROTATE: 'rotate'
 } as const
 
 class MoveCommand implements ICommand {
@@ -216,6 +219,74 @@ class BringToFrontCommand implements ICommand {
     }
 }
 
+class ResizeCommand implements ICommand {
+    undoable: boolean = true
+    timestamp: number | undefined
+    oldTransforms = new Map<string, RotActionTransform>()
+    newTransforms = new Map<string, RotActionTransform>()
+
+    constructor(private canvasScene: CanvasScene) {
+        const { oldTransforms, newTransforms } = canvasScene.transformBox.resizeAction.copy()
+        this.oldTransforms = oldTransforms
+        this.newTransforms = newTransforms
+    }
+
+    execute(): void {
+        this.newTransforms.forEach(({ pos, rotOrScale }, id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                el.transform.setPos(pos)
+                el.transform.setScale(rotOrScale)
+            }
+        })
+        this.canvasScene.transformBox.notifyParents()
+    }
+    undo(): void {
+        this.oldTransforms.forEach(({ pos, rotOrScale }, id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                el.transform.setPos(pos)
+                el.transform.setScale(rotOrScale)
+            }
+        })
+        this.canvasScene.transformBox.notifyParents()
+    }
+}
+
+class RotateCommand implements ICommand {
+    undoable: boolean = true
+    timestamp: number | undefined
+    oldTransforms = new Map<string, RotActionTransform>()
+    newTransforms = new Map<string, RotActionTransform>()
+
+    constructor(private canvasScene: CanvasScene) {
+        const { oldTransforms, newTransforms } = canvasScene.transformBox.rotateAction.copy()
+        this.oldTransforms = oldTransforms
+        this.newTransforms = newTransforms
+    }
+
+    execute(): void {
+        this.newTransforms.forEach(({ pos, rotOrScale }, id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                el.transform.setPos(pos)
+                el.transform.setRotation(rotOrScale)
+            }
+        })
+        this.canvasScene.transformBox.notifyParents()
+    }
+    undo(): void {
+        this.oldTransforms.forEach(({ pos, rotOrScale }, id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                el.transform.setPos(pos)
+                el.transform.setRotation(rotOrScale)
+            }
+        })
+        this.canvasScene.transformBox.notifyParents()
+    }
+}
+
 export function registerCanvasCommands(commandRegistry: CommandRegistry) {
     const activeScene = () => useCanvasStore().getActiveCanvas as CanvasScene
     const scope = 'canvas'
@@ -268,6 +339,26 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
         keybind: '',
         when: hasSelectedElements,
         create: () => new MoveCommand(activeScene()!)
+    })
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.RESIZE,
+        label: 'Resize',
+        scope,
+        showInPalette: false,
+        keybind: '',
+        when: hasSelectedElements,
+        create: () => new ResizeCommand(activeScene()!)
+    })
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.ROTATE,
+        label: 'Rotate',
+        scope,
+        showInPalette: false,
+        keybind: '',
+        when: hasSelectedElements,
+        create: () => new RotateCommand(activeScene()!)
     })
 
     commandRegistry.register({
