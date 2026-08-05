@@ -3,7 +3,9 @@ import {
     Transform,
     Vector2,
     calculateBBoxByChildren,
-    isInsideRect
+    isInsideRect,
+    rotateCoordAroundOrigin,
+    rotateVectorAroundOrigin
 } from './CanvasUtils'
 import type CanvasScene from './CanvasScene'
 import { GroupCanvasElement } from './CanvasElements'
@@ -204,7 +206,16 @@ export class TransformBox {
         this.resizeAction.saveOld(this.canvas)
         this.startMouse.setV(this.canvas.mousePos)
 
-        this.axisMask = this.getResizeAxisMask(axis)
+        if (this.transform.rotation !== 0) {
+            this.axisMask = rotateCoordAroundOrigin(
+                this.getResizeAxisMask(axis),
+                new Vector2(0, 0),
+                this.transform.rotation
+            )
+        } else {
+            this.axisMask = this.getResizeAxisMask(axis)
+        }
+
         this.startMouseToPivotDistance = this.axisToPivot.get(axis)!()
             .clone()
             .subtract(this.canvas.mousePos)
