@@ -7,7 +7,9 @@ import {
     Transform,
     Vector2
 } from './CanvasUtils'
-import { CARDINAL_DIRECTIONS } from './TransformBox'
+import { CARDINAL_DIRECTIONS, NoteResizeAction } from './TransformBox'
+import { CANVAS_COMMANDS } from '../../commands/CanvasCmd'
+import { CmdService } from '@renderer/main'
 
 export abstract class CanvasElement {
     transform: Transform
@@ -216,114 +218,114 @@ export class MediaFileCanvasElement extends CanvasElement {
 export class NoteCanvasElement extends CanvasElement {
     noteText: string
     editMode: boolean = false
-    textAreaHtmlEl: HTMLTextAreaElement | undefined = undefined
-    textContainerHtmlEl: HTMLPreElement | undefined = undefined
-    textAreaMinSize: Vector2 = new Vector2(0, 0)
-    resizing: boolean = false
-    resizeAxis: CARDINAL_DIRECTIONS = CARDINAL_DIRECTIONS.none
-    rotationBackup = 0
+    resizeAction: NoteResizeAction = new NoteResizeAction()
+    MIN_SIZE = 50
+    textAreaMinSize: Vector2 = new Vector2(this.MIN_SIZE, this.MIN_SIZE)
 
-    currentMousePos: Vector2 = new Vector2(0, 0)
-    startMousePos: Vector2 = new Vector2(0, 0)
-    sizeOnStart: Vector2 = new Vector2(0, 0)
-    posOnStart: Vector2 = new Vector2(0, 0)
+    private resizeStartMouse = new Vector2()
+    private resizeStartWidth = 0
+    private resizeStartHeight = 0
+    private resizeStartPos = new Vector2()
+    private resizeAxisMask: Coordinates = { x: 0, y: 0 }
+    private resizeActive = false
 
     constructor(canvas: CanvasScene, parentTransform: Transform, noteText: string) {
         super(canvas, parentTransform)
         this.noteText = noteText
+        this.transform.width = this.MIN_SIZE * 3
+        this.transform.height = this.MIN_SIZE
     }
 
-    setHtmlElement(htmlElement: HTMLDivElement) {
-        super.setHtmlElement(htmlElement)
+    beginResize(axis: CARDINAL_DIRECTIONS, mousePos: Vector2) {
+        this.resizeAction.saveOld(this)
+        this.resizeStartMouse.setV(mousePos)
+        this.resizeStartWidth = this.transform.width
+        this.resizeStartHeight = this.transform.height
+        this.resizeStartPos.setV(this.transform.position)
+        this.resizeActive = true
+        this.resizeAxisMask = this.getResizeAxisMask(axis)
     }
 
-    setTextContainer(textContainerHtmlEl: HTMLPreElement) {
-        this.textContainerHtmlEl = textContainerHtmlEl
+    updateResize(mousePos: Vector2) {
+        if (!this.resizeActive) return
 
-        requestAnimationFrame(() => {
-            this.fitTextContainerToContent()
-        })
-    }
+        const scale = this.transform.scale
+        const rot = this.transform.rotation
+        const cos = Math.cos(rot)
+        const sin = Math.sin(rot)
 
-    fitTextContainerToContent() {
-        this.transform.width = this.textContainerHtmlEl!.offsetWidth
-        this.transform.height = this.textContainerHtmlEl!.offsetHeight
+        const worldDx = mousePos.x - this.resizeStartMouse.x
+        const worldDy = mousePos.y - this.resizeStartMouse.y
 
-        this.textAreaMinSize.x = Math.max(this.transform.width, this.textAreaMinSize.x)
-        this.textAreaMinSize.y = Math.max(this.transform.height, this.textAreaMinSize.y)
-    }
+        const localDx = (worldDx * cos + worldDy * sin) / scale
+        const localDy = (worldDx * -sin + worldDy * cos) / scale
 
-    fitTextAreaToContent() {
-        if (typeof this.textAreaHtmlEl == 'undefined') return
+        let newWidth = this.resizeStartWidth
+        let newHeight = this.resizeStartHeight
 
-        this.transform.width = this.textAreaHtmlEl!.scrollWidth / this.transform.scale
-        this.transform.height = this.textAreaHtmlEl!.scrollHeight / this.transform.scale
-    }
+        this.transform.position.setV(this.resizeStartPos)
 
-    setEditMode(onOff: boolean) {
-        this.canvas.editedNote = onOff ? this : undefined
-        this.editMode = onOff
-        this.locked = onOff //temporalily lock movement
-
-        if (typeof this.textAreaHtmlEl == 'undefined') return
-
-        requestAnimationFrame(() => {
-            if (onOff) {
-                this.fitTextAreaToContent()
-                this.rotationBackup = this.transform.rotation
-                this.transform.rotation = 0
-            } else {
-                this.fitTextContainerToContent()
-                this.transform.rotation = this.rotationBackup
+        if (this.resizeAxisMask.x !== 0) {
+            const sign = Math.sign(this.resizeAxisMask.x)
+            newWidth = Math.max(this.MIN_SIZE, this.resizeStartWidth + localDx * sign)
+            if (sign < 0) {
+                const widthDelta = (newWidth - this.resizeStartWidth) * scale
+                this.transform.position.x -= cos * widthDelta
+                this.transform.position.y -= sin * widthDelta
             }
-
-            this.textAreaMinSize.x = Math.max(this.transform.width, this.textAreaMinSize.x)
-            this.textAreaMinSize.y = Math.max(this.transform.height, this.textAreaMinSize.y)
-            this.transform.width = this.textAreaMinSize.x
-            this.transform.height = this.textAreaMinSize.y
-        })
-        // this.canvas.toggleTransformBox(!onOff);
-    }
-
-    onDoubleClick() {
-        this.setEditMode(true)
-    }
-
-    getResizePivotFromAxisArea() {
-        let pivot = new Vector2(0, 0)
-        if (this.resizeAxis == CARDINAL_DIRECTIONS.n) {
-            // pick the pivot point, and calculate scale difference
-            pivot = this.transform.getCenterBottom()
-        } else if (this.resizeAxis == CARDINAL_DIRECTIONS.e) {
-            pivot = this.transform.getCenterLeft()
-        } else if (this.resizeAxis == CARDINAL_DIRECTIONS.s) {
-            pivot = this.transform.getCenterTop()
-        } else if (this.resizeAxis == CARDINAL_DIRECTIONS.w) {
-            pivot = this.transform.getCenterRight()
-        } else if (this.resizeAxis == CARDINAL_DIRECTIONS.ne) {
-            pivot = this.transform.getBottomLeft()
-        } else if (this.resizeAxis == CARDINAL_DIRECTIONS.nw) {
-            pivot = this.transform.getBottomRight()
-        } else if (this.resizeAxis == CARDINAL_DIRECTIONS.se) {
-            pivot = this.transform.getTopLeft()
-        } else if (this.resizeAxis == CARDINAL_DIRECTIONS.sw) {
-            pivot = this.transform.getTopRight()
         }
-        return pivot
+        if (this.resizeAxisMask.y !== 0) {
+            const sign = Math.sign(this.resizeAxisMask.y)
+            newHeight = Math.max(this.MIN_SIZE, this.resizeStartHeight + localDy * sign)
+            if (sign < 0) {
+                const heightDelta = (newHeight - this.resizeStartHeight) * scale
+                this.transform.position.x += sin * heightDelta
+                this.transform.position.y -= cos * heightDelta
+            }
+        }
+
+        this.transform.width = newWidth
+        this.transform.height = newHeight
     }
 
-    getResizeAxisMaskFromAxisArea() {
-        const axisMask = new Vector2(1, 1)
-        if (this.resizeAxis == CARDINAL_DIRECTIONS.n) {
-            // pick the pivot point, and calculate scale difference
-            axisMask.x = 0
-        } else if (this.resizeAxis == CARDINAL_DIRECTIONS.e) {
-            axisMask.y = 0
-        } else if (this.resizeAxis == CARDINAL_DIRECTIONS.s) {
-            axisMask.x = 0
-        } else if (this.resizeAxis == CARDINAL_DIRECTIONS.w) {
-            axisMask.y = 0
+    endResize() {
+        if (!this.resizeActive) return
+        this.resizeActive = false
+        this.resizeAction.saveNew(this)
+        CmdService.execute(CANVAS_COMMANDS.NOTE_RESIZE)
+    }
+
+    enterEditMode() {
+        this.editMode = true
+        this.canvas.clearSelection()
+        this.canvas.editedNote = this
+    }
+
+    exitEditMode() {
+        this.editMode = false
+        this.canvas.editedNote = undefined
+    }
+
+    private getResizeAxisMask(axis: CARDINAL_DIRECTIONS): Coordinates {
+        switch (axis) {
+            case CARDINAL_DIRECTIONS.n:
+                return { x: 0, y: -1 }
+            case CARDINAL_DIRECTIONS.e:
+                return { x: 1, y: 0 }
+            case CARDINAL_DIRECTIONS.s:
+                return { x: 0, y: 1 }
+            case CARDINAL_DIRECTIONS.w:
+                return { x: -1, y: 0 }
+            case CARDINAL_DIRECTIONS.nw:
+                return { x: -1, y: -1 }
+            case CARDINAL_DIRECTIONS.ne:
+                return { x: 1, y: -1 }
+            case CARDINAL_DIRECTIONS.se:
+                return { x: 1, y: 1 }
+            case CARDINAL_DIRECTIONS.sw:
+                return { x: -1, y: 1 }
+            default:
+                return { x: 0, y: 0 }
         }
-        return axisMask
     }
 }

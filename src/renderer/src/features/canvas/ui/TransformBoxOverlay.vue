@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { TransformBox } from '../ts/scene/TransformBox'
 import { useTransformStyleUnzoomed } from '../composables/useTransformStyle'
+import { getRotatedResizeCursor, type NoteResizeDirection } from '../ts/scene/CanvasUtils'
 
 const props = defineProps<{
     transformBox: TransformBox
@@ -14,6 +15,10 @@ const transformStyle = useTransformStyleUnzoomed(
 )
 
 const emit = defineEmits(['resizeStart', 'rotateStart'])
+
+function tboxCursor(base: NoteResizeDirection) {
+    return getRotatedResizeCursor(base, props.transformBox.transform.rotation)
+}
 </script>
 
 <template>
@@ -21,36 +26,44 @@ const emit = defineEmits(['resizeStart', 'rotateStart'])
         <div class="resize-corners">
             <div
                 class="tbox-resize-corner -top-2.5 -left-2.5 cursor-nw-resize"
+                :style="{ cursor: tboxCursor('nw') }"
                 @mousedown.stop="emit('resizeStart', { axis: 'nw', e: $event })"
             ></div>
             <div
                 class="tbox-resize-corner -top-2.5 -right-2.5 cursor-ne-resize"
+                :style="{ cursor: tboxCursor('ne') }"
                 @mousedown.stop="emit('resizeStart', { axis: 'ne', e: $event })"
             ></div>
             <div
                 class="tbox-resize-corner -right-2.5 -bottom-2.5 cursor-se-resize"
+                :style="{ cursor: tboxCursor('se') }"
                 @mousedown.stop="emit('resizeStart', { axis: 'se', e: $event })"
             ></div>
             <div
                 class="tbox-resize-corner -bottom-2.5 -left-2.5 cursor-sw-resize"
+                :style="{ cursor: tboxCursor('sw') }"
                 @mousedown.stop="emit('resizeStart', { axis: 'sw', e: $event })"
             ></div>
         </div>
         <div class="resize-edges">
             <div
                 class="tbox-resize-bar -top-2 flex h-2 w-full cursor-n-resize justify-center"
+                :style="{ cursor: tboxCursor('n') }"
                 @mousedown.stop="emit('resizeStart', { axis: 'n', e: $event })"
             ></div>
             <div
                 class="tbox-resize-bar -right-2 flex h-full w-2 cursor-e-resize flex-col justify-center"
+                :style="{ cursor: tboxCursor('e') }"
                 @mousedown.stop="emit('resizeStart', { axis: 'e', e: $event })"
             ></div>
             <div
                 class="tbox-resize-bar -bottom-2 flex h-2 w-full cursor-s-resize justify-center"
+                :style="{ cursor: tboxCursor('s') }"
                 @mousedown.stop="emit('resizeStart', { axis: 's', e: $event })"
             ></div>
             <div
                 class="tbox-resize-bar -left-2 flex h-full w-2 cursor-w-resize flex-col justify-center"
+                :style="{ cursor: tboxCursor('w') }"
                 @mousedown.stop="emit('resizeStart', { axis: 'w', e: $event })"
             ></div>
         </div>

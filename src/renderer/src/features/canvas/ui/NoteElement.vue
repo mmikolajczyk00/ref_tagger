@@ -1,219 +1,169 @@
 <template>
-    <div ref="note-html-element" :style="noteStyle" :class="noteClasses" class="noteStyle">
-        <pre
-            v-show="!noteData.editMode"
-            ref="text-container"
-            class="size-fit"
-            :style="textContainerStyle"
-            >{{ noteData.noteText }}</pre>
+    <div
+        ref="noteHtmlElement"
+        class="bg-surface-200 dark:bg-surface-800 relative z-0 flex size-full"
+        @dblclick.stop="toggleEditMode"
+    >
+        <pre v-show="!noteData.editMode" class="m-2 overflow-auto">{{ noteData.noteText }}</pre>
         <textarea
             v-show="noteData.editMode"
-            ref="text-area"
+            ref="textAreaRef"
             v-model="noteData.noteText"
+            class="absolute size-full resize-none overflow-auto p-2 focus-within:outline-0"
             :style="textAreaStyle"
-            style="field-sizing: content"
+            @mousedown.stop
+            @keydown.esc="exitEditMode"
         ></textarea>
 
-        <!-- resize buttons -->
-
-        <div v-show="noteData.editMode" id="resize-btns-container" class="absolute size-full">
-            <div
-                ref="resize-n"
-                class="absolute -top-8 flex w-full cursor-n-resize items-center justify-center"
-            >
-                <div class="bg-surface-200 dark:bg-surface-900 size-full text-center">--</div>
-            </div>
-            <div
-                ref="resize-e"
-                class="absolute -right-8 flex h-full cursor-e-resize items-center justify-center"
-            >
+        <div
+            v-show="noteData.editMode"
+            class="resize-btns-container absolute size-full"
+            :style="resizeContainerStyle"
+            @mousedown.stop
+            @dblclick.stop
+        >
+            <div class="resize-corners">
                 <div
-                    class="bg-surface-200 dark:bg-surface-900 flex size-full items-center px-1 py-2"
-                >
-                    ||
-                </div>
-            </div>
-            <div
-                ref="resize-s"
-                class="absolute -bottom-8 flex w-full cursor-s-resize items-center justify-center"
-            >
-                <div class="bg-surface-200 dark:bg-surface-900 size-full text-center">--</div>
-            </div>
-            <div
-                ref="resize-w"
-                class="absolute -left-8 flex h-full cursor-w-resize items-center justify-center"
-            >
+                    class="note-resize-corner -top-2.5 -left-2.5 cursor-nw-resize"
+                    :style="{ cursor: noteCursor('nw') }"
+                    @mousedown.stop="handleResizeStart({ axis: 'nw', e: $event })"
+                ></div>
                 <div
-                    class="bg-surface-200 dark:bg-surface-900 flex size-full items-center px-1 py-2"
-                >
-                    ||
-                </div>
-            </div>
-            <div
-                ref="resize-ne"
-                class="absolute -top-8 -right-8 flex cursor-ne-resize items-center justify-center"
-            >
-                <div class="bg-surface-200 dark:bg-surface-900 size-7 justify-center text-center">
-                    \
-                </div>
-            </div>
-            <div
-                ref="resize-nw"
-                class="absolute -top-8 -left-8 flex cursor-nw-resize items-center justify-center"
-            >
-                <div class="bg-surface-200 dark:bg-surface-900 size-7 justify-center text-center">
-                    /
-                </div>
-            </div>
-            <div
-                ref="resize-se"
-                class="absolute -right-8 -bottom-8 flex cursor-se-resize items-center justify-center"
-            >
+                    class="note-resize-corner -top-2.5 -right-2.5 cursor-ne-resize"
+                    :style="{ cursor: noteCursor('ne') }"
+                    @mousedown.stop="handleResizeStart({ axis: 'ne', e: $event })"
+                ></div>
                 <div
-                    class="bg-surface-200 dark:bg-surface-900 flex size-7 items-center justify-center"
-                >
-                    /
-                </div>
-            </div>
-            <div
-                ref="resize-sw"
-                class="absolute -bottom-8 -left-8 flex cursor-sw-resize items-center justify-center"
-            >
+                    class="note-resize-corner -right-2.5 -bottom-2.5 cursor-se-resize"
+                    :style="{ cursor: noteCursor('se') }"
+                    @mousedown.stop="handleResizeStart({ axis: 'se', e: $event })"
+                ></div>
                 <div
-                    class="bg-surface-200 dark:bg-surface-900 flex size-7 items-center justify-center"
-                >
-                    \
-                </div>
+                    class="note-resize-corner -bottom-2.5 -left-2.5 cursor-sw-resize"
+                    :style="{ cursor: noteCursor('sw') }"
+                    @mousedown.stop="handleResizeStart({ axis: 'sw', e: $event })"
+                ></div>
+            </div>
+            <div class="resize-edges">
+                <div
+                    class="note-resize-bar -top-2 flex h-2 w-full cursor-n-resize justify-center"
+                    :style="{ cursor: noteCursor('n') }"
+                    @mousedown.stop="handleResizeStart({ axis: 'n', e: $event })"
+                ></div>
+                <div
+                    class="note-resize-bar -right-2 flex h-full w-2 cursor-e-resize flex-col justify-center"
+                    :style="{ cursor: noteCursor('e') }"
+                    @mousedown.stop="handleResizeStart({ axis: 'e', e: $event })"
+                ></div>
+                <div
+                    class="note-resize-bar -bottom-2 flex h-2 w-full cursor-s-resize justify-center"
+                    :style="{ cursor: noteCursor('s') }"
+                    @mousedown.stop="handleResizeStart({ axis: 's', e: $event })"
+                ></div>
+                <div
+                    class="note-resize-bar -left-2 flex h-full w-2 cursor-w-resize flex-col justify-center"
+                    :style="{ cursor: noteCursor('w') }"
+                    @mousedown.stop="handleResizeStart({ axis: 'w', e: $event })"
+                ></div>
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-//@ts-ignore file will be rewritten in the future
-
-import { useTemplateRef, reactive, onMounted, computed } from 'vue'
+import { reactive, computed, ref, nextTick } from 'vue'
 import { NoteCanvasElement } from '../ts/scene/CanvasElements'
+import { CARDINAL_DIRECTIONS } from '../ts/scene/TransformBox'
+import {
+    initMouseAction,
+    getRotatedResizeCursor,
+    type NoteResizeDirection
+} from '../ts/scene/CanvasUtils'
 
 const { canvasNoteData } = defineProps({
     canvasNoteData: NoteCanvasElement
 })
 const noteData = reactive(canvasNoteData as NoteCanvasElement)
+const note = canvasNoteData as NoteCanvasElement
 
-const noteStyle = computed(() => {
+const noteHtmlElement = ref<HTMLDivElement | null>(null)
+const textAreaRef = ref<HTMLTextAreaElement | null>(null)
+
+const textAreaStyle = computed(() => ({
+    'min-width': `${noteData.textAreaMinSize.x}px`,
+    'min-height': `${noteData.textAreaMinSize.y}px`
+}))
+
+const resizeContainerStyle = computed(() => {
+    const canvasZoom = noteData.canvas.zoom
+    const w = noteData.transform.width * noteData.transform.scale * canvasZoom
+    const h = noteData.transform.height * noteData.transform.scale * canvasZoom
+
     return {
-        bottom: noteData.transform.position.y + 'px',
-        left: noteData.transform.position.x + 'px',
-        cursor: noteData.isGrabbed ? 'grabbing' : 'grab',
-        transform: `rotate(${noteData.transform.rotation}deg)`,
-        width: noteData.transform.width * noteData.transform.scale + 'px',
-        height: noteData.transform.height * noteData.transform.scale + 'px',
-        'min-width': noteData.textAreaMinSize.x * noteData.transform.scale + 'px',
-        'min-height': noteData.textAreaMinSize.y * noteData.transform.scale + 'px',
-        'z-index': noteData.zIndex,
-        'transform-origin': 'bottom left'
+        width: `${w}px`,
+        height: `${h}px`,
+        transform: `scale(${1 / noteData.transform.scale / canvasZoom})`,
+        transformOrigin: 'top left'
     }
 })
 
-const textContainerStyle = computed(() => {
-    return {
-        transform: `scale(${noteData.transform.scale.y})`,
-        'transform-origin': 'top left'
-    }
-})
-
-const textAreaStyle = computed(() => {
-    return {
-        width: noteData.transform.width * noteData.transform.scale + 'px',
-        height: noteData.transform.height * noteData.transform.scale + 'px',
-        'min-width': noteData.textAreaMinSize.x * noteData.transform.scale + 'px',
-        'min-height': noteData.textAreaMinSize.y * noteData.transform.scale + 'px',
-        'font-size': `${noteData.transform.scale}rem`,
-        padding: `${noteData.transform.scale}rem`
-
-        // transform: `scale(${noteData.transform.scale.y})`,
-        // "transform-origin": "topleft",
-    }
-})
-
-const noteClasses = computed(() => {
-    return {
-        selectedNoteStyle: noteData.isSelected,
-        editModeStyle_On: noteData.editMode,
-        editModeStyle_Off: !noteData.editMode
-    }
-})
-
-const noteHtmlEl = useTemplateRef('note-html-element')
-const textContainer = useTemplateRef('text-container')
-
-const textAreaHtmlEl = useTemplateRef('text-area')
-
-const resizeButtons = {
-    n: useTemplateRef('resize-n'),
-    e: useTemplateRef('resize-e'),
-    s: useTemplateRef('resize-s'),
-    w: useTemplateRef('resize-w'),
-    ne: useTemplateRef('resize-ne'),
-    nw: useTemplateRef('resize-nw'),
-    se: useTemplateRef('resize-se'),
-    sw: useTemplateRef('resize-sw')
+function noteCursor(base: NoteResizeDirection) {
+    return getRotatedResizeCursor(base, noteData.transform.rotation)
 }
 
-onMounted(() => {
-    canvasNoteData?.setHtmlElement(noteHtmlEl.value as HTMLDivElement)
-    canvasNoteData?.setTextContainer(textContainer.value as HTMLPreElement)
-    canvasNoteData?.setTextAreaEl(textAreaHtmlEl.value as HTMLTextAreaElement)
-
-    const resizeBtns = {
-        n: resizeButtons.n.value as HTMLElement,
-        e: resizeButtons.e.value as HTMLElement,
-        s: resizeButtons.s.value as HTMLElement,
-        w: resizeButtons.w.value as HTMLElement,
-        ne: resizeButtons.ne.value as HTMLElement,
-        nw: resizeButtons.nw.value as HTMLElement,
-        se: resizeButtons.se.value as HTMLElement,
-        sw: resizeButtons.sw.value as HTMLElement
+function toggleEditMode() {
+    if (noteData.editMode) {
+        exitEditMode()
+    } else {
+        enterEditMode()
     }
+}
 
-    canvasNoteData?.setResizeButtons(resizeBtns)
-})
+function enterEditMode() {
+    note.enterEditMode()
+    nextTick(() => {
+        textAreaRef.value?.focus()
+    })
+}
+
+function exitEditMode() {
+    if (!noteData.editMode) return
+    note.exitEditMode()
+}
+
+function handleResizeStart(ev: { axis: string; e: MouseEvent }) {
+    const axis = ev.axis as CARDINAL_DIRECTIONS
+    const canvas = note.canvas
+
+    initMouseAction(
+        () => {
+            note.beginResize(axis, canvas.mousePos.clone())
+        },
+        () => {
+            note.updateResize(canvas.mousePos)
+        },
+        () => {
+            note.endResize()
+        }
+    )
+}
 </script>
 
 <style scoped>
 @reference "#main.css";
 
-/* no matter the state */
-.noteStyle {
-    @apply border-surface-300 dark:border-surface-700 bg-surface-0 dark:bg-surface-950 text-surface-950 dark:text-surface-0 absolute z-0 box-border flex;
+.resize-btns-container {
+    @apply border-primary pointer-events-none z-0 border-2 border-dashed;
 }
 
-/* edit mode */
-.editModeStyle_Off {
-    @apply w-fit border text-nowrap;
-}
-
-.editModeStyle_On {
-    @apply w-fit border text-nowrap;
-}
-
-/* selected */
-.selectedNoteStyle {
-    @apply ring-primary-500 ring-2;
-}
-
-pre {
-    @apply box-border p-4 font-mono;
-}
-
-textarea {
-    @apply bg-surface-0 dark:bg-surface-950 box-border resize-none overflow-hidden font-mono text-nowrap focus-visible:outline-none;
-}
-
-#resize-btns-container {
-    @apply pointer-events-none;
-}
-#resize-btns-container * {
+.resize-btns-container * {
     @apply pointer-events-auto;
+}
+
+.note-resize-corner {
+    @apply bg-primary-500 absolute z-5 aspect-square size-6;
+}
+.note-resize-bar {
+    @apply absolute z-0 min-h-3 min-w-3 opacity-0;
 }
 </style>

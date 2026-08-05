@@ -2,9 +2,9 @@ import { CommandRegistry, ICommand } from '@renderer/core/command_system/UndoRed
 import CanvasScene, { ZIndexChange } from '../ts/scene/CanvasScene'
 import { useCanvasStore } from '../ts/canvasStore'
 import { AppTabType } from '@renderer/features/tab_system/Tabs'
-import { CanvasElement, GroupCanvasElement } from '../ts/scene/CanvasElements'
+import { CanvasElement, GroupCanvasElement, NoteCanvasElement } from '../ts/scene/CanvasElements'
 import { Coordinates } from '../ts/scene/CanvasUtils'
-import { RotActionTransform } from '../ts/scene/TransformBox'
+import { NoteTransformSnapshot, RotActionTransform } from '../ts/scene/TransformBox'
 
 export const CANVAS_COMMANDS = {
     ARRANGE: 'arrange',
@@ -13,7 +13,8 @@ export const CANVAS_COMMANDS = {
     MOVE: 'move',
     BRING_TO_FRONT: 'bring_to_front',
     RESIZE: 'resize',
-    ROTATE: 'rotate'
+    ROTATE: 'rotate',
+    NOTE_RESIZE: 'note_resize'
 } as const
 
 class MoveCommand implements ICommand {
@@ -287,6 +288,41 @@ class RotateCommand implements ICommand {
     }
 }
 
+class NoteResizeCommand implements ICommand {
+    undoable: boolean = true
+    timestamp: number | undefined
+    private noteId: string
+    private oldTransform: NoteTransformSnapshot
+    private newTransform: NoteTransformSnapshot
+
+    constructor(private canvasScene: CanvasScene) {
+        const note = canvasScene.editedNote as NoteCanvasElement
+        this.noteId = note.elementId
+        const { oldTransform, newTransform } = note.resizeAction.copy()
+        this.oldTransform = oldTransform
+        this.newTransform = newTransform
+    }
+
+    execute(): void {
+        const note = this.canvasScene.elementsDict.get(this.noteId) as NoteCanvasElement
+        if (!note) return
+        const { pos, width, height, scale } = this.newTransform
+        note.transform.setPos(pos)
+        note.transform.width = width
+        note.transform.height = height
+        note.transform.scale = scale
+    }
+    undo(): void {
+        const note = this.canvasScene.elementsDict.get(this.noteId) as NoteCanvasElement
+        if (!note) return
+        const { pos, width, height, scale } = this.oldTransform
+        note.transform.setPos(pos)
+        note.transform.width = width
+        note.transform.height = height
+        note.transform.scale = scale
+    }
+}
+
 export function registerCanvasCommands(commandRegistry: CommandRegistry) {
     const activeScene = () => useCanvasStore().getActiveCanvas as CanvasScene
     const scope = 'canvas'
@@ -359,6 +395,20 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
         keybind: '',
         when: hasSelectedElements,
         create: () => new RotateCommand(activeScene()!)
+    })
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.NOTE_RESIZE,
+        label: 'Note Resize',
+        scope,
+        showInPalette: false,
+        keybind: '',
+        when: () => {
+            const scene = activeScene()
+            if (!scene) return false
+            return scene.editedNote instanceof NoteCanvasElement
+        },
+        create: () => new NoteResizeCommand(activeScene()!)
     })
 
     commandRegistry.register({

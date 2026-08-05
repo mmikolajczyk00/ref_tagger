@@ -106,6 +106,7 @@ window.api.files.getMediaFiles(1, 50).then((result) => {
             result.data.data.map(([id]) => id),
             'CanvasDemo'
         )
+        tabStore.setActiveTab(3)
     }
 })
 

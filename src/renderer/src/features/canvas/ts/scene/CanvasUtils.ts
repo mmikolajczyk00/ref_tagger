@@ -58,6 +58,10 @@ export class Vector2 implements Coordinates {
         return this
     }
 
+    divided(scalar: number) {
+        return new Vector2(this.x / scalar, this.y / scalar)
+    }
+
     divideByVector(vector: Coordinates) {
         this.x = this.x / vector.x
         this.y = this.y / vector.y
@@ -317,20 +321,14 @@ export function removeFromArray(array: Array<any>, item: any) {
     }
 }
 
-export function rotateCoordAroundOrigin(
-    x: number,
-    y: number,
-    px: number,
-    py: number,
-    angleRad: number
-) {
+export function rotateCoordAroundOrigin(coord: Coordinates, pivot: Coordinates, angleRad: number) {
     const c = Math.cos(angleRad)
     const s = Math.sin(angleRad)
-    const dx = x - px
-    const dy = y - py
+    const dx = coord.x - pivot.x
+    const dy = coord.y - pivot.y
     return {
-        x: px + c * dx - s * dy,
-        y: py + s * dx + c * dy
+        x: pivot.x + c * dx - s * dy,
+        y: pivot.y + s * dx + c * dy
     } as Coordinates
 }
 
@@ -442,4 +440,46 @@ export function removeCanvElFromArray(array: Array<CanvasElement>, el: CanvasEle
 export function pushCanvElToArray(array: Array<CanvasElement>, el: CanvasElement) {
     if (array.some((e) => e.elementId == el.elementId)) return
     array.push(el)
+}
+
+export function initMouseAction(
+    start: (e?: MouseEvent) => void,
+    update: (e: MouseEvent) => void,
+    end: (e: MouseEvent) => void,
+    e?: MouseEvent
+) {
+    const handleMouseMove = (e: MouseEvent) => {
+        update(e)
+    }
+
+    const handleMouseUp = (e: MouseEvent) => {
+        window.removeEventListener('mousemove', handleMouseMove)
+        window.removeEventListener('mouseup', handleMouseUp)
+
+        end(e)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+
+    start(e)
+}
+
+export const NOTE_RESIZE_DIRECTIONS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const
+export type NoteResizeDirection = (typeof NOTE_RESIZE_DIRECTIONS)[number]
+
+const ROTATED_CURSORS: Record<NoteResizeDirection, NoteResizeDirection[]> = {
+    n: ['n', 'e', 's', 'w'],
+    ne: ['ne', 'se', 'sw', 'nw'],
+    e: ['e', 's', 'w', 'n'],
+    se: ['se', 'sw', 'nw', 'ne'],
+    s: ['s', 'w', 'n', 'e'],
+    sw: ['sw', 'nw', 'ne', 'se'],
+    w: ['w', 'n', 'e', 's'],
+    nw: ['nw', 'ne', 'se', 'sw']
+}
+
+export function getRotatedResizeCursor(base: NoteResizeDirection, rotationRad: number): string {
+    const step = (((Math.round(rotationRad / (Math.PI / 2)) % 4) + 4) % 4) as 0 | 1 | 2 | 3
+    return `${ROTATED_CURSORS[base][step]}-resize`
 }

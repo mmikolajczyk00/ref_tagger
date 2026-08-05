@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { computed, onActivated, onDeactivated, useTemplateRef } from 'vue'
 import CanvasElementWrapper from './CanvasElementWrapper.vue'
-import { CanvasElement, GroupCanvasElement, MediaFileCanvasElement } from '../ts/scene/CanvasElements'
+import {
+    CanvasElement,
+    GroupCanvasElement,
+    MediaFileCanvasElement,
+    NoteCanvasElement
+} from '../ts/scene/CanvasElements'
 import TransformBoxOverlay from './TransformBoxOverlay.vue'
 import { CARDINAL_DIRECTIONS, TransformBox } from '../ts/scene/TransformBox'
-import { Vector2 } from '../ts/scene/CanvasUtils'
+import { initMouseAction, Vector2 } from '../ts/scene/CanvasUtils'
 import SelectionBoxOverlay from './SelectionBoxOverlay.vue'
 import { useCanvasStore } from '../ts/canvasStore'
 import { MouseButton } from '../../../core/utils/general'
 import GroupElement from './GroupElement.vue'
 import MediaFileElement from './MediaFileElement.vue'
+import NoteElement from './NoteElement.vue'
 
 export interface CanvasTabProps {
     canvasId: number
@@ -21,6 +27,17 @@ const canvasStore = useCanvasStore()
 const canvasScene = canvasStore.getCanvas(props.canvasId!)!
 const canvasMediaFileElements = computed(() => canvasScene.mediaFileElements)
 const canvasGroupElements = computed(() => canvasScene.groupElements)
+const canvasNoteElements = computed(() => canvasScene.noteElements)
+
+const sortedCanvasElements = computed(() => {
+    const all = [
+        ...canvasMediaFileElements.value,
+        ...canvasGroupElements.value,
+        ...canvasNoteElements.value
+    ]
+    all.sort((a, b) => (a.transform.zIndex ?? 0) - (b.transform.zIndex ?? 0))
+    return all
+})
 
 const canvasBg = useTemplateRef('canvas-bg')
 
@@ -44,44 +61,29 @@ onDeactivated(() => {
     window.removeEventListener('mousemove', handleGlobalMouseMove)
 })
 
-function initMouseAction(
-    start: (e?: MouseEvent) => void,
-    update: (e: MouseEvent) => void,
-    end: (e: MouseEvent) => void,
-    e?: MouseEvent
-) {
-    const handleMouseMove = (e: MouseEvent) => {
-        update(e)
-    }
-
-    const handleMouseUp = (e: MouseEvent) => {
-        window.removeEventListener('mousemove', handleMouseMove)
-        window.removeEventListener('mouseup', handleMouseUp)
-
-        end(e)
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-
-    start(e)
-}
-
 let isPotentialTogglableClick = false
 let dragStartMousePos = new Vector2(0, 0)
 const MOVE_THRESHOLD_SQ = 16
 
 function handleDoubleClick(el: CanvasElement, e: MouseEvent) {
     el = el.getOrGetSelectableAncestor()
+    if (e.shiftKey) return
 
     if (el instanceof GroupCanvasElement) {
         el.expanded = !el.expanded
-        console.log('expanded', el)
+    } else if (el instanceof MediaFileCanvasElement) {
+        console.log('to be implemented', el)
     }
     console.log('dbclick', el)
 }
 
 function handleElementMouseDown(el: CanvasElement, e: MouseEvent) {
+    if (el instanceof NoteCanvasElement && el.editMode) return
+
+    if (canvasScene.editedNote && canvasScene.editedNote.elementId !== el.elementId) {
+        canvasScene.editedNote.exitEditMode()
+    }
+
     el = el.getOrGetSelectableAncestor()
 
     if (el.isSelected) {
@@ -122,6 +124,10 @@ function handleMoveStart(el: CanvasElement) {
 }
 
 function handleBgClick(e: MouseEvent) {
+    if (canvasScene.editedNote) {
+        canvasScene.editedNote.exitEditMode()
+    }
+
     if (e.button == MouseButton.LEFT) {
         initMouseAction(
             () => {
@@ -163,45 +169,31 @@ function handleWheel(e: WheelEvent) {
 function handleResizeStart(ev: { axis: CARDINAL_DIRECTIONS; e: MouseEvent }) {
     const { axis } = ev
 
-    const handleMouseMove = (e: MouseEvent) => {
-        canvasScene.transformBox.resizeUpdate(axis, e.altKey)
-    }
-
-    const handleMouseUp = () => {
-        window.removeEventListener('mousemove', handleMouseMove)
-        window.removeEventListener('mouseup', handleMouseUp)
-
-        canvasScene.transformBox.resizeEnd()
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-
-    canvasScene.transformBox.resizeStart(axis)
+    initMouseAction(
+        () => {
+            canvasScene.transformBox.resizeStart(axis)
+        },
+        (e: MouseEvent) => {
+            canvasScene.transformBox.resizeUpdate(axis, e.altKey)
+        },
+        () => {
+            canvasScene.transformBox.resizeEnd()
+        }
+    )
 }
 function handleRotateStart() {
-    const handleMouseMove = (e: MouseEvent) => {
-        canvasScene.transformBox.rotateUpdate(e.altKey)
-    }
-
-    const handleMouseUp = () => {
-        window.removeEventListener('mousemove', handleMouseMove)
-        window.removeEventListener('mouseup', handleMouseUp)
-
-        canvasScene.transformBox.rotateEnd()
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-
-    canvasScene.transformBox.rotateStart()
+    initMouseAction(
+        () => {
+            canvasScene.transformBox.rotateStart()
+        },
+        (e: MouseEvent) => {
+            canvasScene.transformBox.rotateUpdate(e.altKey)
+        },
+        () => {
+            canvasScene.transformBox.rotateEnd()
+        }
+    )
 }
-
-const sortedCanvasElements = computed(() => {
-    const all = [...canvasMediaFileElements.value, ...canvasGroupElements.value]
-    all.sort((a, b) => (a.transform.zIndex ?? 0) - (b.transform.zIndex ?? 0))
-    return all
-})
 
 const canvasBgStyle = computed(() => {
     return {
@@ -255,6 +247,10 @@ const canvasBgStyle = computed(() => {
                     <GroupElement
                         v-else-if="el instanceof GroupCanvasElement"
                         :canvas-group-data="el"
+                    />
+                    <NoteElement
+                        v-else-if="el instanceof NoteCanvasElement"
+                        :canvas-note-data="el"
                     />
                 </CanvasElementWrapper>
             </div>

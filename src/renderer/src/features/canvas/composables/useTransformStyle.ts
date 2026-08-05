@@ -16,9 +16,9 @@ export function useTransformStyle(transformSource: MaybeRefOrGetter<Transform>) 
             position: 'absolute' as const,
             top: 0,
             left: 0,
-            width: `${width * scale}px`,
-            height: `${height * scale}px`,
-            transform: `translate3d(${x}px, ${y}px,0) rotate(${rotation}rad)`,
+            width: `${width}px`,
+            height: `${height}px`,
+            transform: `translate3d(${x}px, ${y}px,0) rotate(${rotation}rad) scale(${scale})`,
             transformOrigin: 'top left',
             zIndex: zIndex
         }

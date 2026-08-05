@@ -4,10 +4,10 @@ import {
     Vector2,
     calculateBBoxByChildren,
     isInsideRect,
-    rotateCoordAroundOrigin,
-    rotateVectorAroundOrigin
+    rotateCoordAroundOrigin
 } from './CanvasUtils'
 import type CanvasScene from './CanvasScene'
+import type { NoteCanvasElement } from './CanvasElements'
 import { GroupCanvasElement } from './CanvasElements'
 import { CANVAS_COMMANDS } from '../../commands/CanvasCmd'
 import { CmdService } from '@renderer/main'
@@ -128,6 +128,57 @@ export class ResizeAction {
             ])
         )
         return { oldTransforms, newTransforms }
+    }
+}
+
+export type NoteTransformSnapshot = {
+    pos: Coordinates
+    width: number
+    height: number
+    scale: number
+}
+
+export class NoteResizeAction {
+    noteId: string = ''
+    oldTransform: NoteTransformSnapshot = { pos: { x: 0, y: 0 }, width: 0, height: 0, scale: 1 }
+    newTransform: NoteTransformSnapshot = { pos: { x: 0, y: 0 }, width: 0, height: 0, scale: 1 }
+
+    saveOld(note: NoteCanvasElement) {
+        this.noteId = note.elementId
+        this.oldTransform = {
+            pos: note.transform.position.asCoordinates(),
+            width: note.transform.width,
+            height: note.transform.height,
+            scale: note.transform.scale
+        }
+    }
+
+    saveNew(note: NoteCanvasElement) {
+        this.newTransform = {
+            pos: note.transform.position.asCoordinates(),
+            width: note.transform.width,
+            height: note.transform.height,
+            scale: note.transform.scale
+        }
+    }
+
+    copy() {
+        const old = this.oldTransform
+        const newT = this.newTransform
+        return {
+            oldTransform: {
+                pos: { x: old.pos.x, y: old.pos.y },
+                width: old.width,
+                height: old.height,
+                scale: old.scale
+            },
+            newTransform: {
+                pos: { x: newT.pos.x, y: newT.pos.y },
+                width: newT.width,
+                height: newT.height,
+                scale: newT.scale
+            }
+        }
     }
 }
 

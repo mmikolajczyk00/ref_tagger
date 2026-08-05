@@ -51,6 +51,8 @@ export default class CanvasScene {
 
         this.transformBox = new TransformBox(this)
         this.selectionBox = new SelectionBox(this)
+
+        this.addNote('sample text', new Vector2(500, 500))
     }
 
     getTransform() {
@@ -65,7 +67,6 @@ export default class CanvasScene {
         this.mediaFileElements.push(mediaFile)
         this.elementsDict.set(mediaFile.elementId, mediaFile)
         // this.transform.addChild(imageEl.transform);
-        this.elementCount++
     }
     addMediaFiles(files: number[], position?: Coordinates) {
         files.forEach((f) => {
@@ -197,8 +198,6 @@ export default class CanvasScene {
 
         this.noteElements.push(note)
         this.elementsDict.set(note.elementId, note)
-        // this.transform.addChild(noteEl.transform);
-        this.elementCount++
     }
 
     addGroup(groupId?: string): GroupCanvasElement {
