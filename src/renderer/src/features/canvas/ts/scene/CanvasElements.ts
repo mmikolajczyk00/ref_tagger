@@ -222,6 +222,9 @@ export class NoteCanvasElement extends CanvasElement {
     MIN_SIZE = 50
     textAreaMinSize: Vector2 = new Vector2(this.MIN_SIZE, this.MIN_SIZE)
 
+    textEditOldText: string = ''
+    didInputNewText: boolean = false
+
     private resizeStartMouse = new Vector2()
     private resizeStartWidth = 0
     private resizeStartHeight = 0
@@ -299,11 +302,23 @@ export class NoteCanvasElement extends CanvasElement {
         this.editMode = true
         this.canvas.clearSelection()
         this.canvas.editedNote = this
+        this.textEditOldText = this.noteText
+        this.didInputNewText = false
+    }
+
+    commitTextEdit() {
+        if (!this.didInputNewText) return
+        if (this.textEditOldText === this.noteText) return
+        CmdService.execute(CANVAS_COMMANDS.NOTE_TEXT_EDIT)
+        this.textEditOldText = this.noteText
+        this.didInputNewText = false
     }
 
     exitEditMode() {
+        this.commitTextEdit()
         this.editMode = false
         this.canvas.editedNote = undefined
+        this.didInputNewText = false
     }
 
     private getResizeAxisMask(axis: CARDINAL_DIRECTIONS): Coordinates {

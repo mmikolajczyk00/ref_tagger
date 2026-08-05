@@ -13,6 +13,9 @@
             :style="textAreaStyle"
             @mousedown.stop
             @keydown.esc="exitEditMode"
+            @keyup.enter="onEnter"
+            @keydown="onKeyDown"
+            @paste="onPaste"
         ></textarea>
 
         <div
@@ -79,6 +82,7 @@ import {
     getRotatedResizeCursor,
     type NoteResizeDirection
 } from '../ts/scene/CanvasUtils'
+import { CmdService } from '../../../main'
 
 const { canvasNoteData } = defineProps({
     canvasNoteData: NoteCanvasElement
@@ -129,6 +133,35 @@ function enterEditMode() {
 function exitEditMode() {
     if (!noteData.editMode) return
     note.exitEditMode()
+}
+
+function onEnter() {
+    if (!noteData.editMode) return
+    note.commitTextEdit()
+}
+
+function onKeyDown(e: KeyboardEvent) {
+    if (!noteData.editMode) return
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault()
+        note.commitTextEdit()
+        if (CmdService) e.shiftKey ? CmdService.redo() : CmdService.undo()
+        return
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault()
+        CmdService.redo()
+    } else {
+        noteData.didInputNewText = true
+    }
+}
+
+function onPaste() {
+    if (!noteData.editMode) return
+    nextTick(() => {
+        noteData.didInputNewText = true
+        note.commitTextEdit()
+    })
 }
 
 function handleResizeStart(ev: { axis: string; e: MouseEvent }) {

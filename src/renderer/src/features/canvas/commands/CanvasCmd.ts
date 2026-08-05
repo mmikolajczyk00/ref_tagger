@@ -14,7 +14,8 @@ export const CANVAS_COMMANDS = {
     BRING_TO_FRONT: 'bring_to_front',
     RESIZE: 'resize',
     ROTATE: 'rotate',
-    NOTE_RESIZE: 'note_resize'
+    NOTE_RESIZE: 'note_resize',
+    NOTE_TEXT_EDIT: 'note_text_edit'
 } as const
 
 class MoveCommand implements ICommand {
@@ -323,6 +324,32 @@ class NoteResizeCommand implements ICommand {
     }
 }
 
+class NoteTextEditCommand implements ICommand {
+    undoable: boolean = true
+    timestamp: number | undefined
+    private noteId: string
+    private oldText: string
+    private newText: string
+
+    constructor(private canvasScene: CanvasScene) {
+        const note = canvasScene.editedNote as NoteCanvasElement
+        this.noteId = note.elementId
+        this.oldText = note.textEditOldText
+        this.newText = note.noteText
+    }
+
+    execute(): void {
+        const note = this.canvasScene.elementsDict.get(this.noteId) as NoteCanvasElement | undefined
+        if (!note) return
+        note.noteText = this.newText
+    }
+    undo(): void {
+        const note = this.canvasScene.elementsDict.get(this.noteId) as NoteCanvasElement | undefined
+        if (!note) return
+        note.noteText = this.oldText
+    }
+}
+
 export function registerCanvasCommands(commandRegistry: CommandRegistry) {
     const activeScene = () => useCanvasStore().getActiveCanvas as CanvasScene
     const scope = 'canvas'
@@ -409,6 +436,20 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
             return scene.editedNote instanceof NoteCanvasElement
         },
         create: () => new NoteResizeCommand(activeScene()!)
+    })
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.NOTE_TEXT_EDIT,
+        label: 'Edit Note Text',
+        scope,
+        showInPalette: false,
+        keybind: '',
+        when: () => {
+            const scene = activeScene()
+            if (!scene) return false
+            return scene.editedNote instanceof NoteCanvasElement
+        },
+        create: () => new NoteTextEditCommand(activeScene()!)
     })
 
     commandRegistry.register({
