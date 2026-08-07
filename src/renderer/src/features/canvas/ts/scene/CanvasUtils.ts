@@ -166,7 +166,7 @@ export class Transform {
     rotation = 0
     width = 0
     height = 0
-    children: Array<Transform> = []
+    children: Map<string, Transform> = new Map()
     parentTransform: Transform | null
     canvas: CanvasScene
     elementId: string
@@ -190,7 +190,7 @@ export class Transform {
     }
 
     setPos(newPos: Coordinates) {
-        if (this.children.length > 0) {
+        if (this.children.size > 0) {
             const difference = { x: newPos.x - this.position.x, y: newPos.y - this.position.y }
             this.move(difference)
         } else {
@@ -227,7 +227,7 @@ export class Transform {
     }
 
     addChild(childTransform: Transform) {
-        this.children.push(childTransform)
+        this.children.set(childTransform.elementId, childTransform)
     }
 
     getBoundingBox(): Rectangle {
@@ -302,6 +302,31 @@ export class Transform {
 
     rotatedPointAroundOrigin(point: Vector2, rotation: number = this.rotation): Vector2 {
         return rotateVectorAroundOrigin(point, this.getTopLeft(), rotation)
+    }
+
+    toJSON() {
+        return {
+            position: this.position.toJSON(),
+            scale: this.scale,
+            rotation: this.rotation,
+            width: this.width,
+            height: this.height,
+            children: this.children.keys()
+        }
+    }
+
+    fromJSON(json: any) {
+        this.position = Vector2.fromJSON(json.position)
+        this.scale = json.scale
+        this.rotation = json.rotation
+        this.width = json.width
+        this.height = json.height
+    }
+
+    onSceneLoad() {
+        this.children.keys().forEach((c) => {
+            this.children.set(c, this.canvas.elementsDict.get(c)!.transform)
+        })
     }
 }
 

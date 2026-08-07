@@ -14,6 +14,7 @@ export const CANVAS_COMMANDS = {
     BRING_TO_FRONT: 'bring_to_front',
     RESIZE: 'resize',
     ROTATE: 'rotate',
+    SAVE: 'save',
     NOTE_RESIZE: 'note_resize',
     NOTE_TEXT_EDIT: 'note_text_edit'
 } as const
@@ -180,6 +181,18 @@ class GroupCommand implements ICommand {
         group.ungroupAll()
         this.canvasScene.removeGroup(this.groupId)
     }
+}
+
+class SaveCommand implements ICommand {
+    undoable: boolean = false
+    timestamp: number | undefined
+
+    constructor(private canvasScene: CanvasScene) {}
+
+    execute(): void {
+        this.canvasScene.saveToJSON()
+    }
+    undo(): void {}
 }
 
 class ArrangeCommand implements ICommand {
@@ -354,9 +367,9 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
     const activeScene = () => useCanvasStore().getActiveCanvas as CanvasScene
     const scope = 'canvas'
 
-    const isCanvas = () => {
-        const context = commandRegistry.context
-        return context?.getActiveTab()?.type === AppTabType.Canvas
+    const isActiveCanvas = () => {
+        const scene = activeScene()
+        return scene !== undefined
     }
     const hasSelectedElements = () => {
         const scene = activeScene()
@@ -415,13 +428,13 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
     })
 
     commandRegistry.register({
-        id: CANVAS_COMMANDS.ROTATE,
-        label: 'Rotate',
+        id: CANVAS_COMMANDS.SAVE,
+        label: 'Save Canvas',
         scope,
-        showInPalette: false,
-        keybind: '',
-        when: hasSelectedElements,
-        create: () => new RotateCommand(activeScene()!)
+        showInPalette: true,
+        keybind: 'ctrl+s',
+        when: isActiveCanvas,
+        create: () => new SaveCommand(activeScene()!)
     })
 
     commandRegistry.register({
@@ -456,7 +469,7 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
         id: CANVAS_COMMANDS.BRING_TO_FRONT,
         label: 'Bring to Front',
         scope,
-        showInPalette: true,
+        showInPalette: false,
         keybind: '',
         when: hasSelectedElements,
         create: () => new BringToFrontCommand(activeScene()!)

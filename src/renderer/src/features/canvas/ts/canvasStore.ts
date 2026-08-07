@@ -23,6 +23,7 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         tabStore.openTab(AppTabType.Canvas, title, { canvasId: scene.id })
         openCanvases.value.set(scene.id, scene)
         scene.addMediaFiles(files, { x: 100, y: 100 } as Coordinates)
+        return scene
     }
 
     function closeCanvas(id: number) {

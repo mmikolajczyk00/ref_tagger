@@ -52,7 +52,7 @@ export default class CanvasScene {
         this.transformBox = new TransformBox(this)
         this.selectionBox = new SelectionBox(this)
 
-        this.addNote('sample text', new Vector2(500, 500))
+        // this.addNote('sample text', new Vector2(500, 500))
     }
 
     getTransform() {
@@ -72,9 +72,6 @@ export default class CanvasScene {
         files.forEach((f) => {
             this.addMediaFile(f, position)
         })
-    }
-    incrementZIndex() {
-        this.highestZIndex++
     }
 
     private collectSubtree(root: CanvasElement): CanvasElement[] {
@@ -430,5 +427,50 @@ export default class CanvasScene {
 
     getElementsById(elements: string[]) {
         return elements.map((id) => this.elementsDict.get(id)!)
+    }
+
+    saveToJSON() {
+        const data = {
+            elements: [...this.elementsDict.values()].map((e) => e.toJSON()),
+            zoom: this.zoom,
+            panOffset: this.panOffset.toJSON(),
+            highestZIndex: this.highestZIndex
+        }
+
+        console.log(data)
+
+        return data
+    }
+
+    loadFromJSON(data: any) {
+        this.zoom = data.zoom
+        this.panOffset = Vector2.fromJSON(data.panOffset)
+        this.highestZIndex = data.highestZIndex
+        this.elementsDict.clear()
+        for (const e of data.elements) {
+            console.log(e)
+            if (e.type === 'media') {
+                const mediaFile = new MediaFileCanvasElement(this, this.transform, e.fileId)
+                this.mediaFileElements.push(mediaFile)
+                this.elementsDict.set(mediaFile.elementId, mediaFile)
+                mediaFile.fromJSON(e)
+            } else if (e.type === 'note') {
+                const note = new NoteCanvasElement(this, this.transform, e.text)
+                this.noteElements.push(note)
+                this.elementsDict.set(note.elementId, note)
+                note.fromJSON(e)
+            } else if (e.type === 'group') {
+                const group = new GroupCanvasElement(this, this.transform, e.position, e.groupId)
+                this.groupElements.push(group)
+                this.elementsDict.set(group.elementId, group)
+                group.fromJSON(e)
+            } else {
+                throw new Error(`Unknown element type: ${e.type}`)
+            }
+        }
+
+        this.elementsDict.values().forEach((i) => {
+            i.onSceneLoad()
+        })
     }
 }

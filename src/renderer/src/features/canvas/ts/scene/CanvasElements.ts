@@ -72,10 +72,24 @@ export abstract class CanvasElement {
         if (!parentId || parentId === 'root') return null
         return this.canvas.elementsDict.get(parentId)?.getOrGetSelectableAncestor()
     }
+
+    toJSON() {
+        return {
+            elementId: this.elementId,
+            type: 'element',
+            transform: this.transform.toJSON()
+        }
+    }
+    fromJSON(json: any) {
+        this.elementId = json.elementId
+        this.transform.fromJSON(json.transform)
+    }
+    onSceneLoad() {
+        this.transform.onSceneLoad()
+    }
 }
 
 export class GroupCanvasElement extends CanvasElement {
-    childrenMap: Map<string, CanvasElement> = new Map()
     static MIN_SIZE = 100
     static PADDING = 50
     expanded: boolean = false
@@ -90,18 +104,19 @@ export class GroupCanvasElement extends CanvasElement {
         if (position) this.transform.position.setV(position)
     }
 
-    get children() {
-        return [...this.childrenMap.values()]
+    get children(): CanvasElement[] {
+        return [...this.transform.children.values()].map((t) =>
+            this.canvas.elementsDict.get(t.elementId)!
+        )
     }
 
     addElements(children: CanvasElement[]) {
         const newChildren: string[] = []
         children.forEach((c) => {
-            if (!this.childrenMap.has(c.elementId) && !this.createsCycle(c)) {
+            if (!this.transform.children.has(c.elementId) && !this.createsCycle(c)) {
                 this.removeFromPreviousParent(c)
 
-                this.childrenMap.set(c.elementId, c)
-                this.transform.children.push(c.transform)
+                this.transform.children.set(c.elementId, c.transform)
                 c.transform.parentTransform = this.transform
                 console.log('dropping into', this.elementId, c.elementId)
 
@@ -130,12 +145,11 @@ export class GroupCanvasElement extends CanvasElement {
     }
 
     addElement(child: CanvasElement) {
-        if (!this.childrenMap.has(child.elementId)) {
+        if (!this.transform.children.has(child.elementId)) {
             if (this.createsCycle(child)) return
 
             this.removeFromPreviousParent(child)
-            this.childrenMap.set(child.elementId, child)
-            this.transform.children.push(child.transform)
+            this.transform.children.set(child.elementId, child.transform)
             child.transform.parentTransform = this.transform
             console.log('dropping into', this.elementId, child.elementId)
             this.updateBoundingBox()
@@ -143,11 +157,8 @@ export class GroupCanvasElement extends CanvasElement {
     }
 
     removeElement(child: CanvasElement) {
-        if (this.childrenMap.has(child.elementId)) {
-            this.childrenMap.delete(child.elementId)
-            this.transform.children = this.transform.children.filter(
-                (t) => t.elementId !== child.transform.elementId
-            )
+        if (this.transform.children.has(child.elementId)) {
+            this.transform.children.delete(child.elementId)
             child.transform.parentTransform = this.transform.parentTransform
             this.updateBoundingBox()
         }
@@ -157,11 +168,8 @@ export class GroupCanvasElement extends CanvasElement {
         let update = false
 
         children.forEach((c) => {
-            if (this.childrenMap.has(c.elementId)) {
-                this.childrenMap.delete(c.elementId)
-                this.transform.children = this.transform.children.filter(
-                    (t) => t.elementId !== c.transform.elementId
-                )
+            if (this.transform.children.has(c.elementId)) {
+                this.transform.children.delete(c.elementId)
                 c.transform.parentTransform = this.transform.parentTransform
                 update = true
             }
@@ -203,6 +211,13 @@ export class GroupCanvasElement extends CanvasElement {
     ungroupAll() {
         this.removeElements(this.children)
     }
+
+    toJSON() {
+        return {
+            ...super.toJSON(),
+            type: 'group'
+        }
+    }
 }
 
 export class MediaFileCanvasElement extends CanvasElement {
@@ -212,6 +227,18 @@ export class MediaFileCanvasElement extends CanvasElement {
         public fileId: number
     ) {
         super(canvas, parentTransform)
+    }
+
+    toJSON() {
+        return {
+            ...super.toJSON(),
+            type: 'media',
+            fileId: this.fileId
+        }
+    }
+    fromJSON(json: any) {
+        super.fromJSON(json)
+        this.fileId = json.fileId
     }
 }
 
@@ -342,5 +369,17 @@ export class NoteCanvasElement extends CanvasElement {
             default:
                 return { x: 0, y: 0 }
         }
+    }
+
+    toJSON() {
+        return {
+            ...super.toJSON(),
+            type: 'note',
+            noteText: this.noteText
+        }
+    }
+    fromJSON(json: any) {
+        super.fromJSON(json)
+        this.noteText = json.noteText
     }
 }
