@@ -54,3 +54,13 @@ model FileTag {
   @@index([tagId])
   @@map("file_tags")
 }
+
+model Canvas {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  dataPath  String   @map("data_path")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("canvases")
+}

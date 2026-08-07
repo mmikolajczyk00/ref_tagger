@@ -4,8 +4,11 @@ import { PrismaClient } from '../../generated/prisma/client'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import { Result } from '../../shared/types/api'
 import {
+    Canvas,
+    CanvasSceneData,
     MediaFile,
     MediaType,
+    PaginatedCanvases,
     PaginatedMediaFiles,
     Tag,
     TagOperation,
@@ -13,6 +16,7 @@ import {
     TagSearchQuery,
     UploadFilePayload
 } from '../../shared/types/models'
+import { CanvasService } from './CanvasService'
 
 const initDDL = `
     CREATE TABLE IF NOT EXISTS files (
@@ -50,6 +54,14 @@ const initDDL = `
 
     CREATE INDEX IF NOT EXISTS idx_tag_relations_parent ON tag_relations(parent_id);
     CREATE INDEX IF NOT EXISTS idx_tag_relations_child ON tag_relations(child_id);
+
+    CREATE TABLE IF NOT EXISTS canvases (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        data_path TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 `
 
 type FileRow = {
@@ -82,6 +94,7 @@ function filesToEntries(files: FileRow[]): Array<[number, MediaFile]> {
 
 export class LocalDatabaseService {
     private prisma: PrismaClient
+    private canvasService: CanvasService
 
     constructor(dbFolderPath: string) {
         const dbPath = path.join(dbFolderPath, 'ref-sheeter.sqlite')
@@ -95,6 +108,8 @@ export class LocalDatabaseService {
 
         const adapterFactory = new PrismaBetterSqlite3({ url: dbPath })
         this.prisma = new PrismaClient({ adapter: adapterFactory })
+
+        this.canvasService = new CanvasService(this.prisma, path.join(dbFolderPath, 'canvases'))
     }
 
     async getFilesPage(page: number, limit: number): Promise<Result<PaginatedMediaFiles>> {
@@ -895,5 +910,63 @@ export class LocalDatabaseService {
                 error: err instanceof Error ? err.message : 'Failed to remove parents.'
             }
         }
+    }
+
+    // Canvas delegation
+
+    async getCanvasesPage(page: number, limit: number): Promise<Result<PaginatedCanvases>> {
+        try {
+            const skip = (page - 1) * limit
+            const [rows, total] = await Promise.all([
+                this.prisma.canvas.findMany({
+                    orderBy: { updatedAt: 'desc' },
+                    skip,
+                    take: limit
+                }),
+                this.prisma.canvas.count()
+            ])
+            return {
+                success: true,
+                data: {
+                    data: rows.map((r) => this.canvasService.toCanvas(r)),
+                    total,
+                    page,
+                    limit
+                }
+            }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to get canvases.'
+            }
+        }
+    }
+
+    async getCanvasesByIds(ids: number[]): Promise<Result<Array<[number, Canvas]>>> {
+        return this.canvasService.getCanvasesByIds(ids)
+    }
+
+    async createCanvas(name: string, data: CanvasSceneData): Promise<Result<Canvas>> {
+        return this.canvasService.createCanvas(name, data)
+    }
+
+    async getAllCanvases(): Promise<Result<Canvas[]>> {
+        return this.canvasService.getAllCanvases()
+    }
+
+    async getCanvas(id: number): Promise<Result<{ meta: Canvas; data: CanvasSceneData }>> {
+        return this.canvasService.getCanvas(id)
+    }
+
+    async updateCanvasName(id: number, name: string): Promise<Result<Canvas>> {
+        return this.canvasService.updateCanvasName(id, name)
+    }
+
+    async updateCanvasData(id: number, data: CanvasSceneData): Promise<Result<void>> {
+        return this.canvasService.updateCanvasData(id, data)
+    }
+
+    async deleteCanvas(id: number): Promise<Result<void>> {
+        return this.canvasService.deleteCanvas(id)
     }
 }

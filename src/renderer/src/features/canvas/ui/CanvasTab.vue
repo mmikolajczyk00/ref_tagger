@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onActivated, onDeactivated, useTemplateRef } from 'vue'
+import { computed, onActivated, onDeactivated, useTemplateRef, watch } from 'vue'
+import { useDialog } from 'primevue/usedialog'
 import CanvasElementWrapper from './CanvasElementWrapper.vue'
 import {
     CanvasElement,
@@ -11,11 +12,12 @@ import TransformBoxOverlay from './TransformBoxOverlay.vue'
 import { CARDINAL_DIRECTIONS, TransformBox } from '../ts/scene/TransformBox'
 import { initMouseAction, Vector2 } from '../ts/scene/CanvasUtils'
 import SelectionBoxOverlay from './SelectionBoxOverlay.vue'
-import { useCanvasStore } from '../ts/canvasStore'
+import { useCanvasStore } from '../ts/useCanvasStore'
 import { MouseButton } from '../../../core/utils/general'
 import GroupElement from './GroupElement.vue'
 import MediaFileElement from './MediaFileElement.vue'
 import NoteElement from './NoteElement.vue'
+import SaveCanvasDialog from './SaveCanvasDialog.vue'
 
 export interface CanvasTabProps {
     canvasId: number
@@ -24,6 +26,45 @@ export interface CanvasTabProps {
 const props = defineProps<CanvasTabProps>()
 
 const canvasStore = useCanvasStore()
+const dialog = useDialog()
+
+watch(
+    () => canvasStore.pendingSaveRequests.has(props.canvasId!),
+    async (needsSave) => {
+        if (!needsSave) return
+
+        const scene = canvasStore.openCanvases.get(props.canvasId!)
+        if (!scene) {
+            canvasStore.clearSaveRequest(props.canvasId!)
+            return
+        }
+
+        if (scene.isPersisted) {
+            await canvasStore.saveCanvas(scene.id, scene.name)
+            canvasStore.clearSaveRequest(props.canvasId!)
+            return
+        }
+
+        const initialName = scene.name?.trim() || 'Untitled canvas'
+        const existingNames = canvasStore.getExistingNames()
+
+        const newName = await new Promise<string | undefined>((resolve) => {
+            dialog.open(SaveCanvasDialog, {
+                data: {
+                    initialName,
+                    existingNames: Array.from(existingNames)
+                },
+                onClose: (options) => resolve(options?.data?.name as string | undefined)
+            })
+        })
+
+        if (newName) {
+            await canvasStore.saveCanvas(props.canvasId!, newName)
+        }
+        canvasStore.clearSaveRequest(props.canvasId!)
+    }
+)
+
 const canvasScene = canvasStore.getCanvas(props.canvasId!)!
 const canvasMediaFileElements = computed(() => canvasScene.mediaFileElements)
 const canvasGroupElements = computed(() => canvasScene.groupElements)

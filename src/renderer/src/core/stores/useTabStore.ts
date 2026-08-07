@@ -73,6 +73,16 @@ export const useTabStore = defineStore('tabStore', () => {
         openTabs.value.push(tab)
     }
 
+    function setTabTitle(index: number, title: string) {
+        const tab = openTabs.value[index]
+        if (tab) tab.title = title
+    }
+
+    function closeTabWhere(predicate: (tab: AppTab) => boolean) {
+        const idx = openTabs.value.findIndex(predicate)
+        if (idx !== -1) closeTab(idx)
+    }
+
     function newId(): number {
         return ++idCounter.value
     }
@@ -87,6 +97,8 @@ export const useTabStore = defineStore('tabStore', () => {
         closeTab,
         open,
         closeActiveTab,
-        reopenTab
+        reopenTab,
+        setTabTitle,
+        closeTabWhere
     }
 })

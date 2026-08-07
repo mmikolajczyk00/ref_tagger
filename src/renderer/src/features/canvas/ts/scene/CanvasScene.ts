@@ -22,12 +22,14 @@ export type ZIndexChange = { elementId: string; oldZ: number; newZ: number }
 
 export default class CanvasScene {
     id: number
+    name: string
+    isPersisted: boolean
+    unsavedChanges: boolean = false
     transform: Transform
     zoom: number = 1
     htmlElement: HTMLDivElement | undefined
     selectedElements: Array<CanvasElement> = []
     isGrabbed: boolean = false
-    panOffset = new Vector2(0, 0)
 
     mediaFileElements: Array<MediaFileCanvasElement> = []
     noteElements: Array<NoteCanvasElement> = []
@@ -45,14 +47,14 @@ export default class CanvasScene {
 
     mousePos = new Vector2(0, 0)
 
-    constructor(id: number) {
+    constructor(id: number, name = 'untitled', isPersisted = false) {
         this.id = id
-        this.transform = new Transform(this, null, 'root')
+        this.name = name
+        this.isPersisted = isPersisted
+        this.transform = new Transform(this, 'root')
 
         this.transformBox = new TransformBox(this)
         this.selectionBox = new SelectionBox(this)
-
-        // this.addNote('sample text', new Vector2(500, 500))
     }
 
     getTransform() {
@@ -60,7 +62,7 @@ export default class CanvasScene {
     }
 
     addMediaFile(fileId: number, position?: Coordinates) {
-        const mediaFile = new MediaFileCanvasElement(this, this.transform, fileId)
+        const mediaFile = new MediaFileCanvasElement(this, fileId)
 
         if (typeof position !== 'undefined') mediaFile.transform.setPos(position)
 
@@ -189,7 +191,7 @@ export default class CanvasScene {
     }
 
     addNote(text: string, position?: Vector2) {
-        const note = new NoteCanvasElement(this, this.transform, text)
+        const note = new NoteCanvasElement(this, text)
 
         if (typeof position !== 'undefined') note.transform.position = position
 
@@ -198,7 +200,7 @@ export default class CanvasScene {
     }
 
     addGroup(groupId?: string): GroupCanvasElement {
-        const group = new GroupCanvasElement(this, this.transform, new Vector2(0, 0), groupId)
+        const group = new GroupCanvasElement(this, groupId)
         this.groupElements.push(group)
         this.elementsDict.set(group.elementId, group)
         return group
@@ -357,7 +359,6 @@ export default class CanvasScene {
 
     panStart() {}
     panUpdate(v: Coordinates) {
-        this.panOffset.add(v)
         this.transform.move(v)
     }
 
@@ -433,7 +434,7 @@ export default class CanvasScene {
         const data = {
             elements: [...this.elementsDict.values()].map((e) => e.toJSON()),
             zoom: this.zoom,
-            panOffset: this.panOffset.toJSON(),
+            panOffset: this.transform.position.toJSON(),
             highestZIndex: this.highestZIndex
         }
 
@@ -444,33 +445,50 @@ export default class CanvasScene {
 
     loadFromJSON(data: any) {
         this.zoom = data.zoom
-        this.panOffset = Vector2.fromJSON(data.panOffset)
+        this.transform.setPos(Vector2.fromJSON(data.panOffset))
         this.highestZIndex = data.highestZIndex
         this.elementsDict.clear()
+        this.mediaFileElements = []
+        this.noteElements = []
+        this.groupElements = []
+        this.selectedElements = []
+        this.unsavedChanges = false
         for (const e of data.elements) {
-            console.log(e)
             if (e.type === 'media') {
-                const mediaFile = new MediaFileCanvasElement(this, this.transform, e.fileId)
+                const mediaFile = new MediaFileCanvasElement(this, e.fileId, e.elementId)
                 this.mediaFileElements.push(mediaFile)
-                this.elementsDict.set(mediaFile.elementId, mediaFile)
+                this.elementsDict.set(e.elementId, mediaFile)
                 mediaFile.fromJSON(e)
             } else if (e.type === 'note') {
-                const note = new NoteCanvasElement(this, this.transform, e.text)
+                const note = new NoteCanvasElement(this, e.text, e.elementId)
                 this.noteElements.push(note)
-                this.elementsDict.set(note.elementId, note)
+                this.elementsDict.set(e.elementId, note)
                 note.fromJSON(e)
             } else if (e.type === 'group') {
-                const group = new GroupCanvasElement(this, this.transform, e.position, e.groupId)
+                const group = new GroupCanvasElement(this, e.elementId)
                 this.groupElements.push(group)
-                this.elementsDict.set(group.elementId, group)
+                this.elementsDict.set(e.elementId, group)
                 group.fromJSON(e)
             } else {
                 throw new Error(`Unknown element type: ${e.type}`)
             }
         }
 
-        this.elementsDict.values().forEach((i) => {
-            i.onSceneLoad()
-        })
+        for (const e of data.elements) {
+            if (e.type !== 'media' && e.type !== 'note' && e.type !== 'group') {
+                throw new Error(`Unknown element type: ${e.type}`)
+            } else {
+                const element = this.elementsDict.get(e.elementId)
+                if (!element) {
+                    throw new Error(`Element not found: ${e.elementId}`)
+                }
+                console.log('onsceneload', e, e.transform, e.transform.children)
+                element.onSceneLoad(e)
+            }
+        }
+
+        // this.elementsDict.values().forEach((i) => {
+        //     i.onSceneLoad()
+        // })
     }
 }

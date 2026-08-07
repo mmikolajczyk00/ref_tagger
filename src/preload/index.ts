@@ -48,6 +48,20 @@ const api = {
             ipcRenderer.invoke('api:tags:addParents', childId, parentIds),
         removeParents: (childId: number, parentIds: number[]) =>
             ipcRenderer.invoke('api:tags:removeParents', childId, parentIds)
+    },
+
+    canvases: {
+        create: (name: string, data: unknown) =>
+            ipcRenderer.invoke('api:canvases:create', name, data),
+        getAll: () => ipcRenderer.invoke('api:canvases:getAll'),
+        get: (id: number) => ipcRenderer.invoke('api:canvases:get', id),
+        rename: (id: number, name: string) => ipcRenderer.invoke('api:canvases:rename', id, name),
+        saveData: (id: number, data: unknown) =>
+            ipcRenderer.invoke('api:canvases:saveData', id, data),
+        delete: (id: number) => ipcRenderer.invoke('api:canvases:delete', id),
+        getPaginated: (page: number, limit: number) =>
+            ipcRenderer.invoke('api:canvases:getPaginated', page, limit),
+        getByIds: (ids: number[]) => ipcRenderer.invoke('api:canvases:getByIds', ids)
     }
 }
 

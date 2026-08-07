@@ -28,6 +28,16 @@ type iapi = {
         removeSubtags: (id: number, subtags: number[]) => Promise<Result<void>>
         removeParents: (id: number, parents: number[]) => Promise<Result<void>>
     }
+    canvases: {
+        create: (name: string, data: CanvasData) => Promise<Result<Canvas>>
+        getAll: () => Promise<Result<Canvas[]>>
+        get: (id: number) => Promise<Result<{ meta: Canvas; data: CanvasData }>>
+        rename: (id: number, name: string) => Promise<Result<Canvas>>
+        saveData: (id: number, data: CanvasData) => Promise<Result<void>>
+        delete: (id: number) => Promise<Result<void>>
+        getPaginated: (page: number, limit: number) => Promise<Result<PaginatedCanvases>>
+        getByIds: (ids: number[]) => Promise<Result<Array<[number, Canvas]>>>
+    }
 }
 
 declare global {

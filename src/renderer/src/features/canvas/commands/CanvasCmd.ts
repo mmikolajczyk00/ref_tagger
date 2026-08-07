@@ -1,7 +1,6 @@
 import { CommandRegistry, ICommand } from '@renderer/core/command_system/UndoRedoManager'
 import CanvasScene, { ZIndexChange } from '../ts/scene/CanvasScene'
-import { useCanvasStore } from '../ts/canvasStore'
-import { AppTabType } from '@renderer/features/tab_system/Tabs'
+import { useCanvasStore } from '../ts/useCanvasStore'
 import { CanvasElement, GroupCanvasElement, NoteCanvasElement } from '../ts/scene/CanvasElements'
 import { Coordinates } from '../ts/scene/CanvasUtils'
 import { NoteTransformSnapshot, RotActionTransform } from '../ts/scene/TransformBox'
@@ -38,6 +37,7 @@ class MoveCommand implements ICommand {
     }
 
     execute(): void {
+        this.canvasScene.unsavedChanges = true
         this.newPositions.forEach((pos, id) => {
             const el = this.canvasScene.elementsDict.get(id)
             if (el) {
@@ -58,6 +58,7 @@ class MoveCommand implements ICommand {
         this.canvasScene.transformBox.notifyParents()
     }
     undo(): void {
+        this.canvasScene.unsavedChanges = true
         this.oldPositions.forEach((pos, id) => {
             const el = this.canvasScene.elementsDict.get(id)
             if (el) {
@@ -113,6 +114,7 @@ class UngroupCommand implements ICommand {
     }
 
     execute(): void {
+        this.canvasScene.unsavedChanges = true
         const allRemoved: CanvasElement[] = []
 
         this.groupElementsMap.forEach((elementIds, groupId) => {
@@ -132,6 +134,7 @@ class UngroupCommand implements ICommand {
         }
     }
     undo(): void {
+        this.canvasScene.unsavedChanges = true
         this.canvasScene.revertZIndexChanges(this.zIndexChanges, this.prevHighestZIndex)
         this.zIndexChanges = []
 
@@ -163,6 +166,7 @@ class GroupCommand implements ICommand {
     }
 
     execute(): void {
+        this.canvasScene.unsavedChanges = true
         const group = this.canvasScene.addGroup(this.groupId)
         this.groupId = group.elementId
         const el = this.canvasScene.getElementsById(this.elementIds)
@@ -172,6 +176,7 @@ class GroupCommand implements ICommand {
         this.zIndexChanges = this.canvasScene.bringToFront(group)
     }
     undo(): void {
+        this.canvasScene.unsavedChanges = true
         if (!this.groupId) return
 
         this.canvasScene.revertZIndexChanges(this.zIndexChanges, this.prevHighestZIndex)
@@ -190,7 +195,7 @@ class SaveCommand implements ICommand {
     constructor(private canvasScene: CanvasScene) {}
 
     execute(): void {
-        this.canvasScene.saveToJSON()
+        useCanvasStore().requestSave(this.canvasScene.id)
     }
     undo(): void {}
 }
@@ -205,9 +210,11 @@ class ArrangeCommand implements ICommand {
     }
 
     execute(): void {
+        this.canvasScene.unsavedChanges = true
         console.log('execute', this.canvasScene, this.elements)
     }
     undo(): void {
+        this.canvasScene.unsavedChanges = true
         console.log('undo')
     }
 }
@@ -222,6 +229,7 @@ class BringToFrontCommand implements ICommand {
 
     execute(): void {
         if (this.canvasScene.selectedElements.length === 0) return
+        this.canvasScene.unsavedChanges = true
         this.prevHighestZIndex = this.canvasScene.highestZIndex
         this.zIndexChanges = this.canvasScene.bringSelectionToFront(
             this.canvasScene.selectedElements
@@ -229,6 +237,7 @@ class BringToFrontCommand implements ICommand {
     }
     undo(): void {
         if (this.zIndexChanges.length === 0) return
+        this.canvasScene.unsavedChanges = true
         this.canvasScene.revertZIndexChanges(this.zIndexChanges, this.prevHighestZIndex)
         this.zIndexChanges = []
     }
@@ -247,6 +256,7 @@ class ResizeCommand implements ICommand {
     }
 
     execute(): void {
+        this.canvasScene.unsavedChanges = true
         this.newTransforms.forEach(({ pos, rotOrScale }, id) => {
             const el = this.canvasScene.elementsDict.get(id)
             if (el) {
@@ -257,6 +267,7 @@ class ResizeCommand implements ICommand {
         this.canvasScene.transformBox.notifyParents()
     }
     undo(): void {
+        this.canvasScene.unsavedChanges = true
         this.oldTransforms.forEach(({ pos, rotOrScale }, id) => {
             const el = this.canvasScene.elementsDict.get(id)
             if (el) {
@@ -281,6 +292,7 @@ class RotateCommand implements ICommand {
     }
 
     execute(): void {
+        this.canvasScene.unsavedChanges = true
         this.newTransforms.forEach(({ pos, rotOrScale }, id) => {
             const el = this.canvasScene.elementsDict.get(id)
             if (el) {
@@ -291,6 +303,7 @@ class RotateCommand implements ICommand {
         this.canvasScene.transformBox.notifyParents()
     }
     undo(): void {
+        this.canvasScene.unsavedChanges = true
         this.oldTransforms.forEach(({ pos, rotOrScale }, id) => {
             const el = this.canvasScene.elementsDict.get(id)
             if (el) {
@@ -320,6 +333,7 @@ class NoteResizeCommand implements ICommand {
     execute(): void {
         const note = this.canvasScene.elementsDict.get(this.noteId) as NoteCanvasElement
         if (!note) return
+        this.canvasScene.unsavedChanges = true
         const { pos, width, height, scale } = this.newTransform
         note.transform.setPos(pos)
         note.transform.width = width
@@ -329,6 +343,7 @@ class NoteResizeCommand implements ICommand {
     undo(): void {
         const note = this.canvasScene.elementsDict.get(this.noteId) as NoteCanvasElement
         if (!note) return
+        this.canvasScene.unsavedChanges = true
         const { pos, width, height, scale } = this.oldTransform
         note.transform.setPos(pos)
         note.transform.width = width
@@ -354,11 +369,13 @@ class NoteTextEditCommand implements ICommand {
     execute(): void {
         const note = this.canvasScene.elementsDict.get(this.noteId) as NoteCanvasElement | undefined
         if (!note) return
+        this.canvasScene.unsavedChanges = true
         note.noteText = this.newText
     }
     undo(): void {
         const note = this.canvasScene.elementsDict.get(this.noteId) as NoteCanvasElement | undefined
         if (!note) return
+        this.canvasScene.unsavedChanges = true
         note.noteText = this.oldText
     }
 }
@@ -415,6 +432,16 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
         keybind: '',
         when: hasSelectedElements,
         create: () => new MoveCommand(activeScene()!)
+    })
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.ROTATE,
+        label: 'Rotate',
+        scope,
+        showInPalette: false,
+        keybind: '',
+        when: hasSelectedElements,
+        create: () => new RotateCommand(activeScene()!)
     })
 
     commandRegistry.register({

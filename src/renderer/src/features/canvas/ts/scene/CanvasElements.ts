@@ -21,14 +21,10 @@ export abstract class CanvasElement {
     isGrabbed = false
     isSelected = false
 
-    constructor(
-        canvas: CanvasScene,
-        parentTransform: Transform,
-        elementId: string = crypto.randomUUID()
-    ) {
+    constructor(canvas: CanvasScene, elementId: string = crypto.randomUUID()) {
         this.elementId = elementId
         this.canvas = canvas
-        this.transform = new Transform(canvas, parentTransform, this.elementId)
+        this.transform = new Transform(canvas, this.elementId)
     }
 
     setHtmlElement(htmlElement: HTMLDivElement) {
@@ -84,8 +80,8 @@ export abstract class CanvasElement {
         this.elementId = json.elementId
         this.transform.fromJSON(json.transform)
     }
-    onSceneLoad() {
-        this.transform.onSceneLoad()
+    onSceneLoad(json: any) {
+        this.transform.onSceneLoad(json.transform)
     }
 }
 
@@ -93,16 +89,6 @@ export class GroupCanvasElement extends CanvasElement {
     static MIN_SIZE = 100
     static PADDING = 50
     expanded: boolean = false
-
-    constructor(
-        canvas: CanvasScene,
-        parentTransform: Transform,
-        position?: Coordinates,
-        elementId?: string
-    ) {
-        super(canvas, parentTransform, elementId)
-        if (position) this.transform.position.setV(position)
-    }
 
     get children(): CanvasElement[] {
         return [...this.transform.children.values()].map((t) =>
@@ -223,10 +209,10 @@ export class GroupCanvasElement extends CanvasElement {
 export class MediaFileCanvasElement extends CanvasElement {
     constructor(
         canvas: CanvasScene,
-        parentTransform: Transform,
-        public fileId: number
+        public fileId: number,
+        elementId?: string
     ) {
-        super(canvas, parentTransform)
+        super(canvas, elementId)
     }
 
     toJSON() {
@@ -259,8 +245,8 @@ export class NoteCanvasElement extends CanvasElement {
     private resizeAxisMask: Coordinates = { x: 0, y: 0 }
     private resizeActive = false
 
-    constructor(canvas: CanvasScene, parentTransform: Transform, noteText: string) {
-        super(canvas, parentTransform)
+    constructor(canvas: CanvasScene, noteText: string, elementId?: string) {
+        super(canvas, elementId)
         this.noteText = noteText
         this.transform.width = this.MIN_SIZE * 3
         this.transform.height = this.MIN_SIZE

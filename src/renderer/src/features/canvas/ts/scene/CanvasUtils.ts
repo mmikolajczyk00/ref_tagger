@@ -167,14 +167,14 @@ export class Transform {
     width = 0
     height = 0
     children: Map<string, Transform> = new Map()
-    parentTransform: Transform | null
+    parentTransform: Transform
     canvas: CanvasScene
     elementId: string
-    zIndex: number | undefined
+    zIndex: number = 0
 
-    constructor(canvas: CanvasScene, parentTransform: Transform | null, elementId: string) {
+    constructor(canvas: CanvasScene, elementId: string) {
         this.canvas = canvas
-        this.parentTransform = parentTransform
+        this.parentTransform = canvas.transform
         this.elementId = elementId
     }
 
@@ -311,7 +311,8 @@ export class Transform {
             rotation: this.rotation,
             width: this.width,
             height: this.height,
-            children: this.children.keys()
+            children: [...this.children.keys()],
+            parent: this.parentTransform?.elementId
         }
     }
 
@@ -323,10 +324,18 @@ export class Transform {
         this.height = json.height
     }
 
-    onSceneLoad() {
-        this.children.keys().forEach((c) => {
+    onSceneLoad(json: any) {
+        json.children.forEach((c) => {
             this.children.set(c, this.canvas.elementsDict.get(c)!.transform)
         })
+        if (json.parent !== 'root') {
+            const p = this.canvas.elementsDict.get(json.parent)
+            if (p) {
+                this.parentTransform = p.transform
+            } else {
+                console.error(`Parent element ${json.parent} not found`)
+            }
+        }
     }
 }
 

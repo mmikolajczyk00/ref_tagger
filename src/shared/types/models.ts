@@ -63,3 +63,25 @@ export interface TagSearchQuery {
     page?: number
     limit?: number
 }
+
+export interface PaginatedCanvases {
+    data: Canvas[]
+    total: number
+    page: number
+    limit: number
+}
+
+export interface Canvas {
+    id: number
+    name: string
+    dataPath: string
+    createdAt: string
+    updatedAt: string
+}
+
+export type CanvasSceneData = {
+    elements: unknown[]
+    zoom: number
+    panOffset: { x: number; y: number }
+    highestZIndex: number
+}

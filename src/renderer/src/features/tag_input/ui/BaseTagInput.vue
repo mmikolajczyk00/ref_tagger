@@ -46,11 +46,15 @@ function removeChip(tagValue: string) {
                     <span v-if="ghostText" class="text-surface-400 dark:text-surface-500">{{
                         ghostText
                     }}</span>
+                    <span
+                        v-if="modelValue.length == 0 && inputValue == ''"
+                        class="text-surface-400 dark:text-surface-500"
+                        >{{ placeholder }}</span
+                    >
                 </span>
                 <input
                     class="caret-surface-950 dark:caret-surface-0 relative w-full bg-transparent py-1 text-sm text-transparent outline-none"
                     :value="inputValue"
-                    :placeholder="modelValue.length === 0 ? placeholder : ''"
                     @input="inputValue = ($event.target as HTMLInputElement).value"
                     @keydown="emit('keydown', $event)"
                     @blur="emit('blur')"

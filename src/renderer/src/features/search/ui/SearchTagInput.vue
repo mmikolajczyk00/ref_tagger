@@ -128,7 +128,7 @@ function handleKeydown(event: KeyboardEvent) {
         :suggestions="suggestions"
         :selected-index="selectedIndex"
         :ghost-text="ghostText"
-        placeholder="!expanded !!exact -expanded-excluded --exact-excluded tag*..."
+        placeholder="Search"
         @keydown="handleKeydown"
         @update:input-value="onInput"
         @select-suggestion="

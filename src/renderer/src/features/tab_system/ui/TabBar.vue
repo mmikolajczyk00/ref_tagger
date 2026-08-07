@@ -15,7 +15,7 @@
                 <span class="material-symbols-outlined mr-2">{{ AppTabIcons[tab.type] }}</span>
                 <p class="overflow-hidden text-nowrap text-ellipsis select-none">
                     <!-- {{ tab.title }} : {{ index }} -->
-                    {{ tab.title }}
+                    {{ tabDisplayTitle(tab) }}
                 </p>
 
                 <Button
@@ -37,14 +37,16 @@
 
 <script setup lang="ts">
 import { inject } from 'vue'
-import { AppTabIcons } from '../Tabs'
+import { AppTabIcons, AppTab, AppTabType } from '../Tabs'
 import { TAB_COMMANDS } from '../commands/TabCmd'
 import { CommandService } from '../../../core/command_system/CommandService'
 import { useTabStore } from '../../../core/stores/useTabStore'
+import { useCanvasStore } from '../../canvas/ts/useCanvasStore'
 import ThemeSwitcher from '../../../core/ui/ThemeSwitcher.vue'
 
 const commandService = inject('commandService') as CommandService
 let tabStore = useTabStore()
+let canvasStore = useCanvasStore()
 
 function clickTab(index: number) {
     tabStore.setActiveTab(index)
@@ -54,5 +56,12 @@ function closeTab(id: number) {
 }
 function newEmptyTab() {
     commandService.execute(TAB_COMMANDS.NEW_EMPTY_TAB)
+}
+
+function tabDisplayTitle(tab: AppTab): string {
+    if (tab.type === AppTabType.Canvas && !canvasStore.isSaved(tab.data.canvasId)) {
+        return '* ' + tab.title
+    }
+    return tab.title
 }
 </script>
