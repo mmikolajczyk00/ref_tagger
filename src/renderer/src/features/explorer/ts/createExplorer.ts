@@ -1,15 +1,58 @@
-// composables/useLocalExplorer.ts
-import { ref } from 'vue'
+import { computed, proxyRefs, ref } from 'vue'
 import { parseSearchChips } from '../../search/ts/parseSearchQuery'
 import { FileTagResult, MediaFile, TagSearchQuery } from 'src/shared/types/models'
 
-export function useExplorer() {
+export function createExplorer() {
     const mediaFiles = ref<Map<number, MediaFile>>(new Map())
     const isLoading = ref(false)
     const isInitialized = ref(false)
     const currentPage = ref(1)
     const hasMoreData = ref(true)
     const query = ref<TagSearchQuery | null>(null)
+
+    const selectedIds = ref<Set<number>>(new Set())
+    const lastSelectedIndex = ref<number | null>(null)
+
+    const selectedItems = computed(() => {
+        return Array.from(mediaFiles.value.values()).filter((f) => selectedIds.value.has(f.id))
+    })
+
+    function handleItemClick(event: MouseEvent, currentItem: MediaFile, currentIndex: number) {
+        const items = Array.from(mediaFiles.value.values())
+
+        if (event.shiftKey && lastSelectedIndex.value !== null) {
+            const start = Math.min(lastSelectedIndex.value, currentIndex)
+            const end = Math.max(lastSelectedIndex.value, currentIndex)
+
+            for (let i = start; i <= end; i++) {
+                selectedIds.value.add(items[i].id)
+            }
+            return
+        }
+
+        if (event.ctrlKey || event.metaKey) {
+            if (selectedIds.value.has(currentItem.id)) {
+                selectedIds.value.delete(currentItem.id)
+            } else {
+                selectedIds.value.add(currentItem.id)
+            }
+            lastSelectedIndex.value = currentIndex
+            return
+        }
+
+        selectedIds.value.clear()
+        selectedIds.value.add(currentItem.id)
+        lastSelectedIndex.value = currentIndex
+    }
+
+    function clearSelection() {
+        selectedIds.value.clear()
+        lastSelectedIndex.value = null
+    }
+
+    function isSelected(id: number): boolean {
+        return selectedIds.value.has(id)
+    }
 
     async function initialize() {
         if (isInitialized.value) return
@@ -93,6 +136,7 @@ export function useExplorer() {
         mediaFiles.value = new Map()
         currentPage.value = 1
         hasMoreData.value = true
+        clearSelection()
         fetchNextPage()
     }
 
@@ -117,16 +161,23 @@ export function useExplorer() {
         return next
     }
 
-    return {
+    return proxyRefs({
         mediaFiles,
         isLoading,
-        fetchNextPage,
-        resetAndRefresh,
+        selectedIds,
+        selectedItems,
+        handleItemClick,
+        clearSelection,
+        isSelected,
         initialize,
         query,
         search,
         refetch,
+        fetchNextPage,
+        resetAndRefresh,
         applyFileTagUpdates,
         applyFileTagUpdatesToMap
-    }
+    })
 }
+
+export type Explorer = ReturnType<typeof createExplorer>

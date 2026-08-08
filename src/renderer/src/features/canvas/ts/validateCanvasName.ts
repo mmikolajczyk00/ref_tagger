@@ -36,8 +36,6 @@ export function validateCanvasName(rawName: string, existingNames: Set<string>):
             message: 'Name cannot contain control characters.'
         }
     }
-    console.log({ existingNames, trimmed })
-
     if (existingNames.has(trimmed)) {
         return {
             valid: false,

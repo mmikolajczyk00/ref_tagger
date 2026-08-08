@@ -5,6 +5,7 @@ import { AppTabType } from '@renderer/features/tab_system/Tabs'
 import CanvasScene from './scene/CanvasScene'
 import { Coordinates } from './scene/CanvasUtils'
 import { Canvas } from 'src/shared/types/models'
+import { validateCanvasName } from './validateCanvasName'
 
 export const useCanvasStore = defineStore('canvasStore', () => {
     const openCanvases = ref(new Map<number, CanvasScene>())
@@ -105,7 +106,12 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         }
         const data = scene.saveToJSON()
         if (!scene.isPersisted || opts?.forceAsNew) {
-            const result = await window.api.canvases.create(name, data)
+            const validation = validateCanvasName(name, getExistingNames(scene.id))
+            if (!validation.valid) {
+                console.error('Canvas name validation failed (save):', validation.message)
+                return
+            }
+            const result = await window.api.canvases.create(validation.name, data)
             if (!result.success) {
                 console.error('Failed to create canvas:', result.error)
                 return
@@ -119,14 +125,14 @@ export const useCanvasStore = defineStore('canvasStore', () => {
             )
 
             scene.id = newId
-            scene.name = name
+            scene.name = validation.name
             scene.isPersisted = true
             openCanvases.value.set(newId, scene)
             availableCanvases.value.set(newId, result.data)
 
             if (idx !== -1) {
                 tabStore.openTabs[idx].data.canvasId = newId
-                tabStore.setTabTitle(idx, name)
+                tabStore.setTabTitle(idx, validation.name)
             }
             console.log('Canvas created:', newId, scene.name)
         } else {
@@ -141,7 +147,12 @@ export const useCanvasStore = defineStore('canvasStore', () => {
     }
 
     async function renameCanvas(id: number, newName: string) {
-        const result = await window.api.canvases.rename(id, newName)
+        const validation = validateCanvasName(newName, getExistingNames(id))
+        if (!validation.valid) {
+            console.error('Canvas name validation failed (rename):', validation.message)
+            return
+        }
+        const result = await window.api.canvases.rename(id, validation.name)
         if (!result.success) {
             console.error('Failed to rename canvas:', result.error)
             return
@@ -149,13 +160,13 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         const updated = result.data
         availableCanvases.value.set(updated.id, updated)
         const scene = openCanvases.value.get(id)
-        if (scene) scene.name = newName
+        if (scene) scene.name = validation.name
         const tabStore = useTabStore()
         const idx = tabStore.openTabs.findIndex(
             (t) => t.type === AppTabType.Canvas && t.data?.canvasId === id
         )
         if (idx !== -1) {
-            tabStore.setTabTitle(idx, newName)
+            tabStore.setTabTitle(idx, validation.name)
         }
     }
 

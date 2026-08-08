@@ -175,8 +175,6 @@ export class GroupCanvasElement extends CanvasElement {
             bbox.left - GroupCanvasElement.PADDING,
             bbox.top - GroupCanvasElement.PADDING
         )
-        console.log('diff', newPos.subtracted(oldPos))
-        console.log('rotated diff', newPos.subtracted(oldPos).rotated(oldRotation))
         const rotatedDiff = newPos.subtracted(oldPos).rotated(oldRotation)
 
         this.transform.width =

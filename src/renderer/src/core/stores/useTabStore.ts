@@ -1,14 +1,12 @@
 import { defineStore } from 'pinia'
 
 import { computed, ref } from 'vue'
-import { AppTab, AppTabType } from '@renderer/features/tab_system/Tabs'
+import { AppTab, AppTabType, ExplorerTabPayload } from '@renderer/features/tab_system/Tabs'
 import { UndoRedoManager } from '../command_system/UndoRedoManager'
 
 interface CanvasTabPayload {
     canvasId: number
 }
-
-interface ExplorerTabPayload {}
 
 interface UploadTabPayload {}
 
@@ -41,11 +39,12 @@ export const useTabStore = defineStore('tabStore', () => {
             return -1
         }
 
+        const tabId = newId()
         const tab: AppTab = {
-            id: newId(),
+            id: tabId,
             title: title ?? 'untitled',
             type: type as any,
-            data,
+            data: data ?? (type === AppTabType.Explorer ? { explorerTabId: tabId } : undefined),
             undoRedoMng: new UndoRedoManager()
         }
 

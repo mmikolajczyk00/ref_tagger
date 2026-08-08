@@ -2,6 +2,7 @@ import { useTabStore } from '../stores/useTabStore'
 import { CommandRegistry, UndoRedoManager } from './UndoRedoManager'
 import { registerTabCommands } from '@renderer/features/tab_system/commands/TabCmd'
 import { registerCanvasCommands } from '@renderer/features/canvas/commands/CanvasCmd'
+import { registerExplorerCommands } from '@renderer/features/explorer/commands/ExplorerCmd'
 import { registerGlobalCommands } from './GlobalCommands'
 import { AppContext } from './AppContext'
 
@@ -73,6 +74,7 @@ class CommandService {
         registerGlobalCommands(this.registry!)
         registerTabCommands(this.registry!)
         registerCanvasCommands(this.registry!)
+        registerExplorerCommands(this.registry!)
     }
 }
 

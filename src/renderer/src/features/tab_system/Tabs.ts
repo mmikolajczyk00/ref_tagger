@@ -39,8 +39,13 @@ export interface CanvasTab extends BaseTab {
     data: CanvasTabProps
 }
 
+export interface ExplorerTabPayload {
+    explorerTabId: number
+}
+
 export interface ExplorerTab extends BaseTab {
     type: AppTabType.Explorer
+    data: ExplorerTabPayload
 }
 
 export interface UploadQueueTab extends BaseTab {

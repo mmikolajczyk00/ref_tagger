@@ -1,59 +1,46 @@
 <script setup lang="ts">
-import { onActivated, onMounted, ref, watch } from 'vue'
-import { clamp, useIntersectionObserver } from '@vueuse/core'
-import { useExplorer } from '../ts/useExplorer'
+import { computed, onActivated, onMounted, ref, watch } from 'vue'
+import { clamp } from '@vueuse/core'
 import { FileTagResult, MediaFile } from 'src/shared/types/models'
+import { ExplorerTabPayload } from '../../tab_system/Tabs'
 
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import TagEditorPanel from './TagEditorPanel.vue'
-import { useSelectionManager } from '../../../core/composables/useSelectionManager'
 import SearchTagInput from '../../search/ui/SearchTagInput.vue'
+import CanvasList from './CanvasList.vue'
+import MediaFileList from './MediaFileList.vue'
 import { useCanvasStore } from '../../canvas/ts/useCanvasStore'
+import { useExplorerStore } from '../ts/useExplorerStore'
 
 const canvasStore = useCanvasStore()
+const props = defineProps<ExplorerTabPayload>()
 
-const {
-    refetch,
-    mediaFiles,
-    initialize,
-    search,
-    fetchNextPage,
-    applyFileTagUpdates,
-    applyFileTagUpdatesToMap
-} = useExplorer()
-
-const { selectedItems, handleItemClick, clearSelection, isSelected } = useSelectionManager(() => {
-    return Array.from(mediaFiles.value.values())
-})
+const explorerStore = useExplorerStore()
+const explorer = explorerStore.getOrCreate(props.explorerTabId)
 
 const searchChips = ref<string[]>([])
 
 watch(searchChips, (chips) => {
-    search(chips)
+    explorer.search(chips)
 })
 
 function handleSearchSubmit() {
-    search(searchChips.value)
+    explorer.search(searchChips.value)
 }
 
 function clearSearch() {
     searchChips.value = []
 }
 
-function openCanvas(id: number) {
-    canvasStore.fetchAndOpenCanvas(id)
-}
-
 function onFilesUpdated(updates: FileTagResult[]) {
-    applyFileTagUpdates(updates)
-    const byId = new Map(selectedItems.value.map((f) => [f.id, f] as [number, MediaFile]))
-    applyFileTagUpdatesToMap(byId, updates)
+    explorer.applyFileTagUpdates(updates)
+    const byId = new Map(explorer.selectedItems.map((f) => [f.id, f] as [number, MediaFile]))
+    explorer.applyFileTagUpdatesToMap(byId, updates)
 }
 
-// REFS
+const mediaFilesArr = computed(() => Array.from(explorer.mediaFiles.values()))
 
-// ZOOM THUMBNAIL SIZE
 const thumbnailScale = ref(200 as number)
 const thumbnailScale_min = 100
 const thumbnailScale_max = 600
@@ -65,18 +52,13 @@ function handleWheel(e: WheelEvent) {
     }
 }
 
-const mediaSentinel = ref<HTMLElement | null>(null)
-useIntersectionObserver(mediaSentinel, ([{ isIntersecting }]) => {
-    if (isIntersecting) fetchNextPage()
-})
-
 onActivated(() => {
-    refetch()
+    explorer.refetch()
     canvasStore.fetchCanvases()
 })
 
 onMounted(() => {
-    initialize()
+    explorer.initialize()
 })
 </script>
 
@@ -100,99 +82,27 @@ onMounted(() => {
             </div>
 
             <Splitter class="flex flex-col" layout="vertical">
-                <SplitterPanel @wheel="handleWheel">
-                    <div
-                        class="flex size-full flex-row flex-wrap content-start items-start justify-start gap-1 overflow-clip overflow-y-auto focus-visible:outline-0"
-                    >
-                        <div
-                            v-for="c in Array.from(canvasStore.availableCanvases.values())"
-                            :key="c.id"
-                            class="media-file border-surface-200 dark:border-surface-800 bg-surface-200 dark:bg-surface-800 hover:border-surface-400 dark:hover:border-surface-600 group relative flex aspect-square flex-col overflow-hidden border transition-colors"
-                            @dblclick.left.stop="openCanvas(c.id)"
-                        >
-                            <div class="flex flex-1 items-center justify-center">
-                                <span class="text-surface-400 dark:text-surface-500 text-2xl"
-                                    >#</span
-                                >
-                            </div>
-
-                            <div
-                                class="border-surface-300/80 dark:border-surface-800/80 bg-surface-0/90 dark:bg-surface-900/90 absolute bottom-0 flex w-full flex-col gap-0.5 border-t p-2 text-xs backdrop-blur-sm"
-                            >
-                                <span
-                                    class="text-surface-700 dark:text-surface-300 group-hover:text-surface-950 dark:group-hover:text-surface-0 truncate font-medium transition-colors"
-                                >
-                                    {{ c.name }}
-                                </span>
-                                <span
-                                    class="text-surface-400 dark:text-surface-500 truncate text-[10px]"
-                                >
-                                    #{{ c.id }}
-                                </span>
-                            </div>
-
-                            <span
-                                class="material-symbols-outlined text-surface-500 bg-surface-0/80 dark:bg-surface-900/80 absolute right-1 bottom-1 z-10 cursor-pointer rounded p-0.5 text-sm opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500 hover:text-white dark:hover:bg-red-600"
-                                @click.left.stop.prevent="canvasStore.deleteCanvas(c.id)"
-                                >delete</span
-                            >
-                        </div>
-                    </div>
+                <SplitterPanel
+                    class="focus-visible:outline-0"
+                    @wheel="handleWheel"
+                    @click="explorer.clearSelection"
+                >
+                    <CanvasList />
                 </SplitterPanel>
-                <SplitterPanel @wheel="handleWheel" @click="clearSelection">
-                    <div
-                        class="flex size-full flex-row flex-wrap content-start items-start justify-start gap-1 overflow-clip overflow-y-auto"
-                    >
-                        <div
-                            v-for="(f, index) in Array.from(mediaFiles.values())"
-                            :key="f.id"
-                            class="media-file border-surface-200 dark:border-surface-800 bg-surface-0 dark:bg-surface-900 hover:border-surface-400 dark:hover:border-surface-600 group relative flex aspect-square flex-col overflow-hidden border transition-colors select-none"
-                            @click.left.stop="handleItemClick($event, f, index)"
-                        >
-                            <div
-                                v-show="isSelected(f.id)"
-                                class="bg-primary/30 absolute size-full"
-                            ></div>
-                            <img
-                                :src="`media://load?path=${f.filePath}`"
-                                :alt="f.fileName"
-                                class="loading-lazy bg-surface-200 dark:bg-surface-950 pointer-events-none w-full flex-1 object-cover"
-                            />
-
-                            <div
-                                class="border-surface-300/80 dark:border-surface-800/80 bg-surface-0/90 dark:bg-surface-900/90 absolute bottom-0 flex w-full flex-col gap-0.5 border-t p-2 text-xs backdrop-blur-sm"
-                            >
-                                <span
-                                    class="text-surface-700 dark:text-surface-300 group-hover:text-surface-950 dark:group-hover:text-surface-0 truncate font-medium transition-colors"
-                                >
-                                    {{ f.fileName }}
-                                </span>
-                                <span
-                                    class="text-surface-400 dark:text-surface-500 truncate text-[10px]"
-                                >
-                                    #{{ f.id }}
-                                </span>
-                            </div>
-                        </div>
-                        <div ref="mediaSentinel" class="h-1 w-full shrink-0"></div>
-                    </div>
+                <SplitterPanel
+                    class="focus-visible:outline-0"
+                    @wheel="handleWheel"
+                    @click="explorer.clearSelection"
+                >
+                    <MediaFileList :files="mediaFilesArr" :explorer="explorer" />
                 </SplitterPanel>
             </Splitter>
         </SplitterPanel>
         <SplitterPanel :min-size="5" :size="15">
             <TagEditorPanel
-                :selected-files="selectedItems"
+                :selected-files="explorer.selectedItems"
                 @files-updated="onFilesUpdated"
             ></TagEditorPanel>
         </SplitterPanel>
     </Splitter>
 </template>
-
-<style scoped>
-.media-file {
-    width: var(--thumb-size);
-    height: var(--thumb-size);
-    content-visibility: auto;
-    contain-intrinsic-size: var(--thumb-size);
-}
-</style>

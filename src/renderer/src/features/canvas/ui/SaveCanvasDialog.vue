@@ -44,10 +44,7 @@ function onCancel() {
                 :maxlength="CANVAS_NAME_MAX_LENGTH"
                 @keydown.enter="onSubmit"
             />
-            <div
-                v-if="!validationResult.valid"
-                class="text-red-500 text-xs"
-            >
+            <div v-if="!validationResult.valid" class="text-xs text-red-500">
                 {{ validationResult.message }}
             </div>
             <div class="text-surface-500 text-xs">
