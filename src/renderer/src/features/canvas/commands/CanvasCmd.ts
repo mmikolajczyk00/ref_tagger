@@ -400,8 +400,7 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
     const scope = 'canvas'
 
     const isActiveCanvas = () => {
-        const scene = activeScene()
-        return scene !== undefined
+        return activeScene() != undefined
     }
     const hasSelectedElements = () => {
         const scene = activeScene()
