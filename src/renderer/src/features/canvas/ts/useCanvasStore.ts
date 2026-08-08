@@ -9,9 +9,8 @@ import { Canvas } from 'src/shared/types/models'
 export const useCanvasStore = defineStore('canvasStore', () => {
     const openCanvases = ref(new Map<number, CanvasScene>())
     const availableCanvases = ref(new Map<number, Canvas>())
-    const pendingSaveRequests = ref(new Set<number>())
+    const pendingSaveRequests = ref(new Map<number, { forceAs: boolean }>())
 
-    const getOpenCanvases = computed(() => openCanvases.value)
     const getCanvas = computed(() => (id: number) => openCanvases.value.get(id))
     const getActiveCanvas = computed(() => {
         const tabStore = useTabStore()
@@ -35,7 +34,19 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         }
     }
 
-    async function fetchOpenCanvas(id: number) {
+    async function fetchAndOpenCanvas(id: number) {
+        // check if already open
+        if (openCanvases.value.has(id)) {
+            const tabStore = useTabStore()
+            const index = tabStore.openTabs.findIndex(
+                (tab) => tab.type == AppTabType.Canvas && tab.data.canvasId == id
+            )
+            if (index !== -1) {
+                tabStore.setActiveTab(index)
+                return openCanvases.value.get(id)
+            }
+        }
+
         const result = await window.api.canvases.get(id)
         if (!result.success) {
             console.error('Failed to fetch canvas:', result.error)
@@ -51,7 +62,7 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         return scene
     }
 
-    function addOpenCanvas(files: number[] = [], title = 'new canvas') {
+    function addAndOpenNewCanvas(files: number[] = [], title = 'new canvas') {
         const scene = new CanvasScene(Date.now(), title, false)
         scene.unsavedChanges = true
         const tabStore = useTabStore()
@@ -70,24 +81,30 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         return names
     }
 
-    function requestSave(id: number) {
-        pendingSaveRequests.value = new Set(pendingSaveRequests.value).add(id)
+    function requestSave(id: number, forceAs = false) {
+        const next = new Map(pendingSaveRequests.value)
+        next.set(id, { forceAs })
+        pendingSaveRequests.value = next
     }
 
     function clearSaveRequest(id: number) {
-        const next = new Set(pendingSaveRequests.value)
+        const next = new Map(pendingSaveRequests.value)
         next.delete(id)
         pendingSaveRequests.value = next
     }
 
-    async function saveCanvas(id: number, name: string) {
+    function getSaveRequest(id: number) {
+        return pendingSaveRequests.value.get(id)
+    }
+
+    async function saveCanvas(id: number, name: string, opts?: { forceAsNew?: boolean }) {
         const scene = openCanvases.value.get(id)
         if (!scene) {
             console.error('Canvas not found:', id)
             return
         }
         const data = scene.saveToJSON()
-        if (!scene.isPersisted) {
+        if (!scene.isPersisted || opts?.forceAsNew) {
             const result = await window.api.canvases.create(name, data)
             if (!result.success) {
                 console.error('Failed to create canvas:', result.error)
@@ -167,19 +184,19 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         openCanvases,
         availableCanvases,
         pendingSaveRequests,
-        getOpenCanvases,
         getCanvas,
         getActiveCanvas,
         isSaved,
-        addOpenCanvas,
+        addAndOpenNewCanvas,
         fetchCanvases,
-        fetchOpenCanvas,
+        fetchAndOpenCanvas,
         saveCanvas,
         renameCanvas,
         deleteCanvas,
         closeCanvas,
         getExistingNames,
         requestSave,
-        clearSaveRequest
+        clearSaveRequest,
+        getSaveRequest
     }
 })

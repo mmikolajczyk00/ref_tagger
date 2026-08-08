@@ -104,11 +104,11 @@ canvasStore.fetchCanvases()
 
 window.api.files.getMediaFiles(1, 50).then((result) => {
     if (result.success) {
-        canvasStore.addOpenCanvas(
+        canvasStore.addAndOpenNewCanvas(
             result.data.data.map(([id]) => id),
             'CanvasDemo'
         )
-        // const scene = canvasStore.addOpenCanvas([], 'CanvasDemo')
+        // const scene = canvasStore.addAndOpenNewCanvas([], 'CanvasDemo')
         // scene.loadFromJSON(data)
 
         tabStore.setActiveTab(3)

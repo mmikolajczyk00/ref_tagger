@@ -482,7 +482,6 @@ export default class CanvasScene {
                 if (!element) {
                     throw new Error(`Element not found: ${e.elementId}`)
                 }
-                console.log('onsceneload', e, e.transform, e.transform.children)
                 element.onSceneLoad(e)
             }
         }

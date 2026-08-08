@@ -14,6 +14,7 @@ export const CANVAS_COMMANDS = {
     RESIZE: 'resize',
     ROTATE: 'rotate',
     SAVE: 'save',
+    SAVE_AS: 'save_as',
     NOTE_RESIZE: 'note_resize',
     NOTE_TEXT_EDIT: 'note_text_edit'
 } as const
@@ -196,6 +197,18 @@ class SaveCommand implements ICommand {
 
     execute(): void {
         useCanvasStore().requestSave(this.canvasScene.id)
+    }
+    undo(): void {}
+}
+
+class SaveAsCommand implements ICommand {
+    undoable: boolean = false
+    timestamp: number | undefined
+
+    constructor(private canvasScene: CanvasScene) {}
+
+    execute(): void {
+        useCanvasStore().requestSave(this.canvasScene.id, true)
     }
     undo(): void {}
 }
@@ -462,6 +475,16 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
         keybind: 'ctrl+s',
         when: isActiveCanvas,
         create: () => new SaveCommand(activeScene()!)
+    })
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.SAVE_AS,
+        label: 'Save Canvas As',
+        scope,
+        showInPalette: true,
+        keybind: 'ctrl+shift+s',
+        when: isActiveCanvas,
+        create: () => new SaveAsCommand(activeScene()!)
     })
 
     commandRegistry.register({

@@ -31,6 +31,8 @@ const dialog = useDialog()
 watch(
     () => canvasStore.pendingSaveRequests.has(props.canvasId!),
     async (needsSave) => {
+        console.log(needsSave)
+
         if (!needsSave) return
 
         const scene = canvasStore.openCanvases.get(props.canvasId!)
@@ -39,7 +41,10 @@ watch(
             return
         }
 
-        if (scene.isPersisted) {
+        const req = canvasStore.getSaveRequest(props.canvasId!)
+        const forceAs = req?.forceAs ?? false
+
+        if (scene.isPersisted && !forceAs) {
             await canvasStore.saveCanvas(scene.id, scene.name)
             canvasStore.clearSaveRequest(props.canvasId!)
             return
@@ -59,7 +64,7 @@ watch(
         })
 
         if (newName) {
-            await canvasStore.saveCanvas(props.canvasId!, newName)
+            await canvasStore.saveCanvas(props.canvasId!, newName, { forceAsNew: forceAs })
         }
         canvasStore.clearSaveRequest(props.canvasId!)
     }

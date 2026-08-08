@@ -42,7 +42,7 @@ function clearSearch() {
 }
 
 function openCanvas(id: number) {
-    canvasStore.fetchOpenCanvas(id)
+    canvasStore.fetchAndOpenCanvas(id)
 }
 
 function onFilesUpdated(updates: FileTagResult[]) {

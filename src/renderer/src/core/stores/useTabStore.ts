@@ -30,6 +30,11 @@ export const useTabStore = defineStore('tabStore', () => {
         activeTabIndex.value = index
     }
 
+    function openTab(type: AppTabType.Canvas, title?: string, data?: CanvasTabPayload): number
+    function openTab(type: AppTabType.Explorer, title?: string, data?: ExplorerTabPayload): number
+    function openTab(type: AppTabType.Upload, title?: string, data?: UploadTabPayload): number
+    function openTab(type: AppTabType.Empty, title?: string): number
+
     function openTab(type: AppTabType, title?: string, data?: any): number {
         if (openTabs.value.length >= TAB_LIMIT) {
             console.error('tab limit reached')
@@ -48,18 +53,13 @@ export const useTabStore = defineStore('tabStore', () => {
         return openTabs.value.length - 1
     }
 
-    function openTab(type: AppTabType.Canvas, title?: string, data?: CanvasTabPayload): number
-    function openTab(type: AppTabType.Explorer, title?: string, data?: ExplorerTabPayload): number
-    function openTab(type: AppTabType.Upload, title?: string, data?: UploadTabPayload): number
-    function openTab(type: AppTabType.Empty, title?: string): number
-
     function closeTab(index: number) {
         const tab = openTabs.value[index]
 
         tabHistory.value.push(tab)
         openTabs.value.splice(index, 1)
 
-        activeTabIndex.value = Math.min(index, openTabs.value.length - 1)
+        activeTabIndex.value = Math.min(activeTabIndex.value, openTabs.value.length - 1)
     }
     function closeActiveTab() {
         closeTab(activeTabIndex.value)

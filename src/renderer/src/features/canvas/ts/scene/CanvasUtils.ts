@@ -311,6 +311,7 @@ export class Transform {
             rotation: this.rotation,
             width: this.width,
             height: this.height,
+            zIndex: this.zIndex,
             children: [...this.children.keys()],
             parent: this.parentTransform?.elementId
         }
@@ -322,6 +323,7 @@ export class Transform {
         this.rotation = json.rotation
         this.width = json.width
         this.height = json.height
+        this.zIndex = json.zIndex
     }
 
     onSceneLoad(json: any) {
