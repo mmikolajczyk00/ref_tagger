@@ -52,7 +52,9 @@ class MoveCommand implements ICommand {
             if (group) {
                 group.addElements(this.canvasScene.getElementsById([...this.newPositions.keys()]))
                 this.prevHighestZIndex = this.canvasScene.highestZIndex
-                this.zIndexChanges = this.canvasScene.bringToFront(group)
+                this.zIndexChanges = this.canvasScene.bringSelectionToFront(
+                    this.canvasScene.getElementsById([...this.newPositions.keys()])
+                )
             }
         }
 
