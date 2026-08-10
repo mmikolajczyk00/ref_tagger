@@ -1,19 +1,19 @@
-import { MediaFile, Tag, TagOperation } from 'src/shared/types/models'
-import { computed, MaybeRefOrGetter, toValue } from 'vue'
+import { MediaFile, Tag, TagOperation } from '@shared/types/models'
+import { computed, Ref } from 'vue'
 
 export function useTagEditorPanel(
-    selectedFilesSource: MaybeRefOrGetter<MediaFile[]>,
+    selFiles: Ref<MediaFile[]>,
     normalizeFn: (input: string) => string
 ) {
-    const selectedFiles = computed(() => toValue(selectedFilesSource) || [])
+    const filesSource = computed<MediaFile[]>(() => selFiles.value)
 
     const tagBuckets = computed(() => {
-        const totalSelected = selectedFiles.value.length
+        const totalSelected = filesSource.value.length
         const tagCounts = new Map<string | number, { count: number; tag: Tag }>()
 
         if (totalSelected === 0) return { all: [], some: [] }
 
-        for (const file of selectedFiles.value) {
+        for (const file of filesSource.value) {
             for (const tag of file.tags) {
                 if (!tagCounts.has(tag.id)) {
                     tagCounts.set(tag.id, { count: 0, tag })
@@ -41,7 +41,7 @@ export function useTagEditorPanel(
 
     const existingTagIds = computed(() => {
         const ids = new Set<number>()
-        for (const file of selectedFiles.value) {
+        for (const file of filesSource.value) {
             for (const tag of file.tags) {
                 ids.add(tag.id)
             }
@@ -55,7 +55,7 @@ export function useTagEditorPanel(
         const operations: TagOperation[] = []
 
         for (const tagName of normalizedTags) {
-            for (const file of selectedFiles.value) {
+            for (const file of filesSource.value) {
                 const fileHasTag = file.tags.some((t) => t.name === tagName)
 
                 if (!fileHasTag) {
@@ -74,7 +74,7 @@ export function useTagEditorPanel(
     function removeTag(targetTag: Tag): TagOperation[] {
         const operations: TagOperation[] = []
 
-        for (const file of selectedFiles.value) {
+        for (const file of filesSource.value) {
             const fileHasTag = file.tags.some((t) => t.id === targetTag.id)
 
             if (fileHasTag) {

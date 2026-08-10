@@ -23,10 +23,10 @@ useIntersectionObserver(mediaSentinel, ([{ isIntersecting }]) => {
             v-for="(f, index) in files"
             :key="f.id"
             class="media-file border-surface-200 dark:border-surface-800 bg-surface-0 dark:bg-surface-900 hover:border-surface-400 dark:hover:border-surface-600 group relative flex aspect-square flex-col overflow-hidden border transition-colors select-none"
-            @click.left.stop="props.explorer.handleItemClick($event, f, index)"
+            @click.left.stop="props.explorer.selection.handleItemClick($event, f, index)"
         >
             <div
-                v-show="props.explorer.isSelected(f.id)"
+                v-show="props.explorer.selection.isSelected(f.id)"
                 class="bg-primary/30 absolute size-full"
             ></div>
             <img

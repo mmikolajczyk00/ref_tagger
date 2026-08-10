@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { FileTagResult, MediaFile, TagOperation, TagOperationResult } from '@shared/types/models'
 import { useTagEditorPanel } from '../ts/useTagEditorPanel'
 import { normalizeTag } from '../../../core/utils/tagsUtils'
@@ -15,8 +15,13 @@ const emit = defineEmits<{
     (e: 'files-updated', updates: FileTagResult[]): void
 }>()
 
+const selectedFilesRef = computed<MediaFile[]>(() => {
+    const v = props.selectedFiles
+    return Array.isArray(v) ? v : []
+})
+
 const { allGroup, someGroup, existingTagIds, submitTags, removeTag } = useTagEditorPanel(
-    () => props.selectedFiles,
+    selectedFilesRef,
     normalizeTag
 )
 

@@ -1,10 +1,20 @@
-export type MediaType = 'audio' | 'video' | 'image'
+export type MediaType = 'image' | 'video' | 'audio'
+export type MediaClassification = MediaType | 'unsupported' | 'undefined'
+export const MEDIA_TYPES = ['image', 'video', 'audio'] as const
+
+export const MediaFileSourceType = {
+    LOCAL: 'local',
+    WEB: 'web'
+} as const
+
+export type MediaFileSource = (typeof MediaFileSourceType)[keyof typeof MediaFileSourceType]
 
 export interface MediaFile {
     id: number
     fileName: string
     filePath: string
     mediaType: MediaType
+    sourceUrl?: string
     createdAt: string
     tags: Tag[]
 }
@@ -31,9 +41,12 @@ export interface PaginatedMediaFiles {
 }
 
 export interface UploadFilePayload {
-    filePath: string
+    source: MediaFileSource
     fileName: string
     mediaType: MediaType
+    filePath?: string
+    mediaUrl?: string
+    sourceUrl?: string
 }
 
 export interface TagOperation {

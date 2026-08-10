@@ -17,7 +17,7 @@ class SelectAllCommand implements ICommand {
     constructor(private explorer: Explorer) {}
 
     execute(): void {
-        this.explorer.selectedIds = new Set(this.explorer.mediaFiles.keys())
+        this.explorer.selection.selectedIds = new Set(this.explorer.mediaFiles.keys())
     }
     undo(): void {}
 }
@@ -28,7 +28,7 @@ class DeleteSelectedCommand implements ICommand {
     private deletedIds: number[] = []
 
     constructor(private explorer: Explorer) {
-        this.deletedIds = [...this.explorer.selectedIds]
+        this.deletedIds = [...this.explorer.selection.selectedIds]
     }
 
     execute(): void {
@@ -45,7 +45,7 @@ class AddToNewCanvasCommand implements ICommand {
     private fileIds: number[] = []
 
     constructor(private explorer: Explorer) {
-        this.fileIds = [...this.explorer.selectedIds]
+        this.fileIds = [...this.explorer.selection.selectedIds]
     }
 
     execute(): void {
@@ -77,7 +77,7 @@ export function registerExplorerCommands(commandRegistry: CommandRegistry) {
     const isActiveExplorer = () => activeExplorer() !== null
     const hasSelection = () => {
         const e = activeExplorer()
-        return e !== null && e.selectedIds.size > 0
+        return e !== null && e.selection.selectedIds.size > 0
     }
 
     commandRegistry.register({

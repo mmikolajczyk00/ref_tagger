@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia'
 
 import { computed, ref } from 'vue'
-import { AppTab, AppTabType, ExplorerTabPayload } from '@renderer/features/tab_system/Tabs'
+import {
+    AppTab,
+    AppTabType,
+    ExplorerTabPayload,
+    TagEditorTab
+} from '@renderer/features/tab_system/Tabs'
 import { UndoRedoManager } from '../command_system/UndoRedoManager'
 
 interface CanvasTabPayload {
@@ -9,6 +14,7 @@ interface CanvasTabPayload {
 }
 
 interface UploadTabPayload {}
+interface TagEditorPayload {}
 
 const TAB_LIMIT = 50
 
@@ -31,6 +37,7 @@ export const useTabStore = defineStore('tabStore', () => {
     function openTab(type: AppTabType.Canvas, title?: string, data?: CanvasTabPayload): number
     function openTab(type: AppTabType.Explorer, title?: string, data?: ExplorerTabPayload): number
     function openTab(type: AppTabType.Upload, title?: string, data?: UploadTabPayload): number
+    function openTab(type: AppTabType.TagEditor, title?: string, data?: TagEditorPayload): number
     function openTab(type: AppTabType.Empty, title?: string): number
 
     function openTab(type: AppTabType, title?: string, data?: any): number {

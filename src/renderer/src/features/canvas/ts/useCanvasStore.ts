@@ -4,7 +4,7 @@ import { useTabStore } from '../../../core/stores/useTabStore'
 import { AppTabType } from '@renderer/features/tab_system/Tabs'
 import CanvasScene from './scene/CanvasScene'
 import { Coordinates } from './scene/CanvasUtils'
-import { Canvas } from 'src/shared/types/models'
+import { Canvas } from '@shared/types/models'
 import { validateCanvasName } from './validateCanvasName'
 
 export const useCanvasStore = defineStore('canvasStore', () => {

@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { clamp } from '@vueuse/core'
-import { FileTagResult, MediaFile } from 'src/shared/types/models'
+import { FileTagResult, MediaFile } from '@shared/types/models'
 import { ExplorerTabPayload } from '../../tab_system/Tabs'
 
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import TagEditorPanel from './TagEditorPanel.vue'
 import SearchTagInput from '../../search/ui/SearchTagInput.vue'
-import CanvasList from './CanvasList.vue'
-import MediaFileList from './MediaFileList.vue'
 import { useCanvasStore } from '../../canvas/ts/useCanvasStore'
 import { useExplorerStore } from '../ts/useExplorerStore'
+import MediaFileExplorerList from './MediaFileExplorerList.vue'
+import CanvasExplorerList from './CanvasExplorerList.vue'
+import TagEditorExplorerPanel from './TagEditorExplorerPanel.vue'
 
 const canvasStore = useCanvasStore()
 const props = defineProps<ExplorerTabPayload>()
@@ -85,24 +85,24 @@ onMounted(() => {
                 <SplitterPanel
                     class="focus-visible:outline-0"
                     @wheel="handleWheel"
-                    @click="explorer.clearSelection"
+                    @click="explorer.selection.clearSelection"
                 >
-                    <CanvasList />
+                    <CanvasExplorerList />
                 </SplitterPanel>
                 <SplitterPanel
                     class="focus-visible:outline-0"
                     @wheel="handleWheel"
-                    @click="explorer.clearSelection"
+                    @click="explorer.selection.clearSelection"
                 >
-                    <MediaFileList :files="mediaFilesArr" :explorer="explorer" />
+                    <MediaFileExplorerList :files="mediaFilesArr" :explorer="explorer" />
                 </SplitterPanel>
             </Splitter>
         </SplitterPanel>
         <SplitterPanel :min-size="5" :size="15">
-            <TagEditorPanel
+            <TagEditorExplorerPanel
                 :selected-files="explorer.selectedItems"
                 @files-updated="onFilesUpdated"
-            ></TagEditorPanel>
+            ></TagEditorExplorerPanel>
         </SplitterPanel>
     </Splitter>
 </template>

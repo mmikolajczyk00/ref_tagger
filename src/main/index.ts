@@ -5,6 +5,7 @@ import icon from '../../resources/icon.png?asset'
 import { LocalDatabaseService } from './services/LocalDatabaseService'
 import { TagOperation, TagSearchQuery, UploadFilePayload } from '../shared/types/models'
 import { pathToFileURL } from 'url'
+import { FILE_ROOT_DIR } from './env'
 
 protocol.registerSchemesAsPrivileged([
     { scheme: 'media', privileges: { standard: true, secure: true, supportFetchAPI: true } }
@@ -12,8 +13,8 @@ protocol.registerSchemesAsPrivileged([
 
 function createWindow(): void {
     const mainWindow = new BrowserWindow({
-        width: 900,
-        height: 670,
+        width: 1920,
+        height: 1080,
         show: false,
         autoHideMenuBar: true,
         ...(process.platform === 'linux' ? { icon } : {}),
@@ -90,7 +91,7 @@ app.whenReady().then(() => {
     })
 
     const userDataPath = app.getPath('userData')
-    const dbService = new LocalDatabaseService(userDataPath)
+    const dbService = new LocalDatabaseService(userDataPath, FILE_ROOT_DIR)
 
     ipcMain.handle('api:files:getPaginated', (_event, page: number, limit: number) => {
         return dbService.getFilesPage(page, limit)
@@ -197,6 +198,10 @@ app.whenReady().then(() => {
 
     ipcMain.handle('api:canvases:getByIds', (_event, ids: number[]) => {
         return dbService.getCanvasesByIds(ids)
+    })
+
+    ipcMain.handle('shell:openExternal', (_event, url: string) => {
+        return shell.openExternal(url)
     })
 
     createWindow()

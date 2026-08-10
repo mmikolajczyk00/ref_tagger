@@ -1,102 +1,91 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useUploadStore } from '../ts/useUploadStore'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { useUploadQueueStore } from '../ts/useUploadQueueStore'
+import ScrapePanel from './ScrapePanel.vue'
+import UploadPanel from './UploadPanel.vue'
+import { handleDrop } from '../ts/DropHandler'
 
 const isDragging = ref(false)
-const isProcessing = ref(false)
+let dragCounter = 0
 
-const uploadStore = useUploadStore()
+const store = useUploadQueueStore()
 
-async function handleDrop(event: DragEvent) {
-    isDragging.value = false
-    const files = event.dataTransfer?.files
-    if (!files) return
+const activeTab = ref('0')
 
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-
-        const absolutePath = await window.api.files.getFilePath(file)
-        if (!absolutePath) continue
-
-        let mediaType = 'unknown'
-        if (file.type.startsWith('image/')) mediaType = 'image'
-        if (file.type.startsWith('audio/')) mediaType = 'audio'
-        if (file.type.startsWith('video/')) mediaType = 'video'
-
-        if (mediaType === 'unknown') continue // Skip unsupported files
-
-        uploadStore.addToQueue([
-            {
-                id: crypto.randomUUID(),
-                name: file.name,
-                path: absolutePath,
-                type: mediaType,
-                size: file.size,
-                status: 'idle'
-            }
-        ])
-    }
+function isFileDrag(e: DragEvent): boolean {
+    return Array.from(e.dataTransfer?.types ?? []).includes('Files')
 }
+
+function onWindowDragEnter(e: DragEvent) {
+    if (!isFileDrag(e)) return
+    dragCounter++
+    isDragging.value = true
+}
+
+function onWindowDragLeave() {
+    dragCounter = Math.max(0, dragCounter - 1)
+    if (dragCounter === 0) isDragging.value = false
+}
+
+function onWindowDrop() {
+    dragCounter = 0
+    isDragging.value = false
+}
+
+onMounted(() => {
+    window.addEventListener('dragenter', onWindowDragEnter)
+    window.addEventListener('dragleave', onWindowDragLeave)
+    window.addEventListener('drop', onWindowDrop)
+})
+
+onUnmounted(() => {
+    window.removeEventListener('dragenter', onWindowDragEnter)
+    window.removeEventListener('dragleave', onWindowDragLeave)
+    window.removeEventListener('drop', onWindowDrop)
+})
+
+async function handleDropEvent(event: DragEvent) {
+    isDragging.value = false
+    dragCounter = 0
+
+    handleDrop(event)
+}
+
+const fakeFiles = new Array(50)
 </script>
 
 <template>
-    <div class="flex h-full flex-col p-6">
+    <div
+        class="relative flex h-full flex-col"
+        @dragover.prevent="isDragging = true"
+        @drop.prevent="handleDropEvent"
+    >
+        <Tabs :value="activeTab" class="flex h-full min-h-0 flex-1 flex-col">
+            <TabList>
+                <Tab value="0">Scrape</Tab>
+                <Tab value="1">Upload</Tab>
+            </TabList>
+            <TabPanels class="flex h-full min-h-0 flex-1 overflow-hidden">
+                <TabPanel
+                    value="0"
+                    class="h-full min-h-0 flex-1 overflow-hidden focus-within:outline-0"
+                >
+                    <ScrapePanel />
+                </TabPanel>
+                <TabPanel value="1" class="min-h-0 flex-1 overflow-hidden focus-within:outline-0">
+                    <UploadPanel />
+                </TabPanel>
+            </TabPanels>
+        </Tabs>
+
         <div
-            class="rounded-lg border-2 border-dashed p-12 text-center transition-colors"
-            :class="
-                isDragging
-                    ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-surface-300 dark:border-surface-700 bg-surface-100 dark:bg-surface-900'
-            "
-            @dragover.prevent="isDragging = true"
-            @dragleave.prevent="isDragging = false"
-            @drop.prevent="handleDrop"
+            v-show="isDragging"
+            class="pointer-events-none absolute inset-0 z-50 flex items-center justify-center"
         >
-            <p class="text-surface-400">Drag and drop audio, video, or image files here</p>
-        </div>
-
-        <div class="mt-4 flex gap-4">
-            <button
-                :disabled="isProcessing || uploadStore.queue.length === 0"
-                class="bg-primary-600 rounded px-4 py-2 disabled:opacity-50"
-                @click="uploadStore.processQueue"
-            >
-                {{ isProcessing ? 'Processing...' : 'Upload All' }}
-            </button>
-            <button
-                class="bg-surface-200 dark:bg-surface-700 rounded px-4 py-2"
-                @click="uploadStore.clearFinished"
-            >
-                Clear Finished
-            </button>
-        </div>
-
-        <div class="mt-6 grid grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
             <div
-                v-for="item in uploadStore.queue"
-                :key="item.id"
-                class="border-surface-300 dark:border-surface-700 bg-surface-0 dark:bg-surface-800 flex flex-col gap-2 rounded border p-4"
+                class="border-primary-500 bg-primary-500/10 m-6 flex size-full items-center justify-center rounded-lg border-2 border-dashed backdrop-blur-sm"
             >
-                <div class="truncate font-medium">{{ item.name }}</div>
-
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-surface-400 text-xs uppercase">{{ item.type }}</span>
-
-                    <span v-if="item.status === 'idle'" class="text-surface-400">Waiting</span>
-                    <span
-                        v-else-if="item.status === 'uploading'"
-                        class="text-primary-400 animate-pulse"
-                        >Saving...</span
-                    >
-                    <span v-else-if="item.status === 'success'" class="text-success-400">Done</span>
-                    <span
-                        v-else-if="item.status === 'error'"
-                        class="text-danger-400 ml-2 truncate"
-                        :title="item.errorMessage"
-                    >
-                        Error: {{ item.errorMessage }}
-                    </span>
-                </div>
+                <span class="text-primary-300 text-lg font-medium">drop files here</span>
             </div>
         </div>
     </div>

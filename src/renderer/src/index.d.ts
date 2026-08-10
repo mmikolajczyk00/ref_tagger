@@ -1,3 +1,5 @@
+type ScrapeResult = unknown
+
 type iapi = {
     scrape: {
         scrapeTwitter: (url: string) => Promise<ScrapeResult>
@@ -9,7 +11,7 @@ type iapi = {
         getMediaFiles: (page: number, limit: number) => Promise<Result<PaginatedMediaFiles>>
         getMediaFileOfId(id: number): Promise<Result<MediaFile>>
         getFilePath: (file: File) => Promise<string> // webutils stuff
-        insertMediaFile: (payload: UploadFilePayload) => Promise<Result<void>>
+        insertMediaFile: (payload: UploadFilePayload) => Promise<Result<{ id: number }>>
         applyTagOperations: (operations: TagOperation[]) => Promise<Result<TagOperationResult>>
         searchFiles: (query: TagSearchQuery) => Promise<Result<PaginatedMediaFiles>>
         getFilesOfIds: (ids: number[]) => Promise<Result<Array<[number, MediaFile]>>>
@@ -37,6 +39,9 @@ type iapi = {
         delete: (id: number) => Promise<Result<void>>
         getPaginated: (page: number, limit: number) => Promise<Result<PaginatedCanvases>>
         getByIds: (ids: number[]) => Promise<Result<Array<[number, Canvas]>>>
+    }
+    shell: {
+        openExternal: (url: string) => Promise<void>
     }
 }
 

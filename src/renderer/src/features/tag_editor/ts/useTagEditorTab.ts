@@ -5,7 +5,7 @@
 // start for app-wide autocomplete, so the full set is in memory regardless.
 
 import { ref, computed, onMounted, watch } from 'vue'
-import { Tag } from 'src/shared/types/models'
+import { Tag } from '@shared/types/models'
 import { useTagStore } from '@renderer/core/stores/useTagStore'
 import { normalizeTag } from '@renderer/core/utils/tagsUtils'
 import type { TagRelations } from '../types'

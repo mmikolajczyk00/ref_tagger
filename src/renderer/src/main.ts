@@ -102,17 +102,17 @@ tabStore.openTab(AppTabType.TagEditor, 'Tag Editor')
 
 canvasStore.fetchCanvases()
 
-window.api.files.getMediaFiles(1, 50).then((result) => {
-    if (result.success) {
-        canvasStore.addAndOpenNewCanvas(
-            result.data.data.map(([id]) => id),
-            'CanvasDemo'
-        )
-        // const scene = canvasStore.addAndOpenNewCanvas([], 'CanvasDemo')
-        // scene.loadFromJSON(data)
+// window.api.files.getMediaFiles(1, 50).then((result) => {
+//     if (result.success) {
+//         canvasStore.addAndOpenNewCanvas(
+//             result.data.data.map(([id]) => id),
+//             'CanvasDemo'
+//         )
+//         // const scene = canvasStore.addAndOpenNewCanvas([], 'CanvasDemo')
+//         // scene.loadFromJSON(data)
 
-        tabStore.setActiveTab(3)
-    }
-})
+//         tabStore.setActiveTab(0)
+//     }
+// })
 
 app.mount('#app')

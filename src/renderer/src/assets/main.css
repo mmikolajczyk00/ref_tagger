@@ -120,6 +120,10 @@
     --p-tooltip-background: var(--p-surface-900);
 }
 
+.p-splitterpanel {
+    min-height: 0;
+}
+
 div img video {
     @apply select-none;
 }

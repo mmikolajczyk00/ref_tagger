@@ -4,6 +4,7 @@
             v-bind="tabStore.currentActiveTab.data"
             :is="AppTabComponents[tabStore.currentActiveTab.type]"
             :key="tabStore.currentActiveTab.id"
+            class="min-h-0 flex-1 overflow-hidden"
         />
     </keep-alive>
 </template>

@@ -24,3 +24,21 @@ function lerp(a: number, b: number, t: number) {
 }
 
 export { clamp, MouseButton, MouseButtons, lerp }
+
+export function containsAtLeastNTimes(str: string, substring: string, n: number): boolean {
+    if (n <= 0) return true
+    if (!substring) return false
+
+    let count = 0
+    let index = 0
+
+    while ((index = str.indexOf(substring, index)) !== -1) {
+        count++
+        if (count >= n) {
+            return true
+        }
+        index += substring.length
+    }
+
+    return false
+}

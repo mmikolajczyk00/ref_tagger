@@ -2,7 +2,6 @@
 import { clamp, useEventListener } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import { FileModel } from '../../../../../shared/model/fileModel'
-import { MediaType } from '../../../../../shared/shared'
 import FileDisplay from '../../../core/ui/FileDisplay.vue'
 
 const props = defineProps({
@@ -153,7 +152,7 @@ const zoom = ref(1)
                     <FileDisplay
                         :class="{ 'shadow-primary-500 shadow-2xl': activeFileId == index }"
                         :src="file.url"
-                        :media-type="MediaType.IMAGE"
+                        :media-type="'image'"
                         class="size-full object-cover"
                         :draggable="false"
                     ></FileDisplay>

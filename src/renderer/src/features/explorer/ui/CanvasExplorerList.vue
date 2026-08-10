@@ -99,7 +99,7 @@ function cancelEditing() {
             </div>
 
             <span
-                class="material-symbols-outlined text-surface-500 bg-surface-0/80 dark:bg-surface-900/80 absolute right-1 bottom-1 z-10 cursor-pointer rounded p-0.5 text-sm opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500 hover:text-white dark:hover:bg-red-600"
+                class="material-symbols-outlined text-surface-500 bg-surface-0/80 dark:bg-surface-900/80 absolute top-1 right-1 z-10 cursor-pointer rounded p-0.5 text-sm opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500 hover:text-white dark:hover:bg-red-600"
                 @click.left.stop.prevent="
                     () => {
                         cancelEditing()

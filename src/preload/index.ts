@@ -1,7 +1,8 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { ScrapeResult } from '../shared/shared'
 import { TagOperation, TagSearchQuery, UploadFilePayload } from '../shared/types/models'
+
+type ScrapeResult = unknown
 
 // Custom APIs for renderer
 const api = {
@@ -62,6 +63,10 @@ const api = {
         getPaginated: (page: number, limit: number) =>
             ipcRenderer.invoke('api:canvases:getPaginated', page, limit),
         getByIds: (ids: number[]) => ipcRenderer.invoke('api:canvases:getByIds', ids)
+    },
+
+    shell: {
+        openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url)
     }
 }
 

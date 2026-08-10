@@ -1,4 +1,6 @@
 import path from 'path'
+import { promises as fs } from 'fs'
+import crypto from 'crypto'
 import Database from 'better-sqlite3'
 import { PrismaClient } from '../../generated/prisma/client'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
@@ -7,7 +9,7 @@ import {
     Canvas,
     CanvasSceneData,
     MediaFile,
-    MediaType,
+    MediaFileSourceType,
     PaginatedCanvases,
     PaginatedMediaFiles,
     Tag,
@@ -17,6 +19,7 @@ import {
     UploadFilePayload
 } from '../../shared/types/models'
 import { CanvasService } from './CanvasService'
+import { FileStorageService } from './FileStorageService'
 
 const initDDL = `
     CREATE TABLE IF NOT EXISTS files (
@@ -24,6 +27,7 @@ const initDDL = `
         file_path TEXT NOT NULL UNIQUE,
         file_name TEXT NOT NULL,
         media_type TEXT NOT NULL,
+        source_url TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -69,6 +73,7 @@ type FileRow = {
     filePath: string
     fileName: string
     mediaType: string
+    sourceUrl: string | null
     createdAt: Date
     tags: {
         fileId: number
@@ -83,6 +88,7 @@ function fileToResponse(f: FileRow) {
         fileName: f.fileName,
         filePath: f.filePath,
         mediaType: f.mediaType as MediaType,
+        sourceUrl: f.sourceUrl ?? undefined,
         createdAt: f.createdAt instanceof Date ? f.createdAt.toISOString() : String(f.createdAt),
         tags: f.tags.map((ft) => ({ id: ft.tag.id, name: ft.tag.name, color: ft.tag.color }))
     }
@@ -92,17 +98,59 @@ function filesToEntries(files: FileRow[]): Array<[number, MediaFile]> {
     return files.map((f) => [f.id, fileToResponse(f)])
 }
 
+function extFromPath(p: string | undefined): string {
+    if (!p) return ''
+    if (p.startsWith('http://') || p.startsWith('https://')) {
+        try {
+            return path.extname(new URL(p).pathname)
+        } catch {
+            return ''
+        }
+    }
+    return path.extname(p)
+}
+
+function extFromFileName(name: string): string {
+    return path.extname(name)
+}
+
+function extFromMediaType(mediaType: string): string {
+    const map: Record<string, string> = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp',
+        'image/svg+xml': '.svg',
+        'video/mp4': '.mp4',
+        'video/webm': '.webm',
+        'video/quicktime': '.mov',
+        'audio/mpeg': '.mp3',
+        'audio/wav': '.wav',
+        'audio/ogg': '.ogg'
+    }
+    return map[mediaType] ?? '.bin'
+}
+
 export class LocalDatabaseService {
     private prisma: PrismaClient
     private canvasService: CanvasService
+    private fileStorage: FileStorageService
 
-    constructor(dbFolderPath: string) {
+    constructor(dbFolderPath: string, fileRootDir: string) {
         const dbPath = path.join(dbFolderPath, 'ref-sheeter.sqlite')
+
+        console.log(dbPath)
 
         const initDb = new Database(dbPath)
         initDb.pragma('journal_mode = WAL')
         initDb.pragma('foreign_keys = ON')
         initDb.exec(initDDL)
+
+        try {
+            initDb.exec('ALTER TABLE files ADD COLUMN source_url TEXT')
+        } catch {
+            // column already exists on existing databases — safe to ignore
+        }
 
         initDb.close()
 
@@ -110,6 +158,7 @@ export class LocalDatabaseService {
         this.prisma = new PrismaClient({ adapter: adapterFactory })
 
         this.canvasService = new CanvasService(this.prisma, path.join(dbFolderPath, 'canvases'))
+        this.fileStorage = new FileStorageService(fileRootDir)
     }
 
     async getFilesPage(page: number, limit: number): Promise<Result<PaginatedMediaFiles>> {
@@ -118,7 +167,8 @@ export class LocalDatabaseService {
             // const res = await this.prisma.file.deleteMany({})
             // const res2 = await this.prisma.tag.deleteMany({})
             // const res3 = await this.prisma.fileTag.deleteMany({})
-            // console.log(res, res2, res3)
+            // const res4 = await this.prisma.canvas.deleteMany({})
+            // console.log(res, res2, res3, res4)
 
             const skip = (page - 1) * limit
             const [files, total] = await Promise.all([
@@ -180,22 +230,67 @@ export class LocalDatabaseService {
         }
     }
 
-    async insertFile(payload: UploadFilePayload): Promise<Result<void>> {
+    async insertFile(payload: UploadFilePayload): Promise<Result<{ id: number }>> {
+        if (payload.source === MediaFileSourceType.LOCAL && !payload.filePath) {
+            return { success: false, error: 'Local upload requires filePath.' }
+        }
+        if (payload.source === MediaFileSourceType.WEB && !payload.mediaUrl) {
+            return { success: false, error: 'Web upload requires mediaUrl.' }
+        }
+
+        const ext =
+            extFromPath(payload.filePath) ||
+            extFromPath(payload.mediaUrl) ||
+            extFromFileName(payload.fileName) ||
+            extFromMediaType(payload.mediaType)
+
+        const placeholder = `pending-${crypto.randomUUID()}`
+        let row
         try {
-            await this.prisma.file.create({
+            row = await this.prisma.file.create({
                 data: {
-                    filePath: payload.filePath,
+                    filePath: placeholder,
                     fileName: payload.fileName,
-                    mediaType: payload.mediaType
+                    mediaType: payload.mediaType,
+                    sourceUrl: payload.sourceUrl ?? null
                 }
             })
-            return { success: true, data: undefined as void }
         } catch (err) {
             return {
                 success: false,
-                error: err instanceof Error ? err.message : 'Failed to insert file.'
+                error: err instanceof Error ? err.message : 'Failed to insert file record.'
             }
         }
+
+        let stored: Result<{ storedPath: string }>
+        if (payload.source === MediaFileSourceType.LOCAL && payload.filePath) {
+            stored = await this.fileStorage.storeLocalFile(row.id, payload.filePath, ext)
+        } else if (payload.source === MediaFileSourceType.WEB && payload.mediaUrl) {
+            stored = await this.fileStorage.storeWebFile(row.id, payload.mediaUrl, ext)
+        } else {
+            stored = { success: false, error: 'Unknown source.' }
+        }
+
+        if (!stored.success) {
+            await this.prisma.file.delete({ where: { id: row.id } }).catch(() => {})
+            return { success: false, error: stored.error }
+        }
+
+        try {
+            await this.prisma.file.update({
+                where: { id: row.id },
+                data: { filePath: stored.data.storedPath }
+            })
+        } catch (err) {
+            await fs.unlink(stored.data.storedPath).catch(() => {})
+            await this.prisma.file.delete({ where: { id: row.id } }).catch(() => {})
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to finalize file path.'
+            }
+        }
+
+        return { success: true, data: { id: row.id } }
     }
 
     async processTagOperations(operations: TagOperation[]): Promise<Result<TagOperationResult>> {

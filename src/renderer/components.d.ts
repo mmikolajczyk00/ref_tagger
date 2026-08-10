@@ -28,8 +28,17 @@ declare module 'vue' {
     InputColorSwatch: typeof import('primevue/inputcolorswatch')['default']
     InputColorSwatchBackground: typeof import('primevue/inputcolorswatchbackground')['default']
     InputColorTransparencyGrid: typeof import('primevue/inputcolortransparencygrid')['default']
+    InputGroup: typeof import('primevue/inputgroup')['default']
+    InputGroupAddon: typeof import('primevue/inputgroupaddon')['default']
     InputIcon: typeof import('primevue/inputicon')['default']
     InputText: typeof import('primevue/inputtext')['default']
+    Label: typeof import('primevue/label')['default']
     Popover: typeof import('primevue/popover')['default']
+    Tab: typeof import('primevue/tab')['default']
+    TabList: typeof import('primevue/tablist')['default']
+    TabPanel: typeof import('primevue/tabpanel')['default']
+    TabPanels: typeof import('primevue/tabpanels')['default']
+    Tabs: typeof import('primevue/tabs')['default']
+    ToggleSwitch: typeof import('primevue/toggleswitch')['default']
   }
 }

@@ -5,13 +5,15 @@
     "src/renderer/src/**/*",
     "src/renderer/src/**/*.vue",
     "src/preload/**/*.d.ts"
-, "src/shared/shared.ts", "src/shared/axios.ts", "src/shared/model"  ],
+, "src/shared/**/*"  ],
   "compilerOptions": {
     "composite": true,
-    "baseUrl": ".",
     "paths": {
       "@renderer/*": [
-        "src/renderer/src/*"
+        "./src/renderer/src/*"
+      ],
+      "@shared/*": [
+        "./src/shared/*"
       ]
     }
   }
