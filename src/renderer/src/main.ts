@@ -100,6 +100,8 @@ tabStore.openTab(AppTabType.TagEditor, 'Tag Editor')
 
 // canvas demo
 
+tabStore.setActiveTab(2)
+
 canvasStore.fetchCanvases()
 
 // window.api.files.getMediaFiles(1, 50).then((result) => {

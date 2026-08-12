@@ -1,17 +1,26 @@
 import { ref, computed } from 'vue'
 import { useTagStore } from '@renderer/core/stores/useTagStore'
+import { normalizeTag } from '@renderer/core/utils/tagsUtils'
 import type { Tag } from '@shared/types/models'
 
-export function useTagAutocomplete(excludeIds: () => Set<number>) {
+export interface TagAutocompleteOptions {
+    queryNormalizer?: (raw: string) => string
+}
+
+export function useTagAutocomplete(
+    excludeIds: () => Set<number>,
+    options: TagAutocompleteOptions = {}
+) {
     const tagStore = useTagStore()
+    const queryNormalizer = options.queryNormalizer ?? normalizeTag
 
     const inputText = ref('')
     const selectedIndex = ref(-1)
 
     const suggestions = computed<Tag[]>(() => {
-        const text = inputText.value.trim()
-        if (!text) return []
-        return tagStore.getMatchingTags(text, excludeIds())
+        const query = queryNormalizer(inputText.value.trim()).trim()
+        if (!query) return []
+        return tagStore.getMatchingTags(query, excludeIds())
     })
 
     const activeSuggestion = computed<Tag | null>(() => {
@@ -22,11 +31,11 @@ export function useTagAutocomplete(excludeIds: () => Set<number>) {
     })
 
     const ghostText = computed<string>(() => {
-        const text = inputText.value.trim()
-        if (!text || suggestions.value.length === 0) return ''
+        const query = queryNormalizer(inputText.value.trim()).trim()
+        if (!query || suggestions.value.length === 0) return ''
         const first = suggestions.value[0].name
-        if (first.toLowerCase().startsWith(text.toLowerCase())) {
-            return first.slice(text.length)
+        if (first.toLowerCase().startsWith(query)) {
+            return first.slice(query.length)
         }
         return ''
     })
