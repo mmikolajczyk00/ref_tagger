@@ -1,6 +1,7 @@
 import { useUploadQueueStore } from './useUploadQueueStore'
 import { SCRAPE_STATUS, UPLOAD_STATUS } from './UploadQueue'
 import type { MediaClassification, MediaFileSource } from '@shared/types/models'
+import { normalizeTag } from '@renderer/core/utils/tagsUtils'
 export { MediaFileSourceType } from '@shared/types/models'
 
 export type DropScanResult = {
@@ -213,29 +214,5 @@ export async function handleDrop(event: DragEvent) {
             files: dt.files
         })
     }
-
-    console.log(
-        'mapped results',
-        results.map((f) => {
-            return {
-                id: crypto.randomUUID(),
-                dropData: f,
-                uploadStatus: UPLOAD_STATUS.IDLE,
-                scrapeStatus: SCRAPE_STATUS.IDLE,
-                userTags: []
-            }
-        })
-    )
-
-    store.addToScrape(
-        results.map((f) => {
-            return {
-                id: crypto.randomUUID(),
-                dropData: f,
-                uploadStatus: UPLOAD_STATUS.IDLE,
-                scrapeStatus: SCRAPE_STATUS.IDLE,
-                userTags: []
-            }
-        })
-    )
+    store.addToScrape(results)
 }

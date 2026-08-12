@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { Tag } from '@shared/types/models'
 
 const modelValue = defineModel<string[]>({ required: true })
@@ -17,6 +18,10 @@ const emit = defineEmits<{
     'highlight-suggestion': [index: number]
     blur: []
 }>()
+
+const inputEl = ref<HTMLInputElement | null>(null)
+
+defineExpose({ focus: () => inputEl.value?.focus() })
 
 function removeChip(tagValue: string) {
     modelValue.value = modelValue.value.filter((t) => t !== tagValue)
@@ -53,6 +58,7 @@ function removeChip(tagValue: string) {
                     >
                 </span>
                 <input
+                    ref="inputEl"
                     class="caret-surface-950 dark:caret-surface-0 relative w-full bg-transparent py-1 text-sm text-transparent outline-none"
                     :value="inputValue"
                     @input="inputValue = ($event.target as HTMLInputElement).value"

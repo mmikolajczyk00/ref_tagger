@@ -65,6 +65,35 @@ const api = {
         getByIds: (ids: number[]) => ipcRenderer.invoke('api:canvases:getByIds', ids)
     },
 
+    tagsProcessing: {
+        blacklist: {
+            getAll: () => ipcRenderer.invoke('api:tagsProcessing:blacklist:getAll'),
+            get: (id: number) => ipcRenderer.invoke('api:tagsProcessing:blacklist:get', id),
+            create: (listName: string) =>
+                ipcRenderer.invoke('api:tagsProcessing:blacklist:create', listName),
+            rename: (id: number, listName: string) =>
+                ipcRenderer.invoke('api:tagsProcessing:blacklist:rename', id, listName),
+            delete: (id: number) => ipcRenderer.invoke('api:tagsProcessing:blacklist:delete', id),
+            addTags: (id: number, tags: string[]) =>
+                ipcRenderer.invoke('api:tagsProcessing:blacklist:addTags', id, tags),
+            removeTag: (id: number, tag: string) =>
+                ipcRenderer.invoke('api:tagsProcessing:blacklist:removeTag', id, tag)
+        },
+        aliases: {
+            getAll: () => ipcRenderer.invoke('api:tagsProcessing:aliases:getAll'),
+            get: (id: number) => ipcRenderer.invoke('api:tagsProcessing:aliases:get', id),
+            create: (realTag: string) =>
+                ipcRenderer.invoke('api:tagsProcessing:aliases:create', realTag),
+            rename: (id: number, realTag: string) =>
+                ipcRenderer.invoke('api:tagsProcessing:aliases:rename', id, realTag),
+            delete: (id: number) => ipcRenderer.invoke('api:tagsProcessing:aliases:delete', id),
+            addTags: (id: number, tags: string[]) =>
+                ipcRenderer.invoke('api:tagsProcessing:aliases:addTags', id, tags),
+            removeTag: (id: number, tag: string) =>
+                ipcRenderer.invoke('api:tagsProcessing:aliases:removeTag', id, tag)
+        }
+    },
+
     shell: {
         openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url)
     }

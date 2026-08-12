@@ -98,3 +98,17 @@ export type CanvasSceneData = {
     panOffset: { x: number; y: number }
     highestZIndex: number
 }
+
+export interface Blacklist {
+    id: number
+    listName: string
+    tags: string[]
+    createdAt: string
+}
+
+export interface Alias {
+    id: number
+    realTag: string
+    aliasTags: string[]
+    createdAt: string
+}

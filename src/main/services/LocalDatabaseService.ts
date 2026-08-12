@@ -6,10 +6,13 @@ import { PrismaClient } from '../../generated/prisma/client'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import { Result } from '../../shared/types/api'
 import {
+    Alias,
+    Blacklist,
     Canvas,
     CanvasSceneData,
     MediaFile,
     MediaFileSourceType,
+    MediaType,
     PaginatedCanvases,
     PaginatedMediaFiles,
     Tag,
@@ -20,6 +23,7 @@ import {
 } from '../../shared/types/models'
 import { CanvasService } from './CanvasService'
 import { FileStorageService } from './FileStorageService'
+import { TagsProcessingService } from './TagsProcessingService'
 
 const initDDL = `
     CREATE TABLE IF NOT EXISTS files (
@@ -66,6 +70,38 @@ const initDDL = `
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS blacklists (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        list_name TEXT NOT NULL UNIQUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS blacklist_tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        list_id INTEGER NOT NULL,
+        tag TEXT NOT NULL,
+        FOREIGN KEY (list_id) REFERENCES blacklists (id) ON DELETE CASCADE,
+        UNIQUE (list_id, tag)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_blacklist_tags_list ON blacklist_tags(list_id);
+
+    CREATE TABLE IF NOT EXISTS aliases (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        real_tag TEXT NOT NULL UNIQUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS alias_tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        alias_id INTEGER NOT NULL,
+        tag TEXT NOT NULL,
+        FOREIGN KEY (alias_id) REFERENCES aliases (id) ON DELETE CASCADE,
+        UNIQUE (alias_id, tag)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_alias_tags_alias ON alias_tags(alias_id);
 `
 
 type FileRow = {
@@ -135,6 +171,7 @@ export class LocalDatabaseService {
     private prisma: PrismaClient
     private canvasService: CanvasService
     private fileStorage: FileStorageService
+    private tagsProcessingService: TagsProcessingService
 
     constructor(dbFolderPath: string, fileRootDir: string) {
         const dbPath = path.join(dbFolderPath, 'ref-sheeter.sqlite')
@@ -159,6 +196,7 @@ export class LocalDatabaseService {
 
         this.canvasService = new CanvasService(this.prisma, path.join(dbFolderPath, 'canvases'))
         this.fileStorage = new FileStorageService(fileRootDir)
+        this.tagsProcessingService = new TagsProcessingService(this.prisma)
     }
 
     async getFilesPage(page: number, limit: number): Promise<Result<PaginatedMediaFiles>> {
@@ -1063,5 +1101,63 @@ export class LocalDatabaseService {
 
     async deleteCanvas(id: number): Promise<Result<void>> {
         return this.canvasService.deleteCanvas(id)
+    }
+
+    // Tags processing delegation
+
+    async createBlacklist(listName: string): Promise<Result<Blacklist>> {
+        return this.tagsProcessingService.createBlacklist(listName)
+    }
+
+    async renameBlacklist(id: number, listName: string): Promise<Result<Blacklist>> {
+        return this.tagsProcessingService.renameBlacklist(id, listName)
+    }
+
+    async deleteBlacklist(id: number): Promise<Result<void>> {
+        return this.tagsProcessingService.deleteBlacklist(id)
+    }
+
+    async getAllBlacklists(): Promise<Result<Blacklist[]>> {
+        return this.tagsProcessingService.getAllBlacklists()
+    }
+
+    async getBlacklist(id: number): Promise<Result<Blacklist>> {
+        return this.tagsProcessingService.getBlacklist(id)
+    }
+
+    async addBlacklistTags(listId: number, tags: string[]): Promise<Result<{ added: string[] }>> {
+        return this.tagsProcessingService.addBlacklistTags(listId, tags)
+    }
+
+    async removeBlacklistTag(listId: number, tag: string): Promise<Result<void>> {
+        return this.tagsProcessingService.removeBlacklistTag(listId, tag)
+    }
+
+    async createAlias(realTag: string): Promise<Result<Alias>> {
+        return this.tagsProcessingService.createAlias(realTag)
+    }
+
+    async renameAlias(id: number, realTag: string): Promise<Result<Alias>> {
+        return this.tagsProcessingService.renameAlias(id, realTag)
+    }
+
+    async deleteAlias(id: number): Promise<Result<void>> {
+        return this.tagsProcessingService.deleteAlias(id)
+    }
+
+    async getAllAliases(): Promise<Result<Alias[]>> {
+        return this.tagsProcessingService.getAllAliases()
+    }
+
+    async getAlias(id: number): Promise<Result<Alias>> {
+        return this.tagsProcessingService.getAlias(id)
+    }
+
+    async addAliasTags(aliasId: number, tags: string[]): Promise<Result<{ added: string[] }>> {
+        return this.tagsProcessingService.addAliasTags(aliasId, tags)
+    }
+
+    async removeAliasTag(aliasId: number, tag: string): Promise<Result<void>> {
+        return this.tagsProcessingService.removeAliasTag(aliasId, tag)
     }
 }

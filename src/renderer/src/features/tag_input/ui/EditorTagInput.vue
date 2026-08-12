@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useTagAutocomplete } from '../ts/useTagAutocomplete'
 import { useTagStore } from '../../../core/stores/useTagStore'
 import { normalizeTag } from '../../../core/utils/tagsUtils'
@@ -14,6 +14,10 @@ const props = defineProps<{
 const emit = defineEmits<{
     submit: []
 }>()
+
+const baseInputEl = ref<InstanceType<typeof BaseTagInput> | null>(null)
+
+defineExpose({ focus: () => baseInputEl.value?.focus() })
 
 const tagStore = useTagStore()
 
@@ -92,6 +96,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 <template>
     <BaseTagInput
+        ref="baseInputEl"
         v-model="modelValue"
         :input-value="inputText"
         :suggestions="suggestions"

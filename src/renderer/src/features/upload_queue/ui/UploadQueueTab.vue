@@ -4,13 +4,15 @@ import { useUploadQueueStore } from '../ts/useUploadQueueStore'
 import ScrapePanel from './ScrapePanel.vue'
 import UploadPanel from './UploadPanel.vue'
 import { handleDrop } from '../ts/DropHandler'
+import TagProcessingPanel from './TagProcessingPanel.vue'
+import TagsProcessingPanel from './TagsProcessingPanel.vue'
 
 const isDragging = ref(false)
 let dragCounter = 0
 
 const store = useUploadQueueStore()
 
-const activeTab = ref('0')
+const activeTab = ref('2')
 
 function isFileDrag(e: DragEvent): boolean {
     return Array.from(e.dataTransfer?.types ?? []).includes('Files')
@@ -50,8 +52,6 @@ async function handleDropEvent(event: DragEvent) {
 
     handleDrop(event)
 }
-
-const fakeFiles = new Array(50)
 </script>
 
 <template>
@@ -64,6 +64,7 @@ const fakeFiles = new Array(50)
             <TabList>
                 <Tab value="0">Scrape</Tab>
                 <Tab value="1">Upload</Tab>
+                <Tab value="2">Tag Processing</Tab>
             </TabList>
             <TabPanels class="flex h-full min-h-0 flex-1 overflow-hidden">
                 <TabPanel
@@ -74,6 +75,9 @@ const fakeFiles = new Array(50)
                 </TabPanel>
                 <TabPanel value="1" class="min-h-0 flex-1 overflow-hidden focus-within:outline-0">
                     <UploadPanel />
+                </TabPanel>
+                <TabPanel value="2" class="min-h-0 flex-1 overflow-hidden focus-within:outline-0">
+                    <TagsProcessingPanel />
                 </TabPanel>
             </TabPanels>
         </Tabs>

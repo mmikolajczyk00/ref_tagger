@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { QueuedFile, SCRAPE_STATUS, UPLOAD_STATUS } from './UploadQueue'
 import { normalizeTag } from '../../../core/utils/tagsUtils'
 import { createListSelection } from '../../../core/utils/listSelection'
+import { DropScanResult } from './DropHandler'
 
 export const useUploadQueueStore = defineStore('upload-queue', () => {
     const scrapeFiles = ref<QueuedFile[]>([])
@@ -21,16 +22,20 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
         uploadFiles.value.filter((f) => uploadSelection.selectedIds.value.has(f.id))
     )
 
-    function addToScrape(files: QueuedFile[]) {
-        const normalized = files.map((f) => ({
-            ...f,
-            userTags: f.userTags ?? [],
-            dropData: {
-                ...f.dropData,
-                tags: [...new Set(f.dropData.tags.map(normalizeTag).filter(Boolean))]
+    function addToScrape(dropData: DropScanResult[]) {
+        const files = dropData.map((f) => {
+            return {
+                id: crypto.randomUUID(),
+                dropData: {
+                    ...f,
+                    tags: [...new Set(f.tags.map(normalizeTag).filter(Boolean))]
+                },
+                uploadStatus: UPLOAD_STATUS.IDLE,
+                scrapeStatus: SCRAPE_STATUS.IDLE,
+                userTags: []
             }
-        }))
-        scrapeFiles.value.push(...normalized)
+        })
+        scrapeFiles.value.push(...files)
     }
 
     function addToUpload(files: QueuedFile[]) {

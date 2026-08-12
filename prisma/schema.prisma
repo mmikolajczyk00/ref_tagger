@@ -65,3 +65,41 @@ model Canvas {
 
   @@map("canvases")
 }
+
+model Blacklist {
+  id        Int            @id @default(autoincrement())
+  listName  String         @unique @map("list_name")
+  createdAt DateTime       @default(now()) @map("created_at")
+  tags      BlacklistTag[]
+
+  @@map("blacklists")
+}
+
+model BlacklistTag {
+  id     Int       @id @default(autoincrement())
+  listId Int       @map("list_id")
+  tag    String
+  list   Blacklist @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, tag])
+  @@map("blacklist_tags")
+}
+
+model Alias {
+  id        Int        @id @default(autoincrement())
+  realTag   String     @unique @map("real_tag")
+  createdAt DateTime   @default(now()) @map("created_at")
+  aliases   AliasTag[]
+
+  @@map("aliases")
+}
+
+model AliasTag {
+  id      Int   @id @default(autoincrement())
+  aliasId Int   @map("alias_id")
+  tag     String
+  alias   Alias @relation(fields: [aliasId], references: [id], onDelete: Cascade)
+
+  @@unique([aliasId, tag])
+  @@map("alias_tags")
+}

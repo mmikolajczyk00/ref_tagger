@@ -40,6 +40,26 @@ type iapi = {
         getPaginated: (page: number, limit: number) => Promise<Result<PaginatedCanvases>>
         getByIds: (ids: number[]) => Promise<Result<Array<[number, Canvas]>>>
     }
+    tagsProcessing: {
+        blacklist: {
+            getAll: () => Promise<Result<Blacklist[]>>
+            get: (id: number) => Promise<Result<Blacklist>>
+            create: (listName: string) => Promise<Result<Blacklist>>
+            rename: (id: number, listName: string) => Promise<Result<Blacklist>>
+            delete: (id: number) => Promise<Result<void>>
+            addTags: (id: number, tags: string[]) => Promise<Result<{ added: string[] }>>
+            removeTag: (id: number, tag: string) => Promise<Result<void>>
+        }
+        aliases: {
+            getAll: () => Promise<Result<Alias[]>>
+            get: (id: number) => Promise<Result<Alias>>
+            create: (realTag: string) => Promise<Result<Alias>>
+            rename: (id: number, realTag: string) => Promise<Result<Alias>>
+            delete: (id: number) => Promise<Result<void>>
+            addTags: (id: number, tags: string[]) => Promise<Result<{ added: string[] }>>
+            removeTag: (id: number, tag: string) => Promise<Result<void>>
+        }
+    }
     shell: {
         openExternal: (url: string) => Promise<void>
     }
