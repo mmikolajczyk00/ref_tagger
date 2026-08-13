@@ -47,4 +47,7 @@ declare module 'vue' {
     Tabs: typeof import('primevue/tabs')['default']
     ToggleSwitch: typeof import('primevue/toggleswitch')['default']
   }
+  export interface GlobalDirectives {
+    Tooltip: typeof import('primevue/tooltip')['default']
+  }
 }

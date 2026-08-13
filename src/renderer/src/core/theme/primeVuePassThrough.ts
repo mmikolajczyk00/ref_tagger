@@ -23,5 +23,10 @@ export const primeVuePassThrough: PrimeVuePTOptions = {
         root: {
             class: 'bg-surface-50 dark:bg-surface-800 border-t border-surface-200 dark:border-surface-800'
         }
+    },
+    badge: {
+        root: ({ props }) => ({
+            class: props.severity === 'danger' ? '!bg-danger-700 !text-surface-0' : undefined
+        })
     }
 }

@@ -18,8 +18,6 @@ export class FileStorageService {
     ): Promise<Result<{ storedPath: string }>> {
         const target = path.join(this.filesDir, `${id}${ext}`)
         try {
-            throw new Error('Testing error handling on upload: Failed to copy local file.')
-
             await fs.copyFile(sourcePath, target)
             return { success: true, data: { storedPath: target } }
         } catch (err) {

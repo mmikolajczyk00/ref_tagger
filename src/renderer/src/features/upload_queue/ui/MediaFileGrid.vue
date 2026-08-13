@@ -34,10 +34,14 @@ function onGridClick(event: MouseEvent) {
         <div
             v-for="(f, index) in files"
             :key="getItemId(f)"
+            v-tooltip.bottom="f.errorMessage"
             class="media-file border-surface-200 dark:border-surface-800 bg-surface-0 dark:bg-surface-900 hover:border-surface-400 dark:hover:border-surface-600 group relative flex aspect-square flex-col overflow-hidden border transition-colors select-none"
             @click.left.stop="onClick($event, f, index)"
         >
-            <div v-show="isSelected(getItemId(f))" class="bg-primary/30 absolute size-full"></div>
+            <div
+                v-show="isSelected(getItemId(f))"
+                class="bg-primary/30 absolute z-10 size-full"
+            ></div>
 
             <span
                 v-show="!isLocked(f)"
@@ -45,7 +49,10 @@ function onGridClick(event: MouseEvent) {
                 @click.left.stop.prevent="emit('remove', getItemId(f))"
                 >delete</span
             >
-
+            <template v-if="f.errorMessage">
+                <div class="bg-danger-500/30 absolute size-full"></div>
+                <Badge class="absolute top-2 right-2" value="error" severity="danger"></Badge
+            ></template>
             <img
                 v-if="f.dropData.mediaType === 'image'"
                 :src="`${f.dropData.sourceType === 'local' ? 'media://load?path=' : ''}${f.dropData.thumb}`"
@@ -68,7 +75,7 @@ function onGridClick(event: MouseEvent) {
             </div>
 
             <div
-                class="bg-surface-0/50 dark:bg-surface-900/50 absolute bottom-0 flex w-full flex-col gap-0.5 p-2 text-xs backdrop-blur-sm"
+                class="bg-surface-0/50 dark:bg-surface-900/50 absolute bottom-0 z-20 flex w-full flex-col gap-0.5 p-2 text-xs backdrop-blur-sm"
             >
                 <span
                     class="text-surface-700 dark:text-surface-300 group-hover:text-surface-950 dark:group-hover:text-surface-0 truncate font-medium transition-colors"
