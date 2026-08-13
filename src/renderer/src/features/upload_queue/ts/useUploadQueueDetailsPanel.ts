@@ -1,12 +1,9 @@
 import type { QueuedFile } from './UploadQueue'
+import type { Tag } from '@shared/types/models'
 import { computed, MaybeRefOrGetter, toValue } from 'vue'
 import { useTagStore } from '../../../core/stores/useTagStore'
-import { DEFAULT_TAG_COLOR } from '../../../core/utils/colorUtils'
-
-interface TagBucketItem {
-    name: string
-    color: string
-}
+import { DEFAULT_TAG_COLOR } from '../../../core/theme/colors'
+import { stringsToTags } from '../../tag_input/ts/tagAdapter'
 
 export function useUploadQueueDetailsPanel(
     selectedFilesSource: MaybeRefOrGetter<QueuedFile[]>,
@@ -18,7 +15,7 @@ export function useUploadQueueDetailsPanel(
     function resolveColor(tagName: string): string {
         const normalized = normalizeFn(tagName)
         const found = tagStore.tags.find((t) => t.name === normalized)
-        return found ? found.color : DEFAULT_TAG_COLOR
+        return found?.color ?? DEFAULT_TAG_COLOR
     }
 
     function buildDropDataBuckets(): { all: string[]; some: string[] } {
@@ -51,7 +48,7 @@ export function useUploadQueueDetailsPanel(
         return { all, some }
     }
 
-    function buildUserTagBuckets(): { all: TagBucketItem[]; some: TagBucketItem[] } {
+    function buildUserTagBuckets(): { all: Tag[]; some: Tag[] } {
         const total = selectedFiles.value.length
         if (total === 0) return { all: [], some: [] }
 
@@ -71,23 +68,28 @@ export function useUploadQueueDetailsPanel(
             }
         }
 
-        const all: TagBucketItem[] = []
-        const some: TagBucketItem[] = []
+        const allNames: string[] = []
+        const someNames: string[] = []
 
         counts.forEach((count, key) => {
-            const item = { name: key, color: colors.get(key)! }
-            if (count === total) {
-                all.push(item)
-            } else {
-                some.push(item)
-            }
+            if (count === total) allNames.push(key)
+            else someNames.push(key)
         })
 
-        return { all, some }
+        const colorFor = (n: string) => colors.get(n) ?? DEFAULT_TAG_COLOR
+
+        return {
+            all: stringsToTags(allNames, colorFor),
+            some: stringsToTags(someNames, colorFor)
+        }
     }
 
-    const dropDataAllGroup = computed(() => buildDropDataBuckets().all)
-    const dropDataSomeGroup = computed(() => buildDropDataBuckets().some)
+    const dropDataAllGroup = computed(() =>
+        stringsToTags(buildDropDataBuckets().all, () => DEFAULT_TAG_COLOR)
+    )
+    const dropDataSomeGroup = computed(() =>
+        stringsToTags(buildDropDataBuckets().some, () => DEFAULT_TAG_COLOR)
+    )
     const userTagsAllGroup = computed(() => buildUserTagBuckets().all)
     const userTagsSomeGroup = computed(() => buildUserTagBuckets().some)
 

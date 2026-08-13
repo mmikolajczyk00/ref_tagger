@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref, nextTick, onActivated } from 'vue'
+import { provide, ref, nextTick, onActivated } from 'vue'
 import { useDialog } from 'primevue/usedialog'
 import { useTagEditorTab } from '../ts/useTagEditorTab'
 import NewTagDialog from './NewTagDialog.vue'
 import ColorPickerDialog from './ColorPickerDialog.vue'
+import TagRelationsExpansion from './TagRelationsExpansion.vue'
 import { Tag } from '@shared/types/models'
 import { normalizeTag } from '../../../core/utils/tagsUtils'
-import { withAlpha } from '../../../core/utils/colorUtils'
-import EditorTagInput from '../../tag_input/ui/EditorTagInput.vue'
+import { DEFAULT_TAG_COLOR } from '../../../core/theme/colors'
+import { tagEditorRelationsKey } from '../types'
 
 const {
     isLoading,
@@ -21,10 +22,6 @@ const {
     updateTagName,
     updateTagColor,
     expandedTags,
-    childrenIdsByTag,
-    parentIdsByTag,
-    childInputBuffers,
-    parentInputBuffers,
     getChildren,
     getParents,
     childCount,
@@ -34,6 +31,16 @@ const {
     removeChild,
     removeParent
 } = useTagEditorTab()
+
+provide(tagEditorRelationsKey, {
+    getParents,
+    getChildren,
+    addParentByName,
+    addChildByName,
+    removeParent,
+    removeChild,
+    updateTagName
+})
 
 onActivated(() => {
     refetch()
@@ -97,28 +104,6 @@ async function onEditColor(tag: Tag) {
     if (result !== undefined) {
         await updateTagColor(tag.id, result)
     }
-}
-
-async function handleRemoveChild(parentId: number, childId: number) {
-    await removeChild(parentId, childId)
-}
-
-async function handleRemoveParent(childId: number, parentId: number) {
-    await removeParent(childId, parentId)
-}
-
-async function flushChildInput(parentId: number) {
-    const buf = childInputBuffers.value[parentId] ?? []
-    if (!buf.length) return
-    childInputBuffers.value[parentId] = []
-    await addChildByName(parentId, buf)
-}
-
-async function flushParentInput(childId: number) {
-    const buf = parentInputBuffers.value[childId] ?? []
-    if (!buf.length) return
-    parentInputBuffers.value[childId] = []
-    await addParentByName(childId, buf)
 }
 
 function sortByCount(
@@ -251,7 +236,7 @@ function sortByCount(
                     <template #body="{ data }">
                         <button
                             class="block h-full min-h-7 w-full cursor-pointer rounded border-0 transition-[filter] duration-150 hover:brightness-110 hover:contrast-125"
-                            :style="{ backgroundColor: data.color }"
+                            :style="{ backgroundColor: data.color ?? DEFAULT_TAG_COLOR }"
                             title="Click to edit color"
                             @click="onEditColor(data)"
                         />
@@ -285,91 +270,7 @@ function sortByCount(
                     </div>
                 </template>
                 <template #expansion="slotProps">
-                    <div class="flex flex-row p-4">
-                        <div class="flex flex-1 flex-col">
-                            <h4
-                                class="text-surface-500 mb-2 text-xs font-semibold tracking-wide uppercase"
-                            >
-                                Parents
-                            </h4>
-                            <div
-                                v-if="getParents(slotProps.data.id).length"
-                                class="mb-2 flex flex-wrap gap-2"
-                            >
-                                <Chip
-                                    v-for="p in getParents(slotProps.data.id)"
-                                    :key="p.id"
-                                    :label="p.name"
-                                    removable
-                                    class="border border-dashed"
-                                    :style="{
-                                        color: p.color,
-                                        backgroundColor: withAlpha(p.color, 0.2),
-                                        borderColor: p.color
-                                    }"
-                                    :pt="{ removeIcon: { color: p.color } }"
-                                    @remove="handleRemoveParent(slotProps.data.id, p.id)"
-                                />
-                            </div>
-                            <p v-else class="text-surface-400 mb-2 text-sm italic">
-                                No parents yet
-                            </p>
-                            <EditorTagInput
-                                class="mt-auto"
-                                :model-value="parentInputBuffers[slotProps.data.id] ??= []"
-                                :existing-tag-ids="[
-                                    slotProps.data.id,
-                                    ...(parentIdsByTag[slotProps.data.id] ?? [])
-                                ]"
-                                @update:model-value="
-                                    (v: string[]) => (parentInputBuffers[slotProps.data.id] = v)
-                                "
-                                @submit="flushParentInput(slotProps.data.id)"
-                            />
-                        </div>
-                        <Divider layout="vertical"></Divider>
-                        <div class="flex flex-1 flex-col">
-                            <h4
-                                class="text-surface-500 mb-2 text-xs font-semibold tracking-wide uppercase"
-                            >
-                                Children
-                            </h4>
-                            <div
-                                v-if="getChildren(slotProps.data.id).length"
-                                class="mb-2 flex flex-wrap gap-2"
-                            >
-                                <Chip
-                                    v-for="c in getChildren(slotProps.data.id)"
-                                    :key="c.id"
-                                    :label="c.name"
-                                    removable
-                                    class="border border-dashed"
-                                    :style="{
-                                        color: c.color,
-                                        backgroundColor: withAlpha(c.color, 0.2),
-                                        borderColor: c.color
-                                    }"
-                                    :pt="{ removeIcon: { color: c.color } }"
-                                    @remove="handleRemoveChild(slotProps.data.id, c.id)"
-                                />
-                            </div>
-                            <p v-else class="text-surface-400 mb-2 text-sm italic">
-                                No children yet
-                            </p>
-                            <EditorTagInput
-                                class="mt-auto"
-                                :model-value="childInputBuffers[slotProps.data.id] ??= []"
-                                :existing-tag-ids="[
-                                    slotProps.data.id,
-                                    ...(childrenIdsByTag[slotProps.data.id] ?? [])
-                                ]"
-                                @update:model-value="
-                                    (v: string[]) => (childInputBuffers[slotProps.data.id] = v)
-                                "
-                                @submit="flushChildInput(slotProps.data.id)"
-                            />
-                        </div>
-                    </div>
+                    <TagRelationsExpansion :tag-id="slotProps.data.id" />
                 </template>
             </DataTable>
         </div>

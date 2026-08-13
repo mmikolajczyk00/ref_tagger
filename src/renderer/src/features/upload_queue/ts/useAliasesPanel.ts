@@ -1,117 +1,88 @@
-import { ref, onMounted } from 'vue'
-import { Alias } from '@shared/types/models'
+import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useTagsProcessingStore } from '../../../core/stores/useTagsProcessingStore'
 
 export function useAliasesPanel() {
-    const aliases = ref<Alias[]>([])
+    const store = useTagsProcessingStore()
+    const { aliases } = storeToRefs(store)
+
     const currentlyEditedAliasId = ref<number | null>(null)
-    const pendingAliases = ref<string[]>([])
     const deletingIds = ref<Set<number>>(new Set())
 
     async function refetch() {
-        const res = await window.api.tagsProcessing.aliases.getAll()
-        if (res.success) {
-            aliases.value = res.data
-        } else {
-            console.error('Failed to load aliases:', res.error)
-        }
+        await store.fetchAliases()
     }
 
     function selectAlias(id: number | null) {
         currentlyEditedAliasId.value = id
-        pendingAliases.value = []
-    }
-
-    function pickUniqueName(base: string): string {
-        const names = new Set(aliases.value.map((a) => a.realTag))
-        if (!names.has(base)) return base
-        let i = 1
-        while (names.has(`${base}_${i}`)) i++
-        return `${base}_${i}`
     }
 
     async function createAlias(): Promise<number | null> {
-        const realTag = pickUniqueName('new_alias')
-        const res = await window.api.tagsProcessing.aliases.create(realTag)
-        if (res.success) {
-            aliases.value.push(res.data)
-            selectAlias(res.data.id)
-            return res.data.id
+        const id = await store.createAlias()
+        if (id !== null) selectAlias(id)
+        return id
+    }
+
+    async function addTag(aliasId: number, tag: string) {
+        const alias = aliases.value.find((a) => a.id === aliasId)
+        if (!alias) return
+        const res = await window.api.tagsProcessing.aliases.addTags(aliasId, [tag])
+        if (!res.success) {
+            console.error('Failed to add alias tag:', res.error)
+            alias.aliasTags = alias.aliasTags.filter((t) => t !== tag)
         }
-        console.error('Failed to create alias:', res.error)
-        return null
     }
 
     async function removeAliasTag(aliasId: number, tag: string) {
         const alias = aliases.value.find((a) => a.id === aliasId)
         if (!alias) return
-        const snapshot = [...alias.aliasTags]
-        alias.aliasTags = alias.aliasTags.filter((t) => t !== tag)
         const res = await window.api.tagsProcessing.aliases.removeTag(aliasId, tag)
         if (!res.success) {
             console.error('Failed to remove alias tag:', res.error)
-            alias.aliasTags = snapshot
+            if (!alias.aliasTags.includes(tag)) alias.aliasTags = [...alias.aliasTags, tag]
         }
     }
 
-    async function submitPendingAliases() {
-        const id = currentlyEditedAliasId.value
-        if (id === null) return
-        const tags = [...pendingAliases.value]
-        if (tags.length === 0) return
-        pendingAliases.value = []
-        const res = await window.api.tagsProcessing.aliases.addTags(id, tags)
-        if (res.success) {
-            const alias = aliases.value.find((a) => a.id === id)
-            if (alias) {
-                const existing = new Set(alias.aliasTags)
-                alias.aliasTags = [...alias.aliasTags, ...tags.filter((t) => !existing.has(t))]
-            }
-        } else {
-            console.error('Failed to add alias tags:', res.error)
-            pendingAliases.value = [...tags, ...pendingAliases.value]
+    async function editTag(aliasId: number, oldName: string, newName: string) {
+        const alias = aliases.value.find((a) => a.id === aliasId)
+        if (!alias) return
+        const removeRes = await window.api.tagsProcessing.aliases.removeTag(aliasId, oldName)
+        if (!removeRes.success) {
+            console.error('Failed to rename alias tag (remove):', removeRes.error)
+            return
         }
+        const addRes = await window.api.tagsProcessing.aliases.addTags(aliasId, [newName])
+        if (!addRes.success) {
+            console.error('Failed to rename alias tag (add):', addRes.error)
+            alias.aliasTags = [...alias.aliasTags, oldName]
+            return
+        }
+        alias.aliasTags = [...alias.aliasTags.filter((t) => t !== oldName), newName]
     }
 
     async function renameAlias(id: number, newName: string) {
-        const alias = aliases.value.find((a) => a.id === id)
-        if (!alias) return
-        const previous = alias.realTag
-        if (previous === newName) return
-        alias.realTag = newName
-        const res = await window.api.tagsProcessing.aliases.rename(id, newName)
-        if (!res.success) {
-            console.error('Failed to rename alias:', res.error)
-            alias.realTag = previous
-        }
+        await store.renameAlias(id, newName)
     }
 
     async function deleteAlias(id: number) {
         deletingIds.value = new Set(deletingIds.value).add(id)
-        const res = await window.api.tagsProcessing.aliases.delete(id)
+        await store.deleteAlias(id)
         deletingIds.value = new Set([...deletingIds.value].filter((x) => x !== id))
-        if (res.success) {
-            aliases.value = aliases.value.filter((a) => a.id !== id)
-            if (currentlyEditedAliasId.value === id) {
-                currentlyEditedAliasId.value = null
-                pendingAliases.value = []
-            }
-        } else {
-            console.error('Failed to delete alias:', res.error)
+        if (currentlyEditedAliasId.value === id) {
+            currentlyEditedAliasId.value = null
         }
     }
-
-    onMounted(refetch)
 
     return {
         aliases,
         currentlyEditedAliasId,
-        pendingAliases,
         deletingIds,
         refetch,
         selectAlias,
         createAlias,
+        addTag,
         removeAliasTag,
-        submitPendingAliases,
+        editTag,
         renameAlias,
         deleteAlias
     }

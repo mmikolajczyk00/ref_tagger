@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, inject, onMounted } from 'vue'
-import { PREMADE_COLORS } from '@renderer/core/theme/colors'
+import { DEFAULT_TAG_COLOR, PREMADE_COLORS } from '@renderer/core/theme/colors'
 import InputColor from 'primevue/inputcolor'
 
 const dialogRef = inject<any>('dialogRef')
 
-const initialColor = (dialogRef?.value?.data?.currentColor as string) || '#FFF'
+const initialColor = (dialogRef?.value?.data?.currentColor as string) || DEFAULT_TAG_COLOR
 const selectedColor = ref(initialColor)
 const dbColors = ref<string[]>([])
 const isLoading = ref(false)

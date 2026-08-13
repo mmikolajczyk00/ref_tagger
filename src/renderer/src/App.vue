@@ -2,6 +2,7 @@
 import { onMounted, watch } from 'vue'
 import { updatePrimaryPalette } from '@primeuix/themes'
 import { useTagStore } from './core/stores/useTagStore'
+import { useTagsProcessingStore } from './core/stores/useTagsProcessingStore'
 import { useSettingsStore } from './core/stores/useSettingsStore'
 import { primaryPalettes } from './core/theme/presets'
 import TabBar from './features/tab_system/ui/TabBar.vue'
@@ -9,6 +10,7 @@ import Tabwindow from './features/tab_system/ui/Tabwindow.vue'
 import DynamicDialog from 'primevue/dynamicdialog'
 
 const tagStore = useTagStore()
+const tpStore = useTagsProcessingStore()
 const settings = useSettingsStore()
 
 function applyPrimaryPalette(palette: Record<string, string>) {
@@ -43,6 +45,7 @@ watch(
 
 onMounted(() => {
     tagStore.fetchTags()
+    tpStore.fetchAll()
     settings.initTheme()
 })
 </script>

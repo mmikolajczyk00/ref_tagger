@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { FileTagResult, MediaFile, TagOperation, TagOperationResult } from '@shared/types/models'
+import { computed, ref, watch } from 'vue'
+import {
+    FileTagResult,
+    MediaFile,
+    Tag,
+    TagOperation,
+    TagOperationResult
+} from '@shared/types/models'
 import { useTagEditorPanel } from '../ts/useTagEditorPanel'
-import { normalizeTag } from '../../../core/utils/tagsUtils'
-import { withAlpha } from '../../../core/utils/colorUtils'
-import EditorTagInput from '../../tag_input/ui/EditorTagInput.vue'
+import TagContainer from '../../tag_input/ui/TagContainer.vue'
 import { useTagStore } from '../../../core/stores/useTagStore'
 
 const props = defineProps<{
@@ -20,14 +24,21 @@ const selectedFilesRef = computed<MediaFile[]>(() => {
     return Array.isArray(v) ? v : []
 })
 
-const { allGroup, someGroup, existingTagIds, submitTags, removeTag } = useTagEditorPanel(
-    selectedFilesRef,
-    normalizeTag
-)
-
-const pendingTags = ref<string[]>([])
+const { allGroup, someGroup, removeTag } = useTagEditorPanel(selectedFilesRef)
 
 const tagStore = useTagStore()
+
+const allItemsTags = ref<Tag[]>([])
+const someItemsTags = ref<Tag[]>([])
+
+watch(
+    [allGroup, someGroup],
+    ([all, some]) => {
+        allItemsTags.value = [...all]
+        someItemsTags.value = [...some]
+    },
+    { immediate: true }
+)
 
 async function applyOperations(ops: TagOperation[]) {
     const result = await window.api.files.applyTagOperations(ops)
@@ -37,24 +48,25 @@ async function applyOperations(ops: TagOperation[]) {
 
         tagStore.addTagsLocally(tags)
         emit('files-updated', files)
-
-        pendingTags.value = []
     } else {
         console.error(result.error)
     }
 }
 
-function handleAddTags() {
-    const operations = submitTags(pendingTags.value)
-    if (!operations.length) return
-
-    applyOperations(operations)
+function handleAddTag(tag: Tag) {
+    const ops: TagOperation[] = []
+    for (const file of selectedFilesRef.value) {
+        const fileHasTag = file.tags.some((t) => t.name === tag.name)
+        if (!fileHasTag) {
+            ops.push({ action: 'add', fileId: file.id, tagName: tag.name })
+        }
+    }
+    if (ops.length) applyOperations(ops)
 }
 
-function handleRemoveTag(tag: any) {
+function handleRemoveTag(tag: Tag) {
     const operations = removeTag(tag)
     if (!operations.length) return
-
     applyOperations(operations)
 }
 </script>
@@ -65,54 +77,14 @@ function handleRemoveTag(tag: any) {
     >
         <h3 class="text-surface-950 dark:text-surface-0 mb-3 text-lg font-bold">Edit Tags</h3>
 
-        <div class="flex-1 overflow-y-auto pr-1">
-            <div v-if="allGroup.length" class="mb-4">
-                <div class="flex flex-wrap gap-2">
-                    <Chip
-                        v-for="tag in allGroup"
-                        :key="tag.id"
-                        :label="tag.name"
-                        removable
-                        class="font-semibold"
-                        :style="{
-                            color: tag.color,
-                            backgroundColor: withAlpha(tag.color, 0.2)
-                        }"
-                        :pt="{ removeIcon: { color: tag.color } }"
-                        @remove="handleRemoveTag(tag)"
-                    />
-                </div>
-            </div>
-
-            <div v-if="someGroup.length">
-                <div class="flex flex-wrap gap-2">
-                    <Chip
-                        v-for="tag in someGroup"
-                        :key="tag.id"
-                        :label="tag.name"
-                        removable
-                        class="border border-dashed"
-                        :style="{
-                            color: tag.color,
-                            backgroundColor: withAlpha(tag.color, 0.2),
-                            borderColor: tag.color
-                        }"
-                        :pt="{ removeIcon: { color: tag.color } }"
-                        @remove="handleRemoveTag(tag)"
-                    />
-                </div>
-            </div>
-        </div>
-
-        <Divider class="my-3" />
-
-        <div>
-            <EditorTagInput
-                v-model="pendingTags"
-                :existing-tag-ids="allGroup.map((t) => t.id)"
-                @submit="handleAddTags"
+        <div class="flex min-h-0">
+            <TagContainer
+                v-model:all-items-tags="allItemsTags"
+                v-model:some-items-tags="someItemsTags"
+                autocomplete
+                @add="handleAddTag"
+                @remove="handleRemoveTag"
             />
-            <Button label="Add Tags" class="mt-2 w-full" @click="handleAddTags" />
         </div>
     </div>
 </template>

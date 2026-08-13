@@ -12,7 +12,7 @@ let dragCounter = 0
 
 const store = useUploadQueueStore()
 
-const activeTab = ref('2')
+const activeTab = ref('1')
 
 function isFileDrag(e: DragEvent): boolean {
     return Array.from(e.dataTransfer?.types ?? []).includes('Files')

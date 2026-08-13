@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, inject } from 'vue'
+import { DEFAULT_TAG_COLOR } from '@renderer/core/theme/colors'
 
 const dialogRef = inject<any>('dialogRef')
 
 const tagName = ref('')
-const tagColor = ref('#FFF')
+const tagColor = ref(DEFAULT_TAG_COLOR)
 
 const nameInput = ref()
 
@@ -44,7 +45,7 @@ function onCancel() {
                 <div class="flex items-center gap-2">
                     <InputText
                         v-model="tagColor"
-                        placeholder="#FFF"
+                        :placeholder="tagColor"
                         class="w-full"
                         @keydown.enter="onSubmit"
                     />

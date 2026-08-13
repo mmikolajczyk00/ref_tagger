@@ -52,7 +52,7 @@ export const useTagStore = defineStore('tags', () => {
         }
     }
 
-    function updateTagLocally(id: number, name: string, color: string) {
+    function updateTagLocally(id: number, name: string, color?: string) {
         const idx = tags.value.findIndex((t) => t.id === id)
         if (idx < 0) return
         const prev = tags.value[idx]

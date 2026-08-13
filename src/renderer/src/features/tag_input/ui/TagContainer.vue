@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import { createListSelection } from '@renderer/core/utils/listSelection'
 import { normalizeTag } from '@renderer/core/utils/tagsUtils'
@@ -11,32 +11,68 @@ import TagChipGroup from './TagChipGroup.vue'
 import TagInputField from './TagInputField.vue'
 import type { Tag } from '@shared/types/models'
 
-const allItemsTags = defineModel<Tag[]>('allItemsTags', { required: true })
-const someItemsTags = defineModel<Tag[]>('someItemsTags', { required: true })
-
 const props = withDefaults(
     defineProps<{
+        allItemsTags: Tag[]
+        someItemsTags: Tag[]
         autocomplete?: boolean
         inline?: boolean
         allowModifiers?: boolean
         placeholder?: string
         disabled?: boolean
+        hideInput?: boolean
+        excludeIds?: number[]
     }>(),
     {
         autocomplete: false,
         inline: false,
         allowModifiers: false,
         placeholder: 'Add tags...',
-        disabled: false
+        disabled: false,
+        hideInput: false,
+        excludeIds: () => []
     }
 )
 
 const emit = defineEmits<{
+    'update:allItemsTags': [tags: Tag[]]
+    'update:someItemsTags': [tags: Tag[]]
     add: [tag: Tag]
     remove: [tag: Tag]
     edit: [tag: Tag, newName: string]
     submit: []
 }>()
+
+// Local source of truth. Always reflects the latest prop on sync ticks,
+// and updates synchronously on writes — unlike defineModel, which only
+// syncs after the parent re-renders.
+const allItems = ref<Tag[]>([...props.allItemsTags])
+const someItems = ref<Tag[]>([...props.someItemsTags])
+
+watch(
+    () => props.allItemsTags,
+    (v) => {
+        allItems.value = [...v]
+    },
+    { flush: 'sync' }
+)
+watch(
+    () => props.someItemsTags,
+    (v) => {
+        someItems.value = [...v]
+    },
+    { flush: 'sync' }
+)
+
+function setAllItems(next: Tag[]) {
+    allItems.value = next
+    emit('update:allItemsTags', next)
+}
+
+function setSomeItems(next: Tag[]) {
+    someItems.value = next
+    emit('update:someItemsTags', next)
+}
 
 const modifiers = useTagInputModifiers()
 const tagStore = useTagStore()
@@ -51,9 +87,11 @@ defineExpose({
 
 onClickOutside(rootRef, () => selection.clearSelection())
 
-const flatItems = computed(() => [...allItemsTags.value, ...someItemsTags.value])
+const flatItems = computed(() => [...allItems.value, ...someItems.value])
 
-const excludeIds = computed(() => new Set(flatItems.value.map((t) => t.id)))
+const excludeIds = computed(
+    () => new Set([...flatItems.value.map((t) => t.id), ...props.excludeIds])
+)
 
 const autocomplete = useTagAutocomplete(
     () => (props.autocomplete ? excludeIds.value : new Set<number>()),
@@ -76,12 +114,12 @@ function commitTag(name: string) {
 
     const existing = tagStore.tags.find((t) => t.name === normalized)
     if (existing) {
-        if (allItemsTags.value.some((t) => t.id === existing.id)) return
-        allItemsTags.value = [...allItemsTags.value, existing]
+        if (allItems.value.some((t) => t.id === existing.id)) return
+        setAllItems([...allItems.value, existing])
         emit('add', existing)
     } else {
-        const local: Tag = { id: -Date.now(), name: normalized, color: '#6b7280' }
-        allItemsTags.value = [...allItemsTags.value, local]
+        const local: Tag = { id: -Date.now(), name: normalized }
+        setAllItems([...allItems.value, local])
         emit('add', local)
     }
 
@@ -89,17 +127,17 @@ function commitTag(name: string) {
 }
 
 function removeFromList(tag: Tag) {
-    if (allItemsTags.value.some((t) => t.id === tag.id)) {
-        allItemsTags.value = allItemsTags.value.filter((t) => t.id !== tag.id)
+    if (allItems.value.some((t) => t.id === tag.id)) {
+        setAllItems(allItems.value.filter((t) => t.id !== tag.id))
     } else {
-        someItemsTags.value = someItemsTags.value.filter((t) => t.id !== tag.id)
+        setSomeItems(someItems.value.filter((t) => t.id !== tag.id))
     }
 }
 
 function onChipSelect(event: MouseEvent, tag: Tag) {
     const idx = flatItems.value.findIndex((t) => t.id === tag.id)
     if (idx >= 0) selection.handleItemClick(event, tag, idx)
-    inputFieldRef.value?.blur()
+    rootRef.value?.focus()
 }
 
 function onChipRemove(tag: Tag) {
@@ -160,9 +198,9 @@ function onKeydown(event: KeyboardEvent) {
         selection.clearSelection()
         event.preventDefault()
     } else if (event.key === 'Backspace' && !autocomplete.inputText.value) {
-        if (allItemsTags.value.length > 0) {
-            const removed = allItemsTags.value[allItemsTags.value.length - 1]
-            allItemsTags.value = allItemsTags.value.slice(0, -1)
+        if (allItems.value.length > 0) {
+            const removed = allItems.value[allItems.value.length - 1]
+            setAllItems(allItems.value.slice(0, -1))
             emit('remove', removed)
         }
     }
@@ -172,17 +210,58 @@ function onInputUpdate(value: string) {
     autocomplete.inputText.value = normalizeDraft(value)
 }
 
-function onContainerKeydown(event: KeyboardEvent) {
-    if (!(event.ctrlKey || event.metaKey) || event.key !== 'c') return
-    if (selection.selectedIds.value.size === 0) return
-    const active = document.activeElement as HTMLElement | null
-    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return
+function onInputPaste(text: string, event: ClipboardEvent) {
+    if (!text.includes(',')) return
     event.preventDefault()
+    const parts = text
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean)
+    for (const part of parts) {
+        commitTag(part)
+    }
+    autocomplete.reset()
+}
+
+function copySelectedTags() {
     const names = flatItems.value
         .filter((t) => selection.isSelected(t.id))
         .map((t) => t.name)
         .join(', ')
     navigator.clipboard.writeText(names).catch(() => {})
+}
+
+function deleteSelectedTags() {
+    const selectedIds = selection.selectedIds.value
+    if (selectedIds.size === 0) return
+    const allNext = allItems.value.filter((t) => !selectedIds.has(t.id))
+    const someNext = someItems.value.filter((t) => !selectedIds.has(t.id))
+    if (allNext.length !== allItems.value.length) setAllItems(allNext)
+    if (someNext.length !== someItems.value.length) setSomeItems(someNext)
+    for (const tag of flatItems.value.filter((t) => selectedIds.has(t.id))) {
+        emit('remove', tag)
+    }
+    selection.clearSelection()
+}
+
+function onContainerKeydown(event: KeyboardEvent) {
+    const active = document.activeElement as HTMLElement | null
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return
+    if (selection.selectedIds.value.size === 0) return
+
+    if ((event.ctrlKey || event.metaKey) && (event.key === 'c' || event.key === 'x')) {
+        event.preventDefault()
+        copySelectedTags()
+        if (event.key === 'x') deleteSelectedTags()
+    } else if (
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.shiftKey &&
+        (event.key === 'Delete' || event.key === 'Backspace')
+    ) {
+        event.preventDefault()
+        deleteSelectedTags()
+    }
 }
 
 function onSelectSuggestion(sug: Tag) {
@@ -217,25 +296,31 @@ function tagProps(tag: Tag) {
 </script>
 
 <template>
-    <div ref="rootRef" class="w-full" @keydown="onContainerKeydown">
+    <div ref="rootRef" class="w-full" tabindex="-1" @keydown="onContainerKeydown">
         <TagChipGroup :inline="inline">
             <template #chips>
                 <template v-if="!inline">
-                    <div v-if="allItemsTags.length" class="flex flex-wrap gap-1">
+                    <div v-if="allItems.length" class="flex flex-wrap gap-1 overflow-y-auto p-1">
                         <TagChip
-                            v-for="tag in allItemsTags"
+                            v-for="tag in allItems"
                             :key="tag.id"
                             v-bind="tagProps(tag)"
                             variant="outlined"
                         />
                     </div>
-                    <div v-if="someItemsTags.length" class="flex flex-wrap gap-1">
+                    <div v-if="someItems.length" class="flex flex-wrap gap-1 overflow-y-auto p-1">
                         <TagChip
-                            v-for="tag in someItemsTags"
+                            v-for="tag in someItems"
                             :key="tag.id"
                             v-bind="tagProps(tag)"
                             variant="dashed"
                         />
+                    </div>
+                    <div
+                        v-if="!allItems.length && !someItems.length"
+                        class="dark:text-surface-500 text-surface-400 text-center"
+                    >
+                        - No tags added yet -
                     </div>
                 </template>
                 <template v-else>
@@ -247,7 +332,7 @@ function tagProps(tag: Tag) {
                     />
                 </template>
             </template>
-            <template #input>
+            <template v-if="!hideInput" #input>
                 <TagInputField
                     ref="inputFieldRef"
                     :input-value="autocomplete.inputText.value"
@@ -255,10 +340,11 @@ function tagProps(tag: Tag) {
                     :selected-index="suggestionOpen ? autocomplete.selectedIndex.value : -1"
                     :ghost-text="suggestionOpen ? autocomplete.ghostText.value : ''"
                     :placeholder="placeholder"
-                    :dropdown-direction="inline ? 'up' : 'down'"
+                    :dropdown-direction="inline ? 'down' : 'up'"
                     :disabled="disabled"
                     @update:input-value="onInputUpdate"
                     @keydown="onKeydown"
+                    @paste="onInputPaste"
                     @select-suggestion="onSelectSuggestion"
                     @highlight-suggestion="onHighlightSuggestion"
                     @blur="onInputBlur"

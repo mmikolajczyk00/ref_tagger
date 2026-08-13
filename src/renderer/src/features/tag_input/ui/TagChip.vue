@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { withAlpha } from '@renderer/core/utils/colorUtils'
+import { DEFAULT_TAG_COLOR } from '@renderer/core/theme/colors'
 
 type Variant = 'solid' | 'outlined' | 'dashed'
 
-const props = defineProps<{
-    label: string
-    color: string
-    variant: Variant
-    selected?: boolean
-    editing?: boolean
-    removable?: boolean
-    disabled?: boolean
-}>()
+const props = withDefaults(
+    defineProps<{
+        label: string
+        color?: string
+        variant: Variant
+        selected?: boolean
+        editing?: boolean
+        removable?: boolean
+        disabled?: boolean
+    }>(),
+    { color: DEFAULT_TAG_COLOR }
+)
 
 const emit = defineEmits<{
     remove: []

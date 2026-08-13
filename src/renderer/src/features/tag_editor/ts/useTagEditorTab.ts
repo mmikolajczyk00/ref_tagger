@@ -8,6 +8,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { Tag } from '@shared/types/models'
 import { useTagStore } from '@renderer/core/stores/useTagStore'
 import { normalizeTag } from '@renderer/core/utils/tagsUtils'
+import { DEFAULT_TAG_COLOR } from '@renderer/core/theme/colors'
 import type { TagRelations } from '../types'
 
 export function useTagEditorTab() {
@@ -20,8 +21,6 @@ export function useTagEditorTab() {
     const first = ref(0)
     const rows = ref(10)
     const expandedTags = ref<number[]>([])
-    const childInputBuffers = ref<Record<number, string[]>>({})
-    const parentInputBuffers = ref<Record<number, string[]>>({})
 
     const filteredTags = computed(() => {
         const q = searchQuery.value.toLowerCase().trim()
@@ -147,7 +146,7 @@ export function useTagEditorTab() {
                 }
                 continue
             }
-            const created = await window.api.tags.create(name, '#FFF')
+            const created = await window.api.tags.create(name, DEFAULT_TAG_COLOR)
             if (created.success) {
                 tagStore.addTagLocally(created.data)
                 tags.value[created.data.id] = created.data
@@ -216,8 +215,6 @@ export function useTagEditorTab() {
         expandedTags,
         childrenIdsByTag,
         parentIdsByTag,
-        childInputBuffers,
-        parentInputBuffers,
         getChildren,
         getParents,
         childCount,

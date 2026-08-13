@@ -20,6 +20,7 @@ const emit = defineEmits<{
     'select-suggestion': [tag: Tag]
     'highlight-suggestion': [index: number]
     blur: []
+    paste: [text: string, event: ClipboardEvent]
 }>()
 
 const inputEl = ref<HTMLInputElement | null>(null)
@@ -31,6 +32,11 @@ defineExpose({
 
 function onInput(event: Event) {
     inputValue.value = (event.target as HTMLInputElement).value
+}
+
+function onPaste(event: ClipboardEvent) {
+    const text = event.clipboardData?.getData('text') ?? ''
+    emit('paste', text, event)
 }
 </script>
 
@@ -59,6 +65,7 @@ function onInput(event: Event) {
                     :disabled="disabled"
                     @input="onInput"
                     @keydown="emit('keydown', $event)"
+                    @paste="onPaste"
                     @blur="emit('blur')"
                 />
             </div>

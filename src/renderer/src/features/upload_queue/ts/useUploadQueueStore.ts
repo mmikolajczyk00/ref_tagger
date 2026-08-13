@@ -4,8 +4,12 @@ import { QueuedFile, SCRAPE_STATUS, UPLOAD_STATUS } from './UploadQueue'
 import { normalizeTag } from '../../../core/utils/tagsUtils'
 import { createListSelection } from '../../../core/utils/listSelection'
 import { DropScanResult } from './DropHandler'
+import { processDroppedTags } from './processDroppedTags'
+import { useTagsProcessingStore } from '../../../core/stores/useTagsProcessingStore'
 
 export const useUploadQueueStore = defineStore('upload-queue', () => {
+    const tpStore = useTagsProcessingStore()
+
     const scrapeFiles = ref<QueuedFile[]>([])
     const uploadFiles = ref<QueuedFile[]>([])
 
@@ -22,20 +26,28 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
         uploadFiles.value.filter((f) => uploadSelection.selectedIds.value.has(f.id))
     )
 
-    function addToScrape(dropData: DropScanResult[]) {
+    async function ensureTagsProcessingLoaded() {
+        if (!tpStore.isLoaded) await tpStore.fetchAll()
+    }
+
+    async function addToScrape(dropData: DropScanResult[]) {
+        await ensureTagsProcessingLoaded()
         const files = dropData.map((f) => {
+            const normalized = f.tags.map(normalizeTag).filter(Boolean)
             return {
                 id: crypto.randomUUID(),
                 dropData: {
                     ...f,
-                    tags: [...new Set(f.tags.map(normalizeTag).filter(Boolean))]
+                    tags: processDroppedTags(normalized, tpStore.blacklistSet, tpStore.aliasMap)
                 },
                 uploadStatus: UPLOAD_STATUS.IDLE,
                 scrapeStatus: SCRAPE_STATUS.IDLE,
                 userTags: []
             }
         })
-        scrapeFiles.value.push(...files)
+        // TODO: temporarily, skip scraping and add files directly to upload queue
+        // scrapeFiles.value.push(...files)
+        addToUpload(files)
     }
 
     function addToUpload(files: QueuedFile[]) {

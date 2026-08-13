@@ -1,24 +1,25 @@
 <script setup lang="ts">
 import Tabs from 'primevue/tabs'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Alias, Blacklist } from '@shared/types/models'
+import { Alias, Blacklist, Tag } from '@shared/types/models'
 import { useBlacklistPanel } from '../ts/useBlacklistPanel'
 import { useAliasesPanel } from '../ts/useAliasesPanel'
-import EditorTagInput from '../../tag_input/ui/EditorTagInput.vue'
 import { useTagStore } from '../../../core/stores/useTagStore'
-import { withAlpha, DEFAULT_TAG_COLOR } from '../../../core/utils/colorUtils'
+import { DEFAULT_TAG_COLOR } from '../../../core/theme/colors'
+import { stringsToTags } from '../../tag_input/ts/tagAdapter'
+import TagContainer from '../../tag_input/ui/TagContainer.vue'
 
 const activeTagProcessPanel = ref('0')
 
 const {
     blacklists,
     currentlyEditedListId,
-    pendingTags,
     deletingIds: blacklistDeletingIds,
     selectList,
     createBlacklist,
-    removeTag,
-    submitPendingTags,
+    addTag: addBlacklistTag,
+    removeTag: removeBlacklistTag,
+    editTag: editBlacklistTag,
     renameBlacklist,
     deleteBlacklist
 } = useBlacklistPanel()
@@ -26,28 +27,18 @@ const {
 const {
     aliases,
     currentlyEditedAliasId,
-    pendingAliases,
     deletingIds: aliasDeletingIds,
     selectAlias,
     createAlias,
+    addTag: addAliasTag,
     removeAliasTag,
-    submitPendingAliases,
+    editTag: editAliasTag,
     renameAlias,
     deleteAlias
 } = useAliasesPanel()
 
 const blacklistScrollContainer = ref<HTMLElement | null>(null)
 const aliasScrollContainer = ref<HTMLElement | null>(null)
-const blacklistEditors: Array<InstanceType<typeof EditorTagInput> | null> = []
-const aliasEditors: Array<InstanceType<typeof EditorTagInput> | null> = []
-
-function setBlacklistEditorRef(el: unknown, id: number) {
-    blacklistEditors[id] = el as (typeof blacklistEditors)[number]
-}
-
-function setAliasEditorRef(el: unknown, id: number) {
-    aliasEditors[id] = el as (typeof aliasEditors)[number]
-}
 
 function scrollToBottom(el: HTMLElement | null) {
     el?.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
@@ -58,7 +49,6 @@ async function handleCreateBlacklist() {
     if (id !== null) {
         await nextTick()
         scrollToBottom(blacklistScrollContainer.value)
-        blacklistEditors[id]?.focus()
     }
 }
 
@@ -67,7 +57,6 @@ async function handleCreateAlias() {
     if (id !== null) {
         await nextTick()
         scrollToBottom(aliasScrollContainer.value)
-        aliasEditors[id]?.focus()
     }
 }
 
@@ -75,6 +64,46 @@ const tagStore = useTagStore()
 
 function resolveColor(tagName: string): string {
     return tagStore.tags.find((t) => t.name === tagName)?.color ?? DEFAULT_TAG_COLOR
+}
+
+function getBlacklistTags(bl: Blacklist): Tag[] {
+    return stringsToTags(bl.tags, resolveColor)
+}
+
+function setBlacklistTags(bl: Blacklist, tags: Tag[]) {
+    bl.tags = tags.map((t) => t.name)
+}
+
+function getAliasTags(al: Alias): Tag[] {
+    return stringsToTags(al.aliasTags, resolveColor)
+}
+
+function setAliasTags(al: Alias, tags: Tag[]) {
+    al.aliasTags = tags.map((t) => t.name)
+}
+
+function onBlacklistAdd(bl: Blacklist, tag: Tag) {
+    addBlacklistTag(bl.id, tag.name)
+}
+
+function onBlacklistRemove(bl: Blacklist, tag: Tag) {
+    removeBlacklistTag(bl.id, tag.name)
+}
+
+function onBlacklistEdit(bl: Blacklist, tag: Tag, newName: string) {
+    editBlacklistTag(bl.id, tag.name, newName)
+}
+
+function onAliasAdd(al: Alias, tag: Tag) {
+    addAliasTag(al.id, tag.name)
+}
+
+function onAliasRemove(al: Alias, tag: Tag) {
+    removeAliasTag(al.id, tag.name)
+}
+
+function onAliasEdit(al: Alias, tag: Tag, newName: string) {
+    editAliasTag(al.id, tag.name, newName)
 }
 
 function onDocumentMouseDown(e: MouseEvent) {
@@ -184,29 +213,13 @@ function cancelRename() {
                                     />
                                 </div>
 
-                                <div
-                                    class="bg-surface-950 flex min-h-24 flex-wrap gap-2 rounded-md p-3"
-                                >
-                                    <Chip
-                                        v-for="tag in bl.tags"
-                                        :key="tag"
-                                        :label="tag"
-                                        removable
-                                        class="h-min font-semibold"
-                                        :style="{
-                                            color: resolveColor(tag),
-                                            backgroundColor: withAlpha(resolveColor(tag), 0.2)
-                                        }"
-                                        :pt="{ removeIcon: { color: resolveColor(tag) } }"
-                                        @remove="removeTag(bl.id, tag)"
-                                    />
-                                </div>
-                                <EditorTagInput
-                                    v-show="currentlyEditedListId === bl.id"
-                                    :ref="(el) => setBlacklistEditorRef(el, bl.id)"
-                                    v-model="pendingTags"
-                                    class="mt-2"
-                                    @submit="submitPendingTags"
+                                <TagContainer
+                                    :all-items-tags="getBlacklistTags(bl)"
+                                    :some-items-tags="[]"
+                                    @update:all-items-tags="(t: Tag[]) => setBlacklistTags(bl, t)"
+                                    @add="(tag: Tag) => onBlacklistAdd(bl, tag)"
+                                    @remove="(tag: Tag) => onBlacklistRemove(bl, tag)"
+                                    @edit="(tag: Tag, n: string) => onBlacklistEdit(bl, tag, n)"
                                 />
                             </div>
                             <Button
@@ -245,21 +258,14 @@ function cancelRename() {
                             @click.stop="selectAlias(al.id)"
                         >
                             <div class="flex flex-row items-center gap-2">
-                                <div
-                                    class="bg-surface-200 dark:bg-surface-950 flex min-h-24 flex-1 flex-wrap gap-2 rounded-md p-3"
-                                >
-                                    <Chip
-                                        v-for="tag in al.aliasTags"
-                                        :key="tag"
-                                        :label="tag"
-                                        removable
-                                        class="h-min font-semibold"
-                                        :style="{
-                                            color: resolveColor(tag),
-                                            backgroundColor: withAlpha(resolveColor(tag), 0.2)
-                                        }"
-                                        :pt="{ removeIcon: { color: resolveColor(tag) } }"
-                                        @remove="removeAliasTag(al.id, tag)"
+                                <div class="relative max-h-60 flex-1">
+                                    <TagContainer
+                                        :all-items-tags="getAliasTags(al)"
+                                        :some-items-tags="[]"
+                                        @update:all-items-tags="(t: Tag[]) => setAliasTags(al, t)"
+                                        @add="(tag: Tag) => onAliasAdd(al, tag)"
+                                        @remove="(tag: Tag) => onAliasRemove(al, tag)"
+                                        @edit="(tag: Tag, n: string) => onAliasEdit(al, tag, n)"
                                     />
                                 </div>
                                 <span
@@ -293,13 +299,6 @@ function cancelRename() {
                                     <span> delete </span>
                                 </Button>
                             </div>
-                            <EditorTagInput
-                                v-show="currentlyEditedAliasId === al.id"
-                                :ref="(el) => setAliasEditorRef(el, al.id)"
-                                v-model="pendingAliases"
-                                class="mt-2"
-                                @submit="submitPendingAliases"
-                            />
                         </div>
                     </div>
                     <div class="p-3">

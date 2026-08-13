@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Badge: typeof import('primevue/badge')['default']
     Button: typeof import('primevue/button')['default']
     Chip: typeof import('primevue/chip')['default']
     Column: typeof import('primevue/column')['default']
@@ -33,6 +34,7 @@ declare module 'vue' {
     InputIcon: typeof import('primevue/inputicon')['default']
     InputText: typeof import('primevue/inputtext')['default']
     Label: typeof import('primevue/label')['default']
+    OverlayBadge: typeof import('primevue/overlaybadge')['default']
     Popover: typeof import('primevue/popover')['default']
     ScrollAreaContent: typeof import('primevue/scrollareacontent')['default']
     ScrollAreaHandle: typeof import('primevue/scrollareahandle')['default']

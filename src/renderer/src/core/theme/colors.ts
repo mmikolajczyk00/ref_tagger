@@ -1,4 +1,5 @@
 export const PREMADE_COLORS = [
+    '#ababab',
     '#E2E2E2',
     '#f5647d',
     '#f26e3b',
@@ -17,3 +18,6 @@ export const PREMADE_COLORS = [
     '#0A2463',
     '#247BA0'
 ]
+
+export const DEFAULT_TAG_COLOR = PREMADE_COLORS[0]
+export const DEFAULT_TAG_BG_20 = `${DEFAULT_TAG_COLOR}33`

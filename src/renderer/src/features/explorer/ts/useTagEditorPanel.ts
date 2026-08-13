@@ -3,7 +3,7 @@ import { computed, Ref } from 'vue'
 
 export function useTagEditorPanel(
     selFiles: Ref<MediaFile[]>,
-    normalizeFn: (input: string) => string
+    normalizeFn?: (input: string) => string
 ) {
     const filesSource = computed<MediaFile[]>(() => selFiles.value)
 
@@ -50,7 +50,9 @@ export function useTagEditorPanel(
     })
 
     function submitTags(tagNames: string[]): TagOperation[] {
-        const normalizedTags = [...new Set(tagNames.map(normalizeFn).filter(Boolean))]
+        const normalizedTags = [
+            ...new Set(tagNames.map((n) => (normalizeFn ? normalizeFn(n) : n)).filter(Boolean))
+        ]
 
         const operations: TagOperation[] = []
 
