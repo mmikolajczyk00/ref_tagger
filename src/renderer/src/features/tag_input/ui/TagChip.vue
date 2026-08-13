@@ -97,7 +97,7 @@ function onRemoveClick(event: MouseEvent) {
 <template>
     <div
         :class="[
-            'group inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-sm font-medium transition-colors',
+            'group inline-flex h-min items-center gap-1 rounded-md px-2 py-0.5 text-sm font-medium transition-colors',
             borderClass,
             selected
                 ? 'ring-primary-500 ring-offset-surface-0 dark:ring-offset-surface-900 ring-2 ring-offset-1'

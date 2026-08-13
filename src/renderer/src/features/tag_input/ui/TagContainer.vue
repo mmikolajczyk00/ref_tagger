@@ -300,7 +300,10 @@ function tagProps(tag: Tag) {
         <TagChipGroup :inline="inline">
             <template #chips>
                 <template v-if="!inline">
-                    <div v-if="allItems.length" class="flex flex-wrap gap-1 overflow-y-auto p-1">
+                    <div
+                        v-if="allItems.length"
+                        class="flex flex-wrap content-start justify-start gap-1 p-1"
+                    >
                         <TagChip
                             v-for="tag in allItems"
                             :key="tag.id"
@@ -308,7 +311,10 @@ function tagProps(tag: Tag) {
                             variant="outlined"
                         />
                     </div>
-                    <div v-if="someItems.length" class="flex flex-wrap gap-1 overflow-y-auto p-1">
+                    <div
+                        v-if="someItems.length"
+                        class="flex flex-wrap content-start justify-start gap-1 p-1"
+                    >
                         <TagChip
                             v-for="tag in someItems"
                             :key="tag.id"

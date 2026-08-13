@@ -7,7 +7,7 @@ defineProps<{
 <template>
     <div
         v-if="!inline"
-        class="border-surface-300 dark:border-surface-700 bg-surface-0 dark:bg-surface-900 flex h-full flex-col gap-3 rounded-lg border p-3"
+        class="border-surface-300 dark:border-surface-700 bg-surface-0 dark:bg-surface-900 flex h-full flex-col gap-3 overflow-y-auto rounded-lg border p-3"
     >
         <div class="flex min-h-0 flex-col gap-2">
             <slot name="chips" />
