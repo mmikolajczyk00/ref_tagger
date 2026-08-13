@@ -1,8 +1,8 @@
 import { useUploadQueueStore } from './useUploadQueueStore'
-import { SCRAPE_STATUS, UPLOAD_STATUS } from './UploadQueue'
 import type { MediaClassification, MediaFileSource } from '@shared/types/models'
-import { normalizeTag } from '@renderer/core/utils/tagsUtils'
 export { MediaFileSourceType } from '@shared/types/models'
+
+const parser = new DOMParser()
 
 export type DropScanResult = {
     name?: string
@@ -21,79 +21,81 @@ function isPinterest(data: DataTransfer): boolean {
 function isSafebooru(data: DataTransfer): boolean {
     return data.types.includes('text/html') && data.getData('text/html').includes('safebooru.org')
 }
+function isXTwitter(data: DataTransfer): boolean {
+    return data.types.includes('text/uri-list') && data.getData('text/uri-list').includes('x.com')
+}
 function isLocal(data: DataTransfer): boolean {
     const files = data.files
     return files && files.length > 0
 }
 
-// extract urls and tags from html
-// urls are in resolution ascending order
+function handleXTwitter(data: DataTransfer): DropScanResult[] {
+    const link = data.getData('text/uri-list')
+    if (!link) return []
+
+    return [
+        {
+            name: 'untitled',
+            thumb: '',
+            src: '',
+            tags: [],
+            mediaType: 'image',
+            sourceType: 'web',
+            originalSourceUrl: link
+        }
+    ]
+}
+
 function handlePinterest(data: DataTransfer): DropScanResult[] {
     const results: DropScanResult[] = []
     const htmlString = data.getData('text/html')
-
-    // const droppedImages = [
-    //     ...htmlString.matchAll(/<a aria-label="([^"]*?)pin page"[\s\S]*? srcSet="([^"]*?)"/gim)
+    if (!htmlString) return []
 
     const trimPinterestTags = function (tags: string) {
-        ;['This contains an image of:', 'This may contain:'].forEach((pref) => {
+        ;['This contains an image of:', 'This may contain:', 'Pin card'].forEach((pref) => {
             tags = tags.replace(pref, '').trim()
         })
         return tags
     }
 
-    const imgPinRegex =
-        /(?:href="([^"]*?pinterest.com\/pin[^"]*?)"(?:(?!href).)*?)(?:<a aria-label="([^"]*?)pin page"|alt="([^"]*?)")(?:(?!(?:<a aria-label|img alt)).)*? srcSet="([^"]*?)"/gim
+    const doc = parser.parseFromString(htmlString, 'text/html')
 
-    const droppedImages = [...htmlString.matchAll(imgPinRegex)].map((m) => m)
-    const droppedVideos = [
-        ...htmlString.matchAll(
-            /<a[\s\S]*?href="([^"]*?)"[\s\S]*?<video .*?poster="([^"]*?)".*?>/gim
-        )
-    ].map((m) => ({ src: m.at(1), thumb: m[2] }))
+    console.log(doc)
 
-    console.dir(htmlString)
+    // selected multiple
 
-    droppedImages.forEach((f) => {
-        console.log(f)
-    })
+    let gridItems = doc.querySelectorAll('[data-grid-item]') as
+        NodeListOf<HTMLAnchorElement> | [HTMLAnchorElement]
 
-    droppedVideos.forEach((f) => {
-        console.log(f)
+    if (gridItems.length == 0) {
+        const item = doc.querySelector('a')
+        if (!item) return results
+        gridItems = [item]
+    }
+
+    for (const item of gridItems) {
+        const originalSourceUrl =
+            item.getAttribute('href') || item.querySelector('a')?.getAttribute('href')
+        const srcSet = item.querySelector('img')?.getAttribute('srcSet')?.split(', ')
+        const thumb = srcSet?.[0].split(' ')[0]
+        const src = srcSet?.[srcSet.length - 1].split(' ')[0]
+        const possibleTagItems = [
+            ...item.querySelectorAll('[aria-label]'),
+            ...item.querySelectorAll('[alt]')
+        ]
+        const tags: string[] = []
+        for (const i of possibleTagItems) {
+            const tagsString = i.getAttribute('aria-label') || i.getAttribute('alt') || ''
+            tags.push(...trimPinterestTags(tagsString).split(' ').filter(Boolean))
+        }
+
+        // TODO: support for videos
+
+        console.log(item, { originalSourceUrl, srcSet, tags })
         const result = {
             name: 'untitled',
-            thumb: f.thumb,
-            src: f.src,
-            tags: [] as string[],
-            mediaType: 'video',
-            videoSrc: f.src,
-            sourceType: 'web',
-            originalSourceUrl: ''
-        } as DropScanResult
-        results.push(result)
-    })
-
-    droppedImages.forEach((f) => {
-        const originalSourceUrl = f[1] || ''
-        let tagsString = f[2] || f[3] || ''
-        tagsString = trimPinterestTags(tagsString)
-
-        const tags = tagsString.trim().split(' ')
-        const srcSet = f[4]
-
-        const srcs = srcSet?.split(',')
-        let thumb = srcs?.[0]?.trim()
-        thumb = thumb?.split(' ')[0]?.trim()
-
-        let best = srcs?.at(-1)?.trim()
-        best = best?.split(' ')[0]?.trim()
-
-        console.log({ thumb, best, tags })
-
-        const result = {
-            name: 'untitled',
-            thumb: thumb || undefined,
-            src: best || undefined,
+            thumb,
+            src,
             tags,
             mediaType: 'image',
             sourceType: 'web',
@@ -101,8 +103,7 @@ function handlePinterest(data: DataTransfer): DropScanResult[] {
         } as DropScanResult
 
         results.push(result)
-    })
-
+    }
     console.log(results)
 
     return results
@@ -111,31 +112,30 @@ function handlePinterest(data: DataTransfer): DropScanResult[] {
 function handleSafebooru(data: DataTransfer): DropScanResult[] {
     const results: DropScanResult[] = []
     const htmlString = data.getData('text/html')
-    // const originalSourceUrl = data.getData('text/plain') || data.getData('text/uri-list')
 
-    const regex = /<a[\s\S]*?href="([^"]*?)"[\s\S]*?<img .*?src="([^"]*?)" alt="([^"]*?)"/gim
-    const getFullResRegex = /\/([0-9]*?)\/thumbnail_([\s\S]*?)\?/
-
-    function thumbToFullRes(thumb: string | undefined): string | undefined {
+    function thumbToFullRes(thumb: string): string {
+        const getFullResRegex = /\/([0-9]*?)\/thumbnail_([\s\S]*?)\?/
         const match = thumb?.match(getFullResRegex)
         const id = match?.[1]
         const url_part = match?.[2]
         console.log('thumbToFullRes', { match, id, url_part })
-        return match ? `https://safebooru.org/images/${id}/${url_part}` : undefined
+        return match ? `https://safebooru.org/images/${id}/${url_part}` : ''
     }
 
-    const matches = htmlString?.matchAll(regex).map((m) => ({
-        src: thumbToFullRes(m[2]),
-        originalSourceUrl: m[1],
-        thumb: m[2],
-        tags: m[3]?.split(' ') || []
-    }))
+    const doc = parser.parseFromString(htmlString, 'text/html')
 
-    if (!matches) return results
+    const gridItems = doc.querySelectorAll('a[id]')
 
-    for (const match of matches) {
-        console.log(match)
-        const { src, thumb, tags, originalSourceUrl } = match
+    for (const item of gridItems) {
+        const originalSourceUrl = item.getAttribute('href')
+        const thumb = item.querySelector('img')?.getAttribute('src') || ''
+        const src = thumbToFullRes(thumb)
+
+        if (!originalSourceUrl || !thumb || !src) continue
+
+        const tags = item.querySelector('img')?.getAttribute('alt')?.split(' ')
+
+        // TODO: support for videos
 
         const result = {
             name: 'untitled',
@@ -146,6 +146,7 @@ function handleSafebooru(data: DataTransfer): DropScanResult[] {
             sourceType: 'web',
             originalSourceUrl
         } as DropScanResult
+
         results.push(result)
     }
 
@@ -201,6 +202,9 @@ export async function handleDrop(event: DragEvent) {
         results.push(...res)
     } else if (isSafebooru(dt)) {
         const res = handleSafebooru(dt)
+        results.push(...res)
+    } else if (isXTwitter(dt)) {
+        const res = handleXTwitter(dt)
         results.push(...res)
     } else {
         console.log('unhandled source')
