@@ -97,11 +97,17 @@ app.whenReady().then(() => {
     const userDataPath = app.getPath('userData')
     const dbService = new LocalDatabaseService(userDataPath, FILE_ROOT_DIR)
 
-    registerIPCFilesHandlers(ipcMain, dbService)
-    registerIPCTagsHandlers(ipcMain, dbService)
-    registerIPCDownloadHandlers(ipcMain, dbService)
-    registerIPCCanvasesHandlers(ipcMain, dbService)
-    registerIPCTagsProcessingHandlers(ipcMain, dbService)
+    registerIPCFilesHandlers(
+        ipcMain,
+        dbService.fileService,
+        dbService.tagService,
+        dbService.searchService,
+        dbService.fileStorage
+    )
+    registerIPCTagsHandlers(ipcMain, dbService.tagService)
+    registerIPCDownloadHandlers(ipcMain, dbService.fileStorage)
+    registerIPCCanvasesHandlers(ipcMain, dbService.canvasService)
+    registerIPCTagsProcessingHandlers(ipcMain, dbService.tagsProcessingService)
 
     ipcMain.handle('shell:openExternal', (_event, url: string) => {
         return shell.openExternal(url)

@@ -1,56 +1,56 @@
 import { IpcMain } from 'electron'
-import { LocalDatabaseService } from '../services/LocalDatabaseService'
+import { TagService } from '../services/TagService'
 
-export function registerIPCTagsHandlers(ipcMain: IpcMain, dbService: LocalDatabaseService): void {
+export function registerIPCTagsHandlers(ipcMain: IpcMain, tagService: TagService): void {
     ipcMain.handle('api:tags:getAll', () => {
-        return dbService.getAllTags()
+        return tagService.getAllTags()
     })
 
     ipcMain.handle('api:tags:create', (_event, name: string, color: string) => {
-        return dbService.createTag(name, color)
+        return tagService.createTag(name, color)
     })
 
     ipcMain.handle('api:tags:delete', (_event, id: number) => {
-        return dbService.deleteTag(id)
+        return tagService.deleteTag(id)
     })
 
     ipcMain.handle('api:tags:updateName', (_event, id: number, name: string) => {
-        return dbService.updateTagName(id, name)
+        return tagService.updateTagName(id, name)
     })
 
     ipcMain.handle('api:tags:updateColor', (_event, id: number, color: string) => {
-        return dbService.updateTagColor(id, color)
+        return tagService.updateTagColor(id, color)
     })
 
     ipcMain.handle('api:tags:getAllColors', () => {
-        return dbService.getAllTagColors()
+        return tagService.getAllTagColors()
     })
 
     ipcMain.handle('api:tags:getSubtags', (_event, parentId: number) => {
-        return dbService.getDirectSubtagIds(parentId)
+        return tagService.getDirectSubtagIds(parentId)
     })
 
     ipcMain.handle('api:tags:addSubtags', (_event, parentId: number, childIds: number[]) => {
-        return dbService.addSubtags(parentId, childIds)
+        return tagService.addSubtags(parentId, childIds)
     })
 
     ipcMain.handle('api:tags:removeSubtags', (_event, parentId: number, childIds: number[]) => {
-        return dbService.removeSubtags(parentId, childIds)
+        return tagService.removeSubtags(parentId, childIds)
     })
 
     ipcMain.handle('api:tags:getAllRelations', () => {
-        return dbService.getAllRelations()
+        return tagService.getAllRelations()
     })
 
     ipcMain.handle('api:tags:getParents', (_event, childId: number) => {
-        return dbService.getDirectParentIds(childId)
+        return tagService.getDirectParentIds(childId)
     })
 
     ipcMain.handle('api:tags:addParents', (_event, childId: number, parentIds: number[]) => {
-        return dbService.addParents(childId, parentIds)
+        return tagService.addParents(childId, parentIds)
     })
 
     ipcMain.handle('api:tags:removeParents', (_event, childId: number, parentIds: number[]) => {
-        return dbService.removeParents(childId, parentIds)
+        return tagService.removeParents(childId, parentIds)
     })
 }

@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { PrismaClient } from '../../generated/prisma/client'
 import { Result } from '../../shared/types/api'
-import { Canvas, CanvasSceneData } from '../../shared/types/models'
+import { Canvas, CanvasSceneData, PaginatedCanvases } from '../../shared/types/models'
 
 export class CanvasService {
     private canvasesDir: string
@@ -76,6 +76,34 @@ export class CanvasService {
             return {
                 success: false,
                 error: err instanceof Error ? err.message : 'Failed to create canvas.'
+            }
+        }
+    }
+
+    async getCanvasesPage(page: number, limit: number): Promise<Result<PaginatedCanvases>> {
+        try {
+            const skip = (page - 1) * limit
+            const [rows, total] = await Promise.all([
+                this.prisma.canvas.findMany({
+                    orderBy: { updatedAt: 'desc' },
+                    skip,
+                    take: limit
+                }),
+                this.prisma.canvas.count()
+            ])
+            return {
+                success: true,
+                data: {
+                    data: rows.map((r) => this.toCanvas(r)),
+                    total,
+                    page,
+                    limit
+                }
+            }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to get canvases.'
             }
         }
     }

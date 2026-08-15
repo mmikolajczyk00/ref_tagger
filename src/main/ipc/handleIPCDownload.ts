@@ -1,12 +1,12 @@
 import { BrowserWindow, IpcMain } from 'electron'
-import { LocalDatabaseService } from '../services/LocalDatabaseService'
+import { FileStorageService } from '../services/FileStorageService'
 import { FileDownloadResult, VideoInfo } from '../../shared/types/models'
 import { downloadFile } from '../services/FileDownloadService'
 import { Result } from '../../shared/types/api'
 
 export function registerIPCDownloadHandlers(
     ipcMain: IpcMain,
-    dbService: LocalDatabaseService
+    fileStorage: FileStorageService
 ): void {
     ipcMain.handle(
         'api:scrape:downloadFile',
@@ -31,12 +31,7 @@ export function registerIPCDownloadHandlers(
                     })
                 }
             }
-            return downloadFile(
-                payload.url,
-                dbService.getFileStorageDirectory(),
-                onProgress,
-                onInfo
-            )
+            return downloadFile(payload.url, fileStorage.getRootDir(), onProgress, onInfo)
         }
     )
 }
