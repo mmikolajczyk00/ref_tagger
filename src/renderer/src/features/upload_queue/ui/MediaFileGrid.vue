@@ -54,17 +54,22 @@ function onGridClick(event: MouseEvent) {
                 <Badge class="absolute top-2 right-2" value="error" severity="danger"></Badge
             ></template>
             <img
-                v-if="f.dropData.mediaType === 'image'"
                 :src="`${f.dropData.sourceType === 'local' ? 'media://load?path=' : ''}${f.dropData.thumb}`"
                 :alt="f.dropData.name || 'Image'"
                 class="bg-surface-200 dark:bg-surface-950 pointer-events-none w-full flex-1 object-cover"
             />
 
-            <div
-                v-else
-                class="bg-surface-200 dark:bg-surface-950 pointer-events-none flex w-full flex-1 items-center justify-center"
+            <span
+                v-if="f.dropData.mediaType === 'video'"
+                class="material-symbols-outlined text-surface-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-200 drop-shadow-lg"
+                >play_circle</span
             >
-                <span class="text-surface-400 text-sm uppercase">{{ f.dropData.mediaType }}</span>
+
+            <div
+                v-if="f.downloadStatus === 'downloading'"
+                class="bg-surface-0/60 absolute inset-0 z-20 flex items-center justify-center backdrop-blur-sm"
+            >
+                <i class="pi pi-spin pi-spinner text-primary-400 text-3xl"></i>
             </div>
 
             <div
@@ -83,9 +88,15 @@ function onGridClick(event: MouseEvent) {
                     {{ f.dropData.name }}
                 </span>
                 <span class="text-surface-400 dark:text-surface-500 truncate text-[10px]">
-                    {{ f.dropData.mediaType }}
+                    {{ f.dropData.mediaType || 'undefined' }}
                 </span>
             </div>
+            <ProgressBar
+                v-if="f.percentage && f.downloadStatus === 'downloading'"
+                class="absolute bottom-0 z-30 w-full"
+                :value="f.percentage"
+                :pt="{ value: { style: { transition: 'none' } } }"
+            ></ProgressBar>
         </div>
     </div>
 </template>

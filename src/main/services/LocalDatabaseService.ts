@@ -23,6 +23,7 @@ import {
 } from '../../shared/types/models'
 import { CanvasService } from './CanvasService'
 import { FileStorageService } from './FileStorageService'
+import { extFromMediaType } from '../../shared/utils/mediaType'
 import { TagsProcessingService } from './TagsProcessingService'
 
 const initDDL = `
@@ -150,23 +151,6 @@ function extFromFileName(name: string): string {
     return path.extname(name)
 }
 
-function extFromMediaType(mediaType: string): string {
-    const map: Record<string, string> = {
-        'image/jpeg': '.jpg',
-        'image/png': '.png',
-        'image/gif': '.gif',
-        'image/webp': '.webp',
-        'image/svg+xml': '.svg',
-        'video/mp4': '.mp4',
-        'video/webm': '.webm',
-        'video/quicktime': '.mov',
-        'audio/mpeg': '.mp3',
-        'audio/wav': '.wav',
-        'audio/ogg': '.ogg'
-    }
-    return map[mediaType] ?? '.bin'
-}
-
 export class LocalDatabaseService {
     private prisma: PrismaClient
     private canvasService: CanvasService
@@ -175,8 +159,6 @@ export class LocalDatabaseService {
 
     constructor(dbFolderPath: string, fileRootDir: string) {
         const dbPath = path.join(dbFolderPath, 'ref-sheeter.sqlite')
-
-        console.log(dbPath)
 
         const initDb = new Database(dbPath)
         initDb.pragma('journal_mode = WAL')
@@ -196,7 +178,14 @@ export class LocalDatabaseService {
 
         this.canvasService = new CanvasService(this.prisma, path.join(dbFolderPath, 'canvases'))
         this.fileStorage = new FileStorageService(fileRootDir)
+        this.fileStorage
+            .clearTempThumbs()
+            .catch((e) => console.warn('Temp thumb cleanup failed:', e))
         this.tagsProcessingService = new TagsProcessingService(this.prisma)
+    }
+
+    getFileStorageDirectory(): string {
+        return this.fileStorage.getRootDir()
     }
 
     async getFilesPage(page: number, limit: number): Promise<Result<PaginatedMediaFiles>> {
@@ -268,12 +257,18 @@ export class LocalDatabaseService {
         }
     }
 
+    async createTempThumb(srcPath: string): Promise<Result<{ thumb: string }>> {
+        return this.fileStorage.createTempVideoThumb(srcPath)
+    }
+
     async insertFile(payload: UploadFilePayload): Promise<Result<{ id: number }>> {
         if (payload.source === MediaFileSourceType.LOCAL && !payload.filePath) {
             return { success: false, error: 'Local upload requires filePath.' }
         }
-        if (payload.source === MediaFileSourceType.WEB && !payload.mediaUrl) {
-            return { success: false, error: 'Web upload requires mediaUrl.' }
+        if (payload.source === MediaFileSourceType.WEB && !payload.mediaUrl && !payload.filePath) {
+            console.log(payload)
+
+            return { success: false, error: 'Web upload requires mediaUrl or filePath.' }
         }
 
         const ext =
@@ -300,8 +295,19 @@ export class LocalDatabaseService {
             }
         }
 
-        let stored: Result<{ storedPath: string }>
-        if (payload.source === MediaFileSourceType.LOCAL && payload.filePath) {
+        let stored: Result<{ storedPath: string; thumbPath?: string }>
+        if (payload.source === MediaFileSourceType.WEB && payload.filePath) {
+            if (!payload.thumb) {
+                await this.prisma.file.delete({ where: { id: row.id } }).catch(() => {})
+                return { success: false, error: 'Web upload (downloaded) requires thumb.' }
+            }
+            stored = await this.fileStorage.storeDownloadedWebFile(
+                row.id,
+                payload.filePath,
+                ext,
+                payload.thumb
+            )
+        } else if (payload.source === MediaFileSourceType.LOCAL && payload.filePath) {
             stored = await this.fileStorage.storeLocalFile(row.id, payload.filePath, ext)
         } else if (payload.source === MediaFileSourceType.WEB && payload.mediaUrl) {
             stored = await this.fileStorage.storeWebFile(row.id, payload.mediaUrl, ext)

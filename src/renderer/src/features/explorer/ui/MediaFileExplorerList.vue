@@ -13,6 +13,10 @@ const mediaSentinel = ref<HTMLElement | null>(null)
 useIntersectionObserver(mediaSentinel, ([{ isIntersecting }]) => {
     if (isIntersecting) props.explorer.fetchNextPage()
 })
+
+function thumbPath(filePath: string): string {
+    return `${filePath}_thumb.webp`
+}
 </script>
 
 <template>
@@ -30,11 +34,18 @@ useIntersectionObserver(mediaSentinel, ([{ isIntersecting }]) => {
                 class="bg-primary/30 absolute size-full"
             ></div>
             <img
-                :src="`media://load?path=${f.filePath}`"
+                :src="`media://load?path=${thumbPath(f.filePath)}`"
                 :alt="f.fileName"
                 class="loading-lazy bg-surface-200 dark:bg-surface-950 pointer-events-none w-full flex-1 object-cover"
+                @error="
+                    (e) => ((e.target as HTMLImageElement).src = `media://load?path=${f.filePath}`)
+                "
             />
-
+            <span
+                v-if="f.mediaType === 'video'"
+                class="material-symbols-outlined text-surface-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-200"
+                >play_circle</span
+            >
             <div
                 class="bg-surface-0/50 dark:bg-surface-900/50 absolute bottom-0 flex w-full flex-col gap-0.5 p-2 text-xs backdrop-blur-sm"
             >

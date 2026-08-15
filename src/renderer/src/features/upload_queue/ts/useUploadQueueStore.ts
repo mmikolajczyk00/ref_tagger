@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { QueuedFile, SCRAPE_STATUS, UPLOAD_STATUS } from './UploadQueue'
+import { DOWNLOAD_STATUS, QueuedFile, SCRAPE_STATUS, UPLOAD_STATUS } from './UploadQueue'
 import { normalizeTag } from '../../../core/utils/tagsUtils'
 import { createListSelection } from '../../../core/utils/listSelection'
 import { DropScanResult } from './DropHandler'
 import { processDroppedTags } from './processDroppedTags'
 import { useTagsProcessingStore } from '../../../core/stores/useTagsProcessingStore'
+import { downloadQueueProcessor } from './downloadQueueProcessor'
+import { VideoInfo } from '@shared/types/models'
 
 export const useUploadQueueStore = defineStore('upload-queue', () => {
     const tpStore = useTagsProcessingStore()
@@ -30,6 +32,25 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
         if (!tpStore.isLoaded) await tpStore.fetchAll()
     }
 
+    async function downloadWithUrl(url: string) {
+        const file = {
+            id: crypto.randomUUID(),
+            uploadStatus: UPLOAD_STATUS.IDLE,
+            scrapeStatus: SCRAPE_STATUS.IDLE,
+            downloadStatus: DOWNLOAD_STATUS.IDLE,
+            errorMessage: undefined,
+            dropData: {
+                name: 'untitled',
+                tags: [],
+                sourceType: 'web',
+                originalSourceUrl: url
+            },
+            userTags: []
+        } as QueuedFile
+        scrapeFiles.value.push(file)
+        downloadQueueProcessor.enqueue([file])
+    }
+
     async function addToScrape(dropData: DropScanResult[]) {
         await ensureTagsProcessingLoaded()
         const files = dropData.map((f) => {
@@ -42,12 +63,11 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
                 },
                 uploadStatus: UPLOAD_STATUS.IDLE,
                 scrapeStatus: SCRAPE_STATUS.IDLE,
+                downloadStatus: DOWNLOAD_STATUS.UNNECESSARY,
                 userTags: []
             }
         })
-        // TODO: temporarily, skip scraping and add files directly to upload queue
-        // scrapeFiles.value.push(...files)
-        addToUpload(files)
+        scrapeFiles.value.push(...files)
     }
 
     function addToUpload(files: QueuedFile[]) {
@@ -56,8 +76,11 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
 
     function moveToUpload(fileIds: string[]) {
         const idSet = new Set(fileIds)
-        const toMove = scrapeFiles.value.filter((f) => idSet.has(f.id))
-        scrapeFiles.value = scrapeFiles.value.filter((f) => !idSet.has(f.id))
+        const canMove = (f: QueuedFile) =>
+            idSet.has(f.id) &&
+            (f.downloadStatus === 'unnecessary' || f.downloadStatus === 'success')
+        const toMove = scrapeFiles.value.filter(canMove)
+        scrapeFiles.value = scrapeFiles.value.filter((f) => !canMove(f))
         const moved = toMove.map((f) => ({
             ...f,
             scrapeStatus: SCRAPE_STATUS.SKIPPED,
@@ -165,6 +188,48 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
             f.id === id ? { ...f, uploadStatus: status, errorMessage } : f
         )
     }
+    function setScrapeStatus(id: string, status: string, errorMessage?: string) {
+        scrapeFiles.value = scrapeFiles.value.map((f) =>
+            f.id === id ? { ...f, scrapeStatus: status, errorMessage } : f
+        )
+    }
+    function setDownloadStatus(
+        id: string,
+        status: string,
+        filePath?: string,
+        errorMessage?: string
+    ) {
+        scrapeFiles.value = scrapeFiles.value.map((f) =>
+            f.id === id
+                ? {
+                      ...f,
+                      dropData: { ...f.dropData, src: filePath },
+                      downloadStatus: status,
+                      errorMessage
+                  }
+                : f
+        )
+    }
+
+    function setPercentage(id: string, percentage: number) {
+        scrapeFiles.value = scrapeFiles.value.map((f) => (f.id === id ? { ...f, percentage } : f))
+    }
+    function setInfo(id: string, info: VideoInfo) {
+        // TODO: use info.tags if possible
+        scrapeFiles.value = scrapeFiles.value.map((f) =>
+            f.id === id
+                ? {
+                      ...f,
+                      dropData: {
+                          ...f.dropData,
+                          thumb: info.thumbnailUrl,
+                          name: info.title,
+                          mediaType: info.mediaType ?? f.dropData.mediaType
+                      }
+                  }
+                : f
+        )
+    }
 
     function remove(side: 'scrape' | 'upload', id: string) {
         if (side === 'scrape') {
@@ -199,12 +264,17 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
         skipFailed,
         remove,
         setUploadStatus,
+        setScrapeStatus,
+        setDownloadStatus,
         addUserTags,
         removeUserTag,
         removeDropDataTag,
         clearDropDataTags,
         updateName,
         updateOriginalSourceUrl,
-        moveToUpload
+        moveToUpload,
+        downloadWithUrl,
+        setPercentage,
+        setInfo
     }
 })

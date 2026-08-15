@@ -100,7 +100,7 @@ tabStore.openTab(AppTabType.TagEditor, 'Tag Editor')
 
 // canvas demo
 
-tabStore.setActiveTab(2)
+tabStore.setActiveTab(0)
 
 canvasStore.fetchCanvases()
 

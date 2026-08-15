@@ -1,5 +1,4 @@
 export type MediaType = 'image' | 'video' | 'audio'
-export type MediaClassification = MediaType | 'unsupported' | 'undefined'
 export const MEDIA_TYPES = ['image', 'video', 'audio'] as const
 
 export const MediaFileSourceType = {
@@ -47,6 +46,7 @@ export interface UploadFilePayload {
     filePath?: string
     mediaUrl?: string
     sourceUrl?: string
+    thumb?: string
 }
 
 export interface TagOperation {
@@ -59,6 +59,19 @@ export interface TagOperation {
 export interface FileTagResult {
     id: number
     tags: Tag[]
+}
+
+export interface FileDownloadResult {
+    filePath: string
+}
+export interface DownloadProgressEvent {
+    sessionId: string
+    percent: number
+}
+
+export interface DownloadInfoEvent {
+    sessionId: string
+    info: VideoInfo
 }
 
 export interface TagOperationResult {
@@ -111,4 +124,13 @@ export interface Alias {
     realTag: string
     aliasTags: string[]
     createdAt: string
+}
+
+export type VideoInfo = {
+    title: string
+    thumbnailUrl: string
+    duration: number
+    ext: string
+    tags: string[]
+    mediaType?: MediaType
 }

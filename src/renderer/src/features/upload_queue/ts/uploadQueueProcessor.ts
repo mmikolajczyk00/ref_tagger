@@ -1,5 +1,5 @@
 import type { QueuedFile } from './UploadQueue'
-import { UPLOAD_STATUS } from './UploadQueue'
+import { DOWNLOAD_STATUS, UPLOAD_STATUS } from './UploadQueue'
 import { useUploadQueueStore } from './useUploadQueueStore'
 import { MediaFileSourceType } from './DropHandler'
 import type { MediaType, UploadFilePayload } from '@shared/types/models'
@@ -102,7 +102,16 @@ function buildPayload(file: QueuedFile): UploadFilePayload {
         mediaType: file.dropData.mediaType as MediaType,
         sourceUrl: file.dropData.originalSourceUrl
     }
-    if (file.dropData.sourceType === MediaFileSourceType.LOCAL) {
+
+    if (file.downloadStatus === DOWNLOAD_STATUS.SUCCESS) {
+        // downloaded from web, meaning it already is inside FILES directory and only needs to be renamed
+        return {
+            ...base,
+            source: MediaFileSourceType.WEB,
+            filePath: file.dropData.src,
+            thumb: file.dropData.thumb
+        }
+    } else if (file.dropData.sourceType === MediaFileSourceType.LOCAL) {
         return {
             ...base,
             source: MediaFileSourceType.LOCAL,

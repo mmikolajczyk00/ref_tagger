@@ -9,6 +9,7 @@ import { registerIPCFilesHandlers } from './ipc/handleIPCFiles'
 import { registerIPCTagsHandlers } from './ipc/handleIPCTags'
 import { registerIPCCanvasesHandlers } from './ipc/handleIPCCanvases'
 import { registerIPCTagsProcessingHandlers } from './ipc/handleIPCTagsProcessing'
+import { registerIPCDownloadHandlers } from './ipc/handleIPCDownload'
 
 protocol.registerSchemesAsPrivileged([
     { scheme: 'media', privileges: { standard: true, secure: true, supportFetchAPI: true } }
@@ -98,6 +99,7 @@ app.whenReady().then(() => {
 
     registerIPCFilesHandlers(ipcMain, dbService)
     registerIPCTagsHandlers(ipcMain, dbService)
+    registerIPCDownloadHandlers(ipcMain, dbService)
     registerIPCCanvasesHandlers(ipcMain, dbService)
     registerIPCTagsProcessingHandlers(ipcMain, dbService)
 

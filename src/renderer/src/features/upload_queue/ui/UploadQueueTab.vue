@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useUploadQueueStore } from '../ts/useUploadQueueStore'
 import ScrapePanel from './ScrapePanel.vue'
 import UploadPanel from './UploadPanel.vue'
@@ -12,7 +12,7 @@ let dragCounter = 0
 
 const store = useUploadQueueStore()
 
-const activeTab = ref('1')
+const activeTab = ref('0')
 
 function isFileDrag(e: DragEvent): boolean {
     return Array.from(e.dataTransfer?.types ?? []).includes('Files')
@@ -52,6 +52,40 @@ async function handleDropEvent(event: DragEvent) {
 
     handleDrop(event)
 }
+
+const ytdlpText = ref('')
+const downloads = reactive<Record<string, number>>({})
+let offProgress: (() => void) | null = null
+
+function startDownload() {
+    const sessionId = crypto.randomUUID()
+    downloads[sessionId] = 0
+    void window.api.scrape
+        .downloadFile(ytdlpText.value, sessionId)
+        .then((result) => {
+            console.log(result)
+        })
+        .catch((err) => {
+            console.error(err)
+        })
+        .finally(() => {
+            delete downloads[sessionId]
+        })
+}
+
+onMounted(() => {
+    offProgress = window.api.scrape.onDownloadProgress(({ sessionId, percentage }) => {
+        if (sessionId in downloads) {
+            console.log(percentage)
+            downloads[sessionId] = percentage
+        }
+    })
+})
+
+onUnmounted(() => {
+    offProgress?.()
+    offProgress = null
+})
 </script>
 
 <template>
@@ -65,6 +99,7 @@ async function handleDropEvent(event: DragEvent) {
                 <Tab value="0">Scrape</Tab>
                 <Tab value="1">Upload</Tab>
                 <Tab value="2">Tag Processing</Tab>
+                <Tab value="3">yt dlp</Tab>
             </TabList>
             <TabPanels class="flex h-full min-h-0 flex-1 overflow-hidden">
                 <TabPanel
@@ -78,6 +113,26 @@ async function handleDropEvent(event: DragEvent) {
                 </TabPanel>
                 <TabPanel value="2" class="min-h-0 flex-1 overflow-hidden focus-within:outline-0">
                     <TagsProcessingPanel />
+                </TabPanel>
+                <TabPanel
+                    value="3"
+                    class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 focus-within:outline-0"
+                >
+                    <div class="flex gap-2">
+                        <InputText v-model="ytdlpText" class="flex-1" />
+                        <Button @click="startDownload">Download</Button>
+                    </div>
+                    <div
+                        v-for="(percentage, sessionId) in downloads"
+                        :key="sessionId"
+                        class="flex flex-col gap-1"
+                    >
+                        <div class="text-surface-400 flex justify-between text-xs">
+                            <span class="font-mono">{{ sessionId.slice(0, 8) }}</span>
+                            <span>{{ percentage.toFixed(1) }}%</span>
+                        </div>
+                        <ProgressBar :value="percentage" />
+                    </div>
                 </TabPanel>
             </TabPanels>
         </Tabs>

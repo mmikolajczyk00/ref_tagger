@@ -3,6 +3,9 @@ import { TagOperation, TagSearchQuery, UploadFilePayload } from '../../shared/ty
 import { LocalDatabaseService } from '../services/LocalDatabaseService'
 
 export function registerIPCFilesHandlers(ipcMain: IpcMain, dbService: LocalDatabaseService): void {
+    ipcMain.handle('api:files:createTempVideoThumb', (_event, srcPath: string) => {
+        return dbService.createTempThumb(srcPath)
+    })
     ipcMain.handle('api:files:getPaginated', (_event, page: number, limit: number) => {
         return dbService.getFilesPage(page, limit)
     })

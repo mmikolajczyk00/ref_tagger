@@ -6,6 +6,7 @@ import UploadQueueDetailsPanel from './UploadQueueDetailsPanel.vue'
 
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
+import { ref } from 'vue'
 
 const store = useUploadQueueStore()
 
@@ -19,6 +20,14 @@ function onClearSelection() {
 
 function onRemove(id: string) {
     store.remove('scrape', id)
+}
+
+const downloadUrl = ref('')
+
+function onDownloadWithUrl() {
+    console.log(downloadUrl.value)
+    store.downloadWithUrl(downloadUrl.value)
+    downloadUrl.value = ''
 }
 </script>
 
@@ -45,6 +54,13 @@ function onRemove(id: string) {
                         @clear-selection="onClearSelection"
                         @remove="onRemove"
                     />
+                    <div class="absolute right-2 bottom-2">
+                        <InputText
+                            v-model="downloadUrl"
+                            placeholder="Paste url here"
+                            @change="onDownloadWithUrl"
+                        />
+                    </div>
                 </div>
             </SplitterPanel>
             <SplitterPanel :min-size="5" :size="20">

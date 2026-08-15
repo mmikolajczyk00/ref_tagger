@@ -1,17 +1,34 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { TagOperation, TagSearchQuery, UploadFilePayload } from '../shared/types/models'
-
-type ScrapeResult = unknown
+import { Result } from '../shared/types/api'
+import {
+    DownloadInfoEvent,
+    DownloadProgressEvent,
+    FileDownloadResult,
+    TagOperation,
+    TagSearchQuery,
+    UploadFilePayload
+} from '../shared/types/models'
 
 // Custom APIs for renderer
 const api = {
     scrape: {
-        scrapeTwitter: (url: string): Promise<ScrapeResult> =>
-            ipcRenderer.invoke('scrape-twt', url),
-        scrapeR34: (url: string): Promise<ScrapeResult> => ipcRenderer.invoke('scrape-r34', url),
-        downloadFromUrl_YTDLP: (url: string): Promise<string[]> =>
-            ipcRenderer.invoke('download-yt-dlp', url)
+        downloadFile: (url: string, sessionId: string): Promise<Result<FileDownloadResult>> =>
+            ipcRenderer.invoke('api:scrape:downloadFile', { url, sessionId }),
+        onDownloadProgress: (handler: (event: DownloadProgressEvent) => void) => {
+            const listener = (_: unknown, payload: DownloadProgressEvent) => handler(payload)
+            ipcRenderer.on('api:scrape:downloadFile:progress', listener)
+            return () => {
+                ipcRenderer.off('api:scrape:downloadFile:progress', listener)
+            }
+        },
+        onDownloadInfo: (handler: (event: DownloadInfoEvent) => void) => {
+            const listener = (_: unknown, payload: DownloadInfoEvent) => handler(payload)
+            ipcRenderer.on('api:scrape:downloadFile:info', listener)
+            return () => {
+                ipcRenderer.off('api:scrape:downloadFile:info', listener)
+            }
+        }
     },
 
     files: {
@@ -23,6 +40,8 @@ const api = {
         getFilePath: (file: File) => {
             return webUtils.getPathForFile(file)
         },
+        getVideoThumb: (srcPath: string) =>
+            ipcRenderer.invoke('api:files:createTempVideoThumb', srcPath),
         applyTagOperations: (operations: TagOperation[]) =>
             ipcRenderer.invoke('api:files:updateTags', operations),
         searchFiles: (query: TagSearchQuery) => ipcRenderer.invoke('api:files:search', query),

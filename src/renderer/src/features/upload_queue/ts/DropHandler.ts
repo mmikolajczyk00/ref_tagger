@@ -1,5 +1,5 @@
 import { useUploadQueueStore } from './useUploadQueueStore'
-import type { MediaClassification, MediaFileSource } from '@shared/types/models'
+import type { MediaFileSource, MediaType } from '@shared/types/models'
 export { MediaFileSourceType } from '@shared/types/models'
 
 const parser = new DOMParser()
@@ -9,8 +9,7 @@ export type DropScanResult = {
     thumb?: string
     src?: string
     tags: string[]
-    mediaType: MediaClassification
-    videoSrc?: string
+    mediaType?: MediaType
     sourceType: MediaFileSource
     originalSourceUrl?: string
 }
@@ -30,14 +29,26 @@ function isLocal(data: DataTransfer): boolean {
 }
 
 function handleXTwitter(data: DataTransfer): DropScanResult[] {
-    const link = data.getData('text/uri-list')
-    if (!link) return []
+    // const link = data.getData('text/uri-list')
+    const htmlString = data.getData('text/html')
+
+    const doc = parser.parseFromString(htmlString, 'text/html')
+
+    console.log(doc)
+
+    const link = doc.querySelector('a')?.getAttribute('href')
+    const thumb = doc.querySelector('img')?.getAttribute('src')
+
+    if (!link || !thumb) return []
+
+    const thumbBody = thumb.slice(0, thumb.lastIndexOf('&name=') + 6)
+    const src = thumbBody + '4096x4096'
 
     return [
         {
             name: 'untitled',
-            thumb: '',
-            src: '',
+            thumb,
+            src,
             tags: [],
             mediaType: 'image',
             sourceType: 'web',
@@ -83,6 +94,8 @@ function handlePinterest(data: DataTransfer): DropScanResult[] {
             ...item.querySelectorAll('[aria-label]'),
             ...item.querySelectorAll('[alt]')
         ]
+        if (!originalSourceUrl || !thumb || !src) continue
+
         const tags: string[] = []
         for (const i of possibleTagItems) {
             const tagsString = i.getAttribute('aria-label') || i.getAttribute('alt') || ''
@@ -163,14 +176,13 @@ async function handleLocal(data: DataTransfer): Promise<DropScanResult[]> {
         const absolutePath = await window.api.files.getFilePath(file)
         if (!absolutePath) continue
 
-        let mediaType: MediaClassification = 'undefined'
+        let mediaType: MediaType | undefined
         if (file.type.startsWith('image/')) mediaType = 'image'
         else if (file.type.startsWith('audio/')) mediaType = 'audio'
         else if (file.type.startsWith('video/')) mediaType = 'video'
-        else mediaType = 'unsupported'
-        if (mediaType === 'unsupported') continue
+        if (!mediaType) continue
 
-        const result = {
+        const result: DropScanResult = {
             name: file.name,
             thumb: absolutePath,
             src: absolutePath,
@@ -178,7 +190,15 @@ async function handleLocal(data: DataTransfer): Promise<DropScanResult[]> {
             mediaType,
             sourceType: 'local',
             originalSourceUrl: absolutePath
-        } as DropScanResult
+        }
+
+        if (mediaType === 'video') {
+            const thumbRes = await window.api.files.getVideoThumb(absolutePath)
+            console.log(thumbRes)
+            if (!thumbRes.success || !thumbRes.data) continue
+            result.thumb = thumbRes.data.thumb
+        }
+
         results.push(result)
     }
 
@@ -192,6 +212,16 @@ export async function handleDrop(event: DragEvent) {
     const store = useUploadQueueStore()
     const dt = event.dataTransfer
     const results = [] as DropScanResult[]
+
+    console.log(dt)
+    console.log(dt.types)
+    console.log({
+        types: dt.types,
+        html: dt.getData('text/html'),
+        text: dt.getData('text/plain'),
+        urilist: dt.getData('text/uri-list'),
+        files: dt.files
+    })
 
     if (isLocal(dt)) {
         const res = await handleLocal(dt)
@@ -208,15 +238,6 @@ export async function handleDrop(event: DragEvent) {
         results.push(...res)
     } else {
         console.log('unhandled source')
-        console.log(dt)
-        console.log(dt.types)
-        console.log({
-            types: dt.types,
-            html: dt.getData('text/html'),
-            text: dt.getData('text/plain'),
-            urilist: dt.getData('text/uri-list'),
-            files: dt.files
-        })
     }
     store.addToScrape(results)
 }

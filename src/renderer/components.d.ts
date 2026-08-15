@@ -36,6 +36,7 @@ declare module 'vue' {
     Label: typeof import('primevue/label')['default']
     OverlayBadge: typeof import('primevue/overlaybadge')['default']
     Popover: typeof import('primevue/popover')['default']
+    ProgressBar: typeof import('primevue/progressbar')['default']
     ScrollAreaContent: typeof import('primevue/scrollareacontent')['default']
     ScrollAreaHandle: typeof import('primevue/scrollareahandle')['default']
     ScrollAreaScrollbar: typeof import('primevue/scrollareascrollbar')['default']
