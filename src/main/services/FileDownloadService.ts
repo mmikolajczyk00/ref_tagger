@@ -7,7 +7,6 @@ import { Result } from '../../shared/types/api'
 
 function getVideoInfo(url: string): Promise<VideoInfo> {
     return new Promise((resolve, reject) => {
-        // Fetch video info without downloading the file
         execFile('yt-dlp', ['--dump-json', url], (error, stdout) => {
             if (error) return reject(error)
 
@@ -16,7 +15,7 @@ function getVideoInfo(url: string): Promise<VideoInfo> {
                 console.log({ info })
                 resolve({
                     title: info.title,
-                    thumbnailUrl: info.thumbnail, // Web URL (e.g. https://i.ytimg.com/vi/...)
+                    thumbnailUrl: info.thumbnail,
                     duration: info.duration,
                     ext: info.ext,
                     tags: info.tags,

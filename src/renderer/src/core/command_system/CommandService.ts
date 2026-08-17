@@ -22,47 +22,44 @@ class CommandService {
         this.registry = context.services.commandRegistry
     }
 
-    execute(id: string): void {
-        const cmd = this.registry!.create(id)
+    async execute(id: string, ...args: any[]): Promise<void> {
+        const cmd = this.registry!.create(id, ...args)
         if (cmd) {
             cmd.timestamp = Date.now()
 
             const registration = this.registry!.commands.get(id)
 
             if (registration?.scope === 'all') {
-                this.globalUndoRedoMng!.execute(cmd)
+                await this.globalUndoRedoMng!.execute(cmd)
             } else {
-                this.getActiveUndoRedoMng().execute(cmd)
+                await this.getActiveUndoRedoMng().execute(cmd)
             }
         }
     }
 
-    undo(): void {
-        // get active cmd manager and the global one
-        // then decide which one to use
-
+    async undo(): Promise<void> {
         const activeUndoRedoMng = this.getActiveUndoRedoMng()
-        const [activeMostRecentTimestamp, globalMostRecentTimestamp] = [
-            activeUndoRedoMng.peekUndo()?.timestamp || 0,
-            this.globalUndoRedoMng!.peekUndo()?.timestamp || 0
-        ]
+
+        const activeMostRecentTimestamp = activeUndoRedoMng.peekUndo()?.timestamp || 0
+        const globalMostRecentTimestamp = this.globalUndoRedoMng!.peekUndo()?.timestamp || 0
+
         if (activeMostRecentTimestamp > globalMostRecentTimestamp) {
-            activeUndoRedoMng.undo()
+            await activeUndoRedoMng.undo()
         } else {
-            this.globalUndoRedoMng!.undo()
+            await this.globalUndoRedoMng!.undo()
         }
     }
 
-    redo(): void {
+    async redo(): Promise<void> {
         const activeUndoRedoMng = this.getActiveUndoRedoMng()
         const [activeMostRecentTimestamp, globalMostRecentTimestamp] = [
             activeUndoRedoMng.peekRedo()?.timestamp || 0,
             this.globalUndoRedoMng!.peekRedo()?.timestamp || 0
         ]
         if (activeMostRecentTimestamp > globalMostRecentTimestamp) {
-            activeUndoRedoMng.redo()
+            await activeUndoRedoMng.redo()
         } else {
-            this.globalUndoRedoMng!.redo()
+            await this.globalUndoRedoMng!.redo()
         }
     }
 

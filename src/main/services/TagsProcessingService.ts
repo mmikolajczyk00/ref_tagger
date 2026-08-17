@@ -175,6 +175,24 @@ export class TagsProcessingService {
         }
     }
 
+    async removeBlacklistTags(listId: number, tags: string[]): Promise<Result<void>> {
+        try {
+            const unique = [...new Set(tags.map((t) => t.trim()).filter((t) => t.length > 0))]
+            if (unique.length === 0) {
+                return { success: false, error: 'No valid tags provided.' }
+            }
+            await this.prisma.blacklistTag.deleteMany({
+                where: { listId, tag: { in: unique } }
+            })
+            return { success: true, data: undefined as void }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to remove blacklist tags.'
+            }
+        }
+    }
+
     // Alias CRUD
 
     async createAlias(realTag: string): Promise<Result<Alias>> {
@@ -311,6 +329,24 @@ export class TagsProcessingService {
             return {
                 success: false,
                 error: err instanceof Error ? err.message : 'Failed to remove alias tag.'
+            }
+        }
+    }
+
+    async removeAliasTags(aliasId: number, tags: string[]): Promise<Result<void>> {
+        try {
+            const unique = [...new Set(tags.map((t) => t.trim()).filter((t) => t.length > 0))]
+            if (unique.length === 0) {
+                return { success: false, error: 'No valid tags provided.' }
+            }
+            await this.prisma.aliasTag.deleteMany({
+                where: { aliasId, tag: { in: unique } }
+            })
+            return { success: true, data: undefined as void }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to remove alias tags.'
             }
         }
     }

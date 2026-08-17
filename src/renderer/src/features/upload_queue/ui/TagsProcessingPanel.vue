@@ -17,8 +17,8 @@ const {
     deletingIds: blacklistDeletingIds,
     selectList,
     createBlacklist,
-    addTag: addBlacklistTag,
-    removeTag: removeBlacklistTag,
+    addTags: addBlacklistTags,
+    removeTags: removeBlacklistTags,
     editTag: editBlacklistTag,
     renameBlacklist,
     deleteBlacklist
@@ -30,8 +30,8 @@ const {
     deletingIds: aliasDeletingIds,
     selectAlias,
     createAlias,
-    addTag: addAliasTag,
-    removeAliasTag,
+    addTags: addAliasTags,
+    removeTags: removeAliasTags,
     editTag: editAliasTag,
     renameAlias,
     deleteAlias
@@ -82,24 +82,36 @@ function setAliasTags(al: Alias, tags: Tag[]) {
     al.aliasTags = tags.map((t) => t.name)
 }
 
-function onBlacklistAdd(bl: Blacklist, tag: Tag) {
-    addBlacklistTag(bl.id, tag.name)
+function onBlacklistAdd(bl: Blacklist, tags: Tag[]) {
+    addBlacklistTags(
+        bl.id,
+        tags.map((t) => t.name)
+    )
 }
 
-function onBlacklistRemove(bl: Blacklist, tag: Tag) {
-    removeBlacklistTag(bl.id, tag.name)
+function onBlacklistRemove(bl: Blacklist, tags: Tag[]) {
+    removeBlacklistTags(
+        bl.id,
+        tags.map((t) => t.name)
+    )
 }
 
 function onBlacklistEdit(bl: Blacklist, tag: Tag, newName: string) {
     editBlacklistTag(bl.id, tag.name, newName)
 }
 
-function onAliasAdd(al: Alias, tag: Tag) {
-    addAliasTag(al.id, tag.name)
+function onAliasAdd(al: Alias, tags: Tag[]) {
+    addAliasTags(
+        al.id,
+        tags.map((t) => t.name)
+    )
 }
 
-function onAliasRemove(al: Alias, tag: Tag) {
-    removeAliasTag(al.id, tag.name)
+function onAliasRemove(al: Alias, tags: Tag[]) {
+    removeAliasTags(
+        al.id,
+        tags.map((t) => t.name)
+    )
 }
 
 function onAliasEdit(al: Alias, tag: Tag, newName: string) {
@@ -217,8 +229,8 @@ function cancelRename() {
                                     :all-items-tags="getBlacklistTags(bl)"
                                     :some-items-tags="[]"
                                     @update:all-items-tags="(t: Tag[]) => setBlacklistTags(bl, t)"
-                                    @add="(tag: Tag) => onBlacklistAdd(bl, tag)"
-                                    @remove="(tag: Tag) => onBlacklistRemove(bl, tag)"
+                                    @add="(tags: Tag[]) => onBlacklistAdd(bl, tags)"
+                                    @remove="(tags: Tag[]) => onBlacklistRemove(bl, tags)"
                                     @edit="(tag: Tag, n: string) => onBlacklistEdit(bl, tag, n)"
                                 />
                             </div>
@@ -263,8 +275,8 @@ function cancelRename() {
                                         :all-items-tags="getAliasTags(al)"
                                         :some-items-tags="[]"
                                         @update:all-items-tags="(t: Tag[]) => setAliasTags(al, t)"
-                                        @add="(tag: Tag) => onAliasAdd(al, tag)"
-                                        @remove="(tag: Tag) => onAliasRemove(al, tag)"
+                                        @add="(tags: Tag[]) => onAliasAdd(al, tags)"
+                                        @remove="(tags: Tag[]) => onAliasRemove(al, tags)"
                                         @edit="(tag: Tag, n: string) => onAliasEdit(al, tag, n)"
                                     />
                                 </div>

@@ -180,8 +180,9 @@ export function useTagEditorTab() {
         }
     }
 
-    async function removeChild(parentId: number, childId: number) {
-        const res = await window.api.tags.removeSubtags(parentId, [childId])
+    async function removeChild(parentId: number, childIds: number[]) {
+        if (childIds.length === 0) return
+        const res = await window.api.tags.removeSubtags(parentId, childIds)
         if (res.success) {
             await refetchRelations()
         } else {
@@ -189,8 +190,9 @@ export function useTagEditorTab() {
         }
     }
 
-    async function removeParent(childId: number, parentId: number) {
-        const res = await window.api.tags.removeParents(childId, [parentId])
+    async function removeParent(childId: number, parentIds: number[]) {
+        if (parentIds.length === 0) return
+        const res = await window.api.tags.removeParents(childId, parentIds)
         if (res.success) {
             await refetchRelations()
         } else {

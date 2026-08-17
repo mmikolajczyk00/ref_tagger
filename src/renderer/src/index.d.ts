@@ -30,6 +30,21 @@ type iapi = {
         addParents: (id: number, parents: number[]) => Promise<Result<void>>
         removeSubtags: (id: number, subtags: number[]) => Promise<Result<void>>
         removeParents: (id: number, parents: number[]) => Promise<Result<void>>
+        addToFiles: (
+            tagNames: string[],
+            fileIds: number[]
+        ) => Promise<
+            Result<{ addedFilesByTagId: Record<number, number[]>; createdTagIds: number[] }>
+        >
+        removeFromFiles: (
+            tagIds: number[],
+            fileIds: number[]
+        ) => Promise<
+            Result<{
+                removedFilesByTagId: Record<number, number[]>
+                remainingFileTagCount: Record<number, number>
+            }>
+        >
     }
     canvases: {
         create: (name: string, data: CanvasData) => Promise<Result<void>>
@@ -50,6 +65,7 @@ type iapi = {
             delete: (id: number) => Promise<Result<void>>
             addTags: (id: number, tags: string[]) => Promise<Result<void>>
             removeTag: (id: number, tag: string) => Promise<Result<void>>
+            removeTags: (id: number, tags: string[]) => Promise<Result<void>>
         }
         aliases: {
             getAll: () => Promise<Result<void>>
@@ -59,6 +75,7 @@ type iapi = {
             delete: (id: number) => Promise<Result<void>>
             addTags: (id: number, tags: string[]) => Promise<Result<void>>
             removeTag: (id: number, tag: string) => Promise<Result<void>>
+            removeTags: (id: number, tags: string[]) => Promise<Result<void>>
         }
     }
     shell: {

@@ -2,8 +2,8 @@ import { AppContext } from './AppContext'
 import { HotkeysManager } from './HotkeysManager'
 
 interface ICommand {
-    execute: () => void
-    undo: () => void
+    execute: () => void | Promise<void>
+    undo: () => void | Promise<void>
     undoable: boolean
     timestamp: number | undefined
 }
@@ -14,8 +14,8 @@ export interface ICommandRegistration {
     scope: string
     showInPalette: boolean
     keybind: string
-    when: (state: AppContext) => boolean
-    create: (state: AppContext) => ICommand | null
+    when: (context: AppContext, ...args: any[]) => boolean
+    create: (context: AppContext, ...args: any[]) => ICommand | null
 }
 
 type CommandFactory = (...args: any[]) => ICommand
@@ -31,8 +31,8 @@ class UndoRedoManager {
         return this.redoStack[this.redoStack.length - 1]
     }
 
-    execute(cmd: ICommand) {
-        cmd.execute()
+    async execute(cmd: ICommand) {
+        await cmd.execute()
         if (cmd.undoable) {
             this.undoStack.push(cmd)
             this.redoStack = []
@@ -44,18 +44,18 @@ class UndoRedoManager {
         this.redoStack = []
     }
 
-    undo() {
+    async undo() {
         if (this.undoStack.length > 0) {
             const cmd = this.undoStack.pop() as ICommand
-            cmd.undo()
+            await cmd.undo()
             this.redoStack.push(cmd)
         }
     }
 
-    redo() {
+    async redo() {
         if (this.redoStack.length > 0) {
             const cmd = this.redoStack.pop() as ICommand
-            cmd.execute()
+            await cmd.execute()
             this.undoStack.push(cmd)
         }
     }
@@ -82,11 +82,11 @@ class CommandRegistry {
         } else console.error('cannot unregister command, not found')
     }
 
-    create(id: string): ICommand | null {
+    create(id: string, ...args: any[]): ICommand | null {
         if (!this.context) return null
         if (this.commands.has(id)) {
             if (!this.commands.get(id)!.when(this.context)) return null
-            return this.commands.get(id)!.create(this.context)
+            return this.commands.get(id)!.create(this.context, ...args)
         }
 
         return null

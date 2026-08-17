@@ -1,65 +1,67 @@
-import { ref, Ref } from 'vue'
+import { reactive, Ref } from 'vue'
 
 export interface ListSelectionHandle<K> {
     handleItemClick(event: MouseEvent, item: { id: K }, index: number): void
     isSelected(id: K): boolean
     clearSelection(): void
-    selectedIds: Ref<Set<K>>
+    selectedIds: Set<K>
+}
+
+interface SelectionState<K> {
+    selectedIds: Set<K>
+    lastIndex: number | null
 }
 
 export function createListSelection<T extends { id: K }, K extends string | number>(
     items: Ref<T[]>
 ): ListSelectionHandle<K> {
-    const selectedIds = ref<Set<K>>(new Set())
-    const lastIndex = ref<number | null>(null)
+    const state = reactive({
+        selectedIds: new Set<K>(),
+        lastIndex: null
+    }) as SelectionState<K>
 
     function handleItemClick(event: MouseEvent, currentItem: T, currentIndex: number) {
-        if (event.shiftKey && event.ctrlKey && lastIndex.value !== null) {
-            const start = Math.min(lastIndex.value, currentIndex)
-            const end = Math.max(lastIndex.value, currentIndex)
-            const next = new Set(selectedIds.value)
+        if (event.shiftKey && event.ctrlKey && state.lastIndex !== null) {
+            const start = Math.min(state.lastIndex, currentIndex)
+            const end = Math.max(state.lastIndex, currentIndex)
             for (let i = start; i <= end; i++) {
-                next.add(items.value[i].id)
+                state.selectedIds.add(items.value[i].id)
             }
-            selectedIds.value = next
             return
         }
 
-        if (event.shiftKey && lastIndex.value !== null) {
-            const start = Math.min(lastIndex.value, currentIndex)
-            const end = Math.max(lastIndex.value, currentIndex)
-            const next = new Set<K>()
+        if (event.shiftKey && state.lastIndex !== null) {
+            const start = Math.min(state.lastIndex, currentIndex)
+            const end = Math.max(state.lastIndex, currentIndex)
             for (let i = start; i <= end; i++) {
-                next.add(items.value[i].id)
+                state.selectedIds.add(items.value[i].id)
             }
-            selectedIds.value = next
             return
         }
 
         if (event.ctrlKey || event.metaKey) {
-            const next = new Set(selectedIds.value)
-            if (next.has(currentItem.id)) {
-                next.delete(currentItem.id)
+            if (state.selectedIds.has(currentItem.id)) {
+                state.selectedIds.delete(currentItem.id)
             } else {
-                next.add(currentItem.id)
+                state.selectedIds.add(currentItem.id)
             }
-            selectedIds.value = next
-            lastIndex.value = currentIndex
+            state.lastIndex = currentIndex
             return
         }
 
-        selectedIds.value = new Set([currentItem.id])
-        lastIndex.value = currentIndex
+        state.selectedIds.clear()
+        state.selectedIds.add(currentItem.id)
+        state.lastIndex = currentIndex
     }
 
     function isSelected(id: K): boolean {
-        return selectedIds.value.has(id)
+        return state.selectedIds.has(id)
     }
 
     function clearSelection() {
-        selectedIds.value = new Set()
-        lastIndex.value = null
+        state.selectedIds.clear()
+        state.lastIndex = null
     }
 
-    return { handleItemClick, isSelected, clearSelection, selectedIds }
+    return { handleItemClick, isSelected, clearSelection, selectedIds: state.selectedIds }
 }

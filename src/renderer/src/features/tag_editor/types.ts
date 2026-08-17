@@ -11,8 +11,8 @@ export interface TagEditorRelationsApi {
     getChildren: (parentId: number) => Tag[]
     addParentByName: (childId: number, names: string[]) => Promise<void>
     addChildByName: (parentId: number, names: string[]) => Promise<void>
-    removeParent: (childId: number, parentId: number) => Promise<void>
-    removeChild: (parentId: number, childId: number) => Promise<void>
+    removeParent: (childId: number, parentIds: number[]) => Promise<void>
+    removeChild: (parentId: number, childIds: number[]) => Promise<void>
     updateTagName: (id: number, name: string) => Promise<void>
 }
 

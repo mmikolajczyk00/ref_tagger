@@ -53,4 +53,12 @@ export function registerIPCTagsHandlers(ipcMain: IpcMain, tagService: TagService
     ipcMain.handle('api:tags:removeParents', (_event, childId: number, parentIds: number[]) => {
         return tagService.removeParents(childId, parentIds)
     })
+
+    ipcMain.handle('api:tags:addToFiles', (_event, tagNames: string[], fileIds: number[]) => {
+        return tagService.addTagsToFiles(tagNames, fileIds)
+    })
+
+    ipcMain.handle('api:tags:removeFromFiles', (_event, tagIds: number[], fileIds: number[]) => {
+        return tagService.removeTagsFromFiles(tagIds, fileIds)
+    })
 }

@@ -67,7 +67,11 @@ const api = {
         addParents: (childId: number, parentIds: number[]) =>
             ipcRenderer.invoke('api:tags:addParents', childId, parentIds),
         removeParents: (childId: number, parentIds: number[]) =>
-            ipcRenderer.invoke('api:tags:removeParents', childId, parentIds)
+            ipcRenderer.invoke('api:tags:removeParents', childId, parentIds),
+        addToFiles: (tagNames: string[], fileIds: number[]) =>
+            ipcRenderer.invoke('api:tags:addToFiles', tagNames, fileIds),
+        removeFromFiles: (tagIds: number[], fileIds: number[]) =>
+            ipcRenderer.invoke('api:tags:removeFromFiles', tagIds, fileIds)
     },
 
     canvases: {
@@ -96,7 +100,9 @@ const api = {
             addTags: (id: number, tags: string[]) =>
                 ipcRenderer.invoke('api:tagsProcessing:blacklist:addTags', id, tags),
             removeTag: (id: number, tag: string) =>
-                ipcRenderer.invoke('api:tagsProcessing:blacklist:removeTag', id, tag)
+                ipcRenderer.invoke('api:tagsProcessing:blacklist:removeTag', id, tag),
+            removeTags: (id: number, tags: string[]) =>
+                ipcRenderer.invoke('api:tagsProcessing:blacklist:removeTags', id, tags)
         },
         aliases: {
             getAll: () => ipcRenderer.invoke('api:tagsProcessing:aliases:getAll'),
@@ -109,7 +115,9 @@ const api = {
             addTags: (id: number, tags: string[]) =>
                 ipcRenderer.invoke('api:tagsProcessing:aliases:addTags', id, tags),
             removeTag: (id: number, tag: string) =>
-                ipcRenderer.invoke('api:tagsProcessing:aliases:removeTag', id, tag)
+                ipcRenderer.invoke('api:tagsProcessing:aliases:removeTag', id, tag),
+            removeTags: (id: number, tags: string[]) =>
+                ipcRenderer.invoke('api:tagsProcessing:aliases:removeTags', id, tags)
         }
     },
 

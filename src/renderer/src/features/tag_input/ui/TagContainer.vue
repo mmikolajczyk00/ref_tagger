@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, watchEffect } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import { createListSelection } from '@renderer/core/utils/listSelection'
-import { normalizeTag } from '@renderer/core/utils/tagsUtils'
-import { useTagStore } from '@renderer/core/stores/useTagStore'
 import { useTagAutocomplete } from '../ts/useTagAutocomplete'
 import { useTagInputModifiers } from '../ts/useTagInputModifiers'
 import TagChip from './TagChip.vue'
 import TagChipGroup from './TagChipGroup.vue'
 import TagInputField from './TagInputField.vue'
 import type { Tag } from '@shared/types/models'
+import { useTagStore } from '../../../core/stores/useTagStore'
+import { createListSelection } from '../../../core/utils/listSelection'
+import { normalizeTag } from '../../../core/utils/tagsUtils'
 
 const props = withDefaults(
     defineProps<{
@@ -37,8 +37,8 @@ const props = withDefaults(
 const emit = defineEmits<{
     'update:allItemsTags': [tags: Tag[]]
     'update:someItemsTags': [tags: Tag[]]
-    add: [tag: Tag]
-    remove: [tag: Tag]
+    add: [tags: Tag[]]
+    remove: [tags: Tag[]]
     edit: [tag: Tag, newName: string]
     submit: []
 }>()
@@ -90,7 +90,7 @@ onClickOutside(rootRef, () => selection.clearSelection())
 const flatItems = computed(() => [...allItems.value, ...someItems.value])
 
 const excludeIds = computed(
-    () => new Set([...flatItems.value.map((t) => t.id), ...props.excludeIds])
+    () => new Set([...allItems.value.map((t) => t.id), ...props.excludeIds])
 )
 
 const autocomplete = useTagAutocomplete(
@@ -107,23 +107,27 @@ function normalizeDraft(raw: string): string {
     return props.allowModifiers ? modifiers.sanitizeDraft(raw) : normalizeTag(raw)
 }
 
-function commitTag(name: string) {
+function commitTag(name: string, batch?: Tag[]): Tag | null {
     const normalized = props.allowModifiers ? modifiers.commit(name) : normalizeTag(name)
-    if (!normalized) return
-    if (flatItems.value.some((t) => t.name === normalized)) return
+    if (!normalized) return null
+    if (flatItems.value.some((t) => t.name === normalized)) return null
+    if (batch?.some((t) => t.name === normalized)) return null
 
     const existing = tagStore.tags.find((t) => t.name === normalized)
+    let newTag: Tag
     if (existing) {
-        if (allItems.value.some((t) => t.id === existing.id)) return
-        setAllItems([...allItems.value, existing])
-        emit('add', existing)
+        if (allItems.value.some((t) => t.id === existing.id)) return null
+        newTag = existing
     } else {
-        const local: Tag = { id: -Date.now(), name: normalized }
-        setAllItems([...allItems.value, local])
-        emit('add', local)
+        newTag = { id: -Date.now() - (batch?.length ?? 0), name: normalized }
     }
 
-    autocomplete.reset()
+    if (batch) {
+        batch.push(newTag)
+    } else {
+        setAllItems([...allItems.value, newTag])
+    }
+    return newTag
 }
 
 function removeFromList(tag: Tag) {
@@ -143,7 +147,7 @@ function onChipSelect(event: MouseEvent, tag: Tag) {
 function onChipRemove(tag: Tag) {
     removeFromList(tag)
     selection.clearSelection()
-    emit('remove', tag)
+    emit('remove', [tag])
 }
 
 function onChipBeginEdit(tag: Tag) {
@@ -159,6 +163,11 @@ function onChipCommitEdit(tag: Tag, newName: string) {
 function onChipCancelEdit() {
     editingId.value = null
 }
+
+watchEffect(() => {
+    const suggestionOpenValue = suggestionOpen.value
+    console.log(suggestionOpenValue)
+})
 
 function onKeydown(event: KeyboardEvent) {
     if (event.key === 'ArrowDown' && suggestionOpen.value) {
@@ -179,18 +188,30 @@ function onKeydown(event: KeyboardEvent) {
         }
     } else if (event.key === 'Enter') {
         event.preventDefault()
-        if (suggestionOpen.value && autocomplete.selectedIndex.value >= 0) {
+        if (
+            suggestionOpen.value &&
+            autocomplete.selectedIndex.value >= 0 &&
+            autocomplete.suggestions.value.length > 0
+        ) {
             const sug = autocomplete.suggestions.value[autocomplete.selectedIndex.value]
+            if (!sug || !sug.name) return
+
             autocomplete.selectSuggestion(autocomplete.selectedIndex.value)
-            commitTag(sug.name)
+            const added = commitTag(sug.name)
+            autocomplete.reset()
+            if (added) emit('add', [added])
         } else if (autocomplete.inputText.value.trim()) {
-            commitTag(autocomplete.inputText.value)
+            const added = commitTag(autocomplete.inputText.value)
+            autocomplete.reset()
+            if (added) emit('add', [added])
         } else if (flatItems.value.length > 0) {
             emit('submit')
         }
     } else if (event.key === ',') {
         if (autocomplete.inputText.value.trim()) {
-            commitTag(autocomplete.inputText.value)
+            const added = commitTag(autocomplete.inputText.value)
+            autocomplete.reset()
+            if (added) emit('add', [added])
         }
         event.preventDefault()
     } else if (event.key === 'Escape') {
@@ -198,10 +219,11 @@ function onKeydown(event: KeyboardEvent) {
         selection.clearSelection()
         event.preventDefault()
     } else if (event.key === 'Backspace' && !autocomplete.inputText.value) {
+        if (!props.inline) return
         if (allItems.value.length > 0) {
             const removed = allItems.value[allItems.value.length - 1]
             setAllItems(allItems.value.slice(0, -1))
-            emit('remove', removed)
+            emit('remove', [removed])
         }
     }
 }
@@ -217,10 +239,15 @@ function onInputPaste(text: string, event: ClipboardEvent) {
         .split(',')
         .map((p) => p.trim())
         .filter(Boolean)
+    const added: Tag[] = []
     for (const part of parts) {
-        commitTag(part)
+        commitTag(part, added)
     }
     autocomplete.reset()
+    if (added.length > 0) {
+        setAllItems([...allItems.value, ...added])
+        emit('add', added)
+    }
 }
 
 function copySelectedTags() {
@@ -232,22 +259,25 @@ function copySelectedTags() {
 }
 
 function deleteSelectedTags() {
-    const selectedIds = selection.selectedIds.value
+    const selectedIds = selection.selectedIds
     if (selectedIds.size === 0) return
+    const removed = flatItems.value.filter((t) => selectedIds.has(t.id))
+    if (removed.length === 0) return
+
     const allNext = allItems.value.filter((t) => !selectedIds.has(t.id))
     const someNext = someItems.value.filter((t) => !selectedIds.has(t.id))
+
     if (allNext.length !== allItems.value.length) setAllItems(allNext)
     if (someNext.length !== someItems.value.length) setSomeItems(someNext)
-    for (const tag of flatItems.value.filter((t) => selectedIds.has(t.id))) {
-        emit('remove', tag)
-    }
+
     selection.clearSelection()
+    emit('remove', removed)
 }
 
 function onContainerKeydown(event: KeyboardEvent) {
     const active = document.activeElement as HTMLElement | null
     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return
-    if (selection.selectedIds.value.size === 0) return
+    if (selection.selectedIds.size === 0) return
 
     if ((event.ctrlKey || event.metaKey) && (event.key === 'c' || event.key === 'x')) {
         event.preventDefault()
@@ -267,7 +297,8 @@ function onContainerKeydown(event: KeyboardEvent) {
 function onSelectSuggestion(sug: Tag) {
     const idx = autocomplete.suggestions.value.findIndex((s) => s.id === sug.id)
     if (idx >= 0) autocomplete.selectSuggestion(idx)
-    commitTag(sug.name)
+    const added = commitTag(sug.name)
+    if (added) emit('add', [added])
 }
 
 function onHighlightSuggestion(i: number) {

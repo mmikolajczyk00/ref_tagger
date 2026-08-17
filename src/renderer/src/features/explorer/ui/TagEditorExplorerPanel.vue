@@ -1,32 +1,23 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import {
-    FileTagResult,
-    MediaFile,
-    Tag,
-    TagOperation,
-    TagOperationResult
-} from '@shared/types/models'
+import { computed, inject, ref, watch } from 'vue'
+import { MediaFile, Tag } from '@shared/types/models'
 import { useTagEditorPanel } from '../ts/useTagEditorPanel'
 import TagContainer from '../../tag_input/ui/TagContainer.vue'
-import { useTagStore } from '../../../core/stores/useTagStore'
+import { EXPLORER_COMMANDS } from '../commands/ExplorerCmd'
+import { CommandService } from '../../../core/command_system/CommandService'
 
 const props = defineProps<{
     selectedFiles: MediaFile[]
 }>()
 
-const emit = defineEmits<{
-    (e: 'files-updated', updates: FileTagResult[]): void
-}>()
+const commandService = inject<CommandService>('commandService')!
 
 const selectedFilesRef = computed<MediaFile[]>(() => {
     const v = props.selectedFiles
     return Array.isArray(v) ? v : []
 })
 
-const { allGroup, someGroup, removeTag } = useTagEditorPanel(selectedFilesRef)
-
-const tagStore = useTagStore()
+const { allGroup, someGroup } = useTagEditorPanel(selectedFilesRef)
 
 const allItemsTags = ref<Tag[]>([])
 const someItemsTags = ref<Tag[]>([])
@@ -40,34 +31,25 @@ watch(
     { immediate: true }
 )
 
-async function applyOperations(ops: TagOperation[]) {
-    const result = await window.api.files.applyTagOperations(ops)
-
-    if (result.success) {
-        const { files, tags } = result.data as TagOperationResult
-
-        tagStore.addTagsLocally(tags)
-        emit('files-updated', files)
-    } else {
-        console.error(result.error)
-    }
+function handleAddTags(tags: Tag[]) {
+    if (tags.length === 0) return
+    const tagNames = tags.map((t) => t.name)
+    const fileIds = selectedFilesRef.value
+        .filter((f) => !f.tags.some((t) => tagNames.includes(t.name)))
+        .map((f) => f.id)
+    if (fileIds.length === 0) return
+    commandService.execute(EXPLORER_COMMANDS.ADD_TAGS_TO_FILES, tagNames, fileIds)
 }
 
-function handleAddTag(tag: Tag) {
-    const ops: TagOperation[] = []
-    for (const file of selectedFilesRef.value) {
-        const fileHasTag = file.tags.some((t) => t.name === tag.name)
-        if (!fileHasTag) {
-            ops.push({ action: 'add', fileId: file.id, tagName: tag.name })
-        }
-    }
-    if (ops.length) applyOperations(ops)
-}
-
-function handleRemoveTag(tag: Tag) {
-    const operations = removeTag(tag)
-    if (!operations.length) return
-    applyOperations(operations)
+function handleRemoveTags(tags: Tag[]) {
+    if (tags.length === 0) return
+    const tagNames = tags.map((t) => t.name)
+    const tagIds = tags.map((t) => t.id)
+    const fileIds = selectedFilesRef.value
+        .filter((f) => f.tags.some((t) => tagIds.includes(t.id)))
+        .map((f) => f.id)
+    if (fileIds.length === 0) return
+    commandService.execute(EXPLORER_COMMANDS.REMOVE_TAGS_FROM_FILES, tagNames, tagIds, fileIds)
 }
 </script>
 
@@ -82,8 +64,8 @@ function handleRemoveTag(tag: Tag) {
                 v-model:all-items-tags="allItemsTags"
                 v-model:some-items-tags="someItemsTags"
                 autocomplete
-                @add="handleAddTag"
-                @remove="handleRemoveTag"
+                @add="handleAddTags"
+                @remove="handleRemoveTags"
             />
         </div>
     </div>

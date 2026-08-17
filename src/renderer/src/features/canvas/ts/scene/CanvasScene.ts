@@ -68,11 +68,23 @@ export default class CanvasScene {
 
         this.mediaFileElements.push(mediaFile)
         this.elementsDict.set(mediaFile.elementId, mediaFile)
+        return mediaFile.elementId
         // this.transform.addChild(imageEl.transform);
     }
     addMediaFiles(files: number[], position?: Coordinates) {
+        const ids: string[] = []
         files.forEach((f) => {
-            this.addMediaFile(f, position)
+            ids.push(this.addMediaFile(f, position))
+        })
+        return ids
+    }
+    removeMediaFile(id: string) {
+        this.mediaFileElements = this.mediaFileElements.filter((e) => e.elementId !== id)
+        this.elementsDict.delete(id)
+    }
+    removeMediaFiles(files: string[]) {
+        files.forEach((f) => {
+            this.removeMediaFile(f)
         })
     }
 

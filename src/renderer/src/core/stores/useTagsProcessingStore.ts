@@ -72,30 +72,33 @@ export const useTagsProcessingStore = defineStore('tags-processing', () => {
         return null
     }
 
-    async function addBlacklistTag(listId: number, tag: string) {
+    async function addBlacklistTags(listId: number, tags: string[]) {
         const list = blacklists.value.find((b) => b.id === listId)
         if (!list) return
-        const res = await window.api.tagsProcessing.blacklist.addTags(listId, [tag])
+        const res = await window.api.tagsProcessing.blacklist.addTags(listId, tags)
         if (!res.success) {
-            console.error('Failed to add blacklist tag:', res.error)
-            list.tags = list.tags.filter((t) => t !== tag)
+            console.error('Failed to add blacklist tags:', res.error)
+            for (const tag of tags) list.tags = list.tags.filter((t) => t !== tag)
         }
     }
 
-    async function removeBlacklistTag(listId: number, tag: string) {
+    async function removeBlacklistTags(listId: number, tags: string[]) {
         const list = blacklists.value.find((b) => b.id === listId)
         if (!list) return
-        const res = await window.api.tagsProcessing.blacklist.removeTag(listId, tag)
+        const tagSet = new Set(tags)
+        const res = await window.api.tagsProcessing.blacklist.removeTags(listId, tags)
         if (!res.success) {
-            console.error('Failed to remove blacklist tag:', res.error)
-            if (!list.tags.includes(tag)) list.tags = [...list.tags, tag]
+            console.error('Failed to remove blacklist tags:', res.error)
+            for (const tag of tags) if (!list.tags.includes(tag)) list.tags = [...list.tags, tag]
+            return
         }
+        list.tags = list.tags.filter((t) => !tagSet.has(t))
     }
 
     async function editBlacklistTag(listId: number, oldName: string, newName: string) {
         const list = blacklists.value.find((b) => b.id === listId)
         if (!list) return
-        const removeRes = await window.api.tagsProcessing.blacklist.removeTag(listId, oldName)
+        const removeRes = await window.api.tagsProcessing.blacklist.removeTags(listId, [oldName])
         if (!removeRes.success) {
             console.error('Failed to rename blacklist tag (remove):', removeRes.error)
             return
@@ -144,30 +147,34 @@ export const useTagsProcessingStore = defineStore('tags-processing', () => {
         return null
     }
 
-    async function addAliasTag(aliasId: number, tag: string) {
+    async function addAliasTags(aliasId: number, tags: string[]) {
         const alias = aliases.value.find((a) => a.id === aliasId)
         if (!alias) return
-        const res = await window.api.tagsProcessing.aliases.addTags(aliasId, [tag])
+        const res = await window.api.tagsProcessing.aliases.addTags(aliasId, tags)
         if (!res.success) {
-            console.error('Failed to add alias tag:', res.error)
-            alias.aliasTags = alias.aliasTags.filter((t) => t !== tag)
+            console.error('Failed to add alias tags:', res.error)
+            for (const tag of tags) alias.aliasTags = alias.aliasTags.filter((t) => t !== tag)
         }
     }
 
-    async function removeAliasTag(aliasId: number, tag: string) {
+    async function removeAliasTags(aliasId: number, tags: string[]) {
         const alias = aliases.value.find((a) => a.id === aliasId)
         if (!alias) return
-        const res = await window.api.tagsProcessing.aliases.removeTag(aliasId, tag)
+        const tagSet = new Set(tags)
+        const res = await window.api.tagsProcessing.aliases.removeTags(aliasId, tags)
         if (!res.success) {
-            console.error('Failed to remove alias tag:', res.error)
-            if (!alias.aliasTags.includes(tag)) alias.aliasTags = [...alias.aliasTags, tag]
+            console.error('Failed to remove alias tags:', res.error)
+            for (const tag of tags)
+                if (!alias.aliasTags.includes(tag)) alias.aliasTags = [...alias.aliasTags, tag]
+            return
         }
+        alias.aliasTags = alias.aliasTags.filter((t) => !tagSet.has(t))
     }
 
     async function editAliasTag(aliasId: number, oldName: string, newName: string) {
         const alias = aliases.value.find((a) => a.id === aliasId)
         if (!alias) return
-        const removeRes = await window.api.tagsProcessing.aliases.removeTag(aliasId, oldName)
+        const removeRes = await window.api.tagsProcessing.aliases.removeTags(aliasId, [oldName])
         if (!removeRes.success) {
             console.error('Failed to rename alias tag (remove):', removeRes.error)
             return
@@ -213,14 +220,14 @@ export const useTagsProcessingStore = defineStore('tags-processing', () => {
         fetchAliases,
         fetchAll,
         createBlacklist,
-        addBlacklistTag,
-        removeBlacklistTag,
+        addBlacklistTags,
+        removeBlacklistTags,
         editBlacklistTag,
         renameBlacklist,
         deleteBlacklist,
         createAlias,
-        addAliasTag,
-        removeAliasTag,
+        addAliasTags,
+        removeAliasTags,
         editAliasTag,
         renameAlias,
         deleteAlias

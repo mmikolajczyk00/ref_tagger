@@ -1,6 +1,6 @@
 import { computed, proxyRefs, ref } from 'vue'
 import { parseSearchChips } from '../../search/ts/parseSearchQuery'
-import { FileTagResult, MediaFile, TagSearchQuery } from '@shared/types/models'
+import { MediaFile, TagSearchQuery } from '@shared/types/models'
 import { createListSelection } from '../../../core/utils/listSelection'
 
 export function createExplorer() {
@@ -14,7 +14,7 @@ export function createExplorer() {
     const mediaFilesArr = computed(() => Array.from(mediaFiles.value.values()))
     const selection = createListSelection<MediaFile, number>(mediaFilesArr)
     const selectedItems = computed(() =>
-        mediaFilesArr.value.filter((f) => selection.selectedIds.value.has(f.id))
+        mediaFilesArr.value.filter((f) => selection.selectedIds.has(f.id))
     )
 
     async function initialize() {
@@ -103,25 +103,10 @@ export function createExplorer() {
         fetchNextPage()
     }
 
-    function applyFileTagUpdates(updates: FileTagResult[]) {
-        for (const u of updates) {
-            const existing = mediaFiles.value.get(u.id)
-            if (existing) {
-                mediaFiles.value.set(u.id, { ...existing, tags: u.tags })
-            }
-        }
-    }
-
-    function applyFileTagUpdatesToMap(
-        map: Map<number, MediaFile>,
-        updates: FileTagResult[]
-    ): Map<number, MediaFile> {
-        const next = new Map(map)
-        for (const u of updates) {
-            const existing = next.get(u.id)
-            if (existing) next.set(u.id, { ...existing, tags: u.tags })
-        }
-        return next
+    function applyFilesUpdate(updated: MediaFile[]) {
+        const next = new Map(mediaFiles.value)
+        for (const f of updated) next.set(f.id, f)
+        mediaFiles.value = next
     }
 
     return proxyRefs({
@@ -135,8 +120,7 @@ export function createExplorer() {
         refetch,
         fetchNextPage,
         resetAndRefresh,
-        applyFileTagUpdates,
-        applyFileTagUpdatesToMap
+        applyFilesUpdate
     })
 }
 

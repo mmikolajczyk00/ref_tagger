@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { clamp } from '@vueuse/core'
-import { FileTagResult, MediaFile } from '@shared/types/models'
 import { ExplorerTabPayload } from '../../tab_system/Tabs'
 
 import Splitter from 'primevue/splitter'
@@ -31,12 +30,6 @@ function handleSearchSubmit() {
 
 function clearSearch() {
     searchChips.value = []
-}
-
-function onFilesUpdated(updates: FileTagResult[]) {
-    explorer.applyFileTagUpdates(updates)
-    const byId = new Map(explorer.selectedItems.map((f) => [f.id, f] as [number, MediaFile]))
-    explorer.applyFileTagUpdatesToMap(byId, updates)
 }
 
 const mediaFilesArr = computed(() => Array.from(explorer.mediaFiles.values()))
@@ -101,7 +94,6 @@ onMounted(() => {
         <SplitterPanel :min-size="5" :size="15">
             <TagEditorExplorerPanel
                 :selected-files="explorer.selectedItems"
-                @files-updated="onFilesUpdated"
             ></TagEditorExplorerPanel>
         </SplitterPanel>
     </Splitter>

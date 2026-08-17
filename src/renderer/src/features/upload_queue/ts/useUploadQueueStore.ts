@@ -22,10 +22,10 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
     const uploadSelection = createListSelection<QueuedFile, string>(uploadFiles)
 
     const selectedScrapeTabItems = computed(() =>
-        scrapeFiles.value.filter((f) => scrapeSelection.selectedIds.value.has(f.id))
+        scrapeFiles.value.filter((f) => scrapeSelection.selectedIds.has(f.id))
     )
     const selectedUploadTabItems = computed(() =>
-        uploadFiles.value.filter((f) => uploadSelection.selectedIds.value.has(f.id))
+        uploadFiles.value.filter((f) => uploadSelection.selectedIds.has(f.id))
     )
 
     async function ensureTagsProcessingLoaded() {
@@ -87,9 +87,7 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
             uploadStatus: UPLOAD_STATUS.IDLE
         }))
         uploadFiles.value.push(...moved)
-        const next = new Set(scrapeSelection.selectedIds.value)
-        fileIds.forEach((id) => next.delete(id))
-        scrapeSelection.selectedIds.value = next
+        fileIds.forEach((id) => scrapeSelection.selectedIds.delete(id))
     }
 
     function skipAll(side: 'scrape' | 'upload') {
@@ -124,21 +122,23 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
         })
     }
 
-    function removeUserTag(fileIds: string[], tag: string) {
+    function removeUserTags(fileIds: string[], tags: string[]) {
+        const tagSet = new Set(tags)
         scrapeFiles.value = scrapeFiles.value.map((f) => {
             if (!fileIds.includes(f.id)) return f
-            return { ...f, userTags: f.userTags.filter((t) => t !== tag) }
+            return { ...f, userTags: f.userTags.filter((t) => !tagSet.has(t)) }
         })
     }
 
-    function removeDropDataTag(fileIds: string[], tag: string) {
+    function removeDropDataTags(fileIds: string[], tags: string[]) {
+        const tagSet = new Set(tags)
         scrapeFiles.value = scrapeFiles.value.map((f) => {
             if (!fileIds.includes(f.id)) return f
             return {
                 ...f,
                 dropData: {
                     ...f.dropData,
-                    tags: f.dropData.tags.filter((t) => t !== tag)
+                    tags: f.dropData.tags.filter((t) => !tagSet.has(t))
                 }
             }
         })
@@ -234,18 +234,10 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
     function remove(side: 'scrape' | 'upload', id: string) {
         if (side === 'scrape') {
             scrapeFiles.value = scrapeFiles.value.filter((f) => f.id !== id)
-            if (scrapeSelection.selectedIds.value.has(id)) {
-                const next = new Set(scrapeSelection.selectedIds.value)
-                next.delete(id)
-                scrapeSelection.selectedIds.value = next
-            }
+            scrapeSelection.selectedIds.delete(id)
         } else {
             uploadFiles.value = uploadFiles.value.filter((f) => f.id !== id)
-            if (uploadSelection.selectedIds.value.has(id)) {
-                const next = new Set(uploadSelection.selectedIds.value)
-                next.delete(id)
-                uploadSelection.selectedIds.value = next
-            }
+            uploadSelection.selectedIds.delete(id)
         }
     }
 
@@ -267,8 +259,8 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
         setScrapeStatus,
         setDownloadStatus,
         addUserTags,
-        removeUserTag,
-        removeDropDataTag,
+        removeUserTags,
+        removeDropDataTags,
         clearDropDataTags,
         updateName,
         updateOriginalSourceUrl,

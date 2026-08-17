@@ -66,18 +66,24 @@ watch(
     { immediate: true }
 )
 
-function handleAddUserTag(tag: Tag) {
-    if (anyLocked.value) return
+function handleAddUserTags(tags: Tag[]) {
+    if (anyLocked.value || tags.length === 0) return
     const ids = selectedFileIds.value
     if (!ids.length) return
-    store.addUserTags(ids, [tag.name])
+    store.addUserTags(
+        ids,
+        tags.map((t) => t.name)
+    )
 }
 
-function handleRemoveUserTag(tag: Tag) {
-    if (anyLocked.value) return
+function handleRemoveUserTags(tags: Tag[]) {
+    if (anyLocked.value || tags.length === 0) return
     const ids = selectedFileIds.value
     if (!ids.length) return
-    store.removeUserTag(ids, tag.name)
+    store.removeUserTags(
+        ids,
+        tags.map((t) => t.name)
+    )
 }
 
 function handleEditUserTag(tag: Tag, newName: string) {
@@ -86,15 +92,18 @@ function handleEditUserTag(tag: Tag, newName: string) {
     if (!normalized || normalized === tag.name) return
     const ids = selectedFileIds.value
     if (!ids.length) return
-    store.removeUserTag(ids, tag.name)
+    store.removeUserTags(ids, [tag.name])
     store.addUserTags(ids, [normalized])
 }
 
-function handleRemoveScrapedTag(tag: Tag) {
-    if (anyLocked.value) return
+function handleRemoveScrapedTags(tags: Tag[]) {
+    if (anyLocked.value || tags.length === 0) return
     const ids = selectedFileIds.value
     if (!ids.length) return
-    store.removeDropDataTag(ids, tag.name)
+    store.removeDropDataTags(
+        ids,
+        tags.map((t) => t.name)
+    )
 }
 
 function handleEditScrapedTag(tag: Tag, newName: string) {
@@ -105,7 +114,7 @@ function handleEditScrapedTag(tag: Tag, newName: string) {
     const filesWithOldTag = props.selectedFiles.filter((f) => f.dropData.tags.includes(tag.name))
     if (!filesWithOldTag.length) return
     const idsWithOld = filesWithOldTag.map((f) => f.id)
-    store.removeDropDataTag(idsWithOld, tag.name)
+    store.removeDropDataTags(idsWithOld, [tag.name])
     if (normalized && normalized !== tag.name) {
         store.addUserTags(idsWithOld, [normalized])
     }
@@ -181,7 +190,7 @@ const hasDropDataTags = computed(
                             v-model:some-items-tags="scrapedSome"
                             hide-input
                             :disabled="anyLocked"
-                            @remove="handleRemoveScrapedTag"
+                            @remove="handleRemoveScrapedTags"
                             @edit="handleEditScrapedTag"
                         />
                     </div>
@@ -198,8 +207,8 @@ const hasDropDataTags = computed(
                             v-model:some-items-tags="userSome"
                             autocomplete
                             :disabled="anyLocked"
-                            @add="handleAddUserTag"
-                            @remove="handleRemoveUserTag"
+                            @add="handleAddUserTags"
+                            @remove="handleRemoveUserTags"
                             @edit="handleEditUserTag"
                         />
                     </div>

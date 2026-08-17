@@ -38,6 +38,13 @@ export function registerIPCTagsProcessingHandlers(
         return tagsProcessingService.removeBlacklistTag(id, tag)
     })
 
+    ipcMain.handle(
+        'api:tagsProcessing:blacklist:removeTags',
+        (_event, id: number, tags: string[]) => {
+            return tagsProcessingService.removeBlacklistTags(id, tags)
+        }
+    )
+
     // Aliases
 
     ipcMain.handle('api:tagsProcessing:aliases:getAll', () => {
@@ -67,4 +74,11 @@ export function registerIPCTagsProcessingHandlers(
     ipcMain.handle('api:tagsProcessing:aliases:removeTag', (_event, id: number, tag: string) => {
         return tagsProcessingService.removeAliasTag(id, tag)
     })
+
+    ipcMain.handle(
+        'api:tagsProcessing:aliases:removeTags',
+        (_event, id: number, tags: string[]) => {
+            return tagsProcessingService.removeAliasTags(id, tags)
+        }
+    )
 }

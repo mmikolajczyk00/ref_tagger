@@ -38,20 +38,36 @@ watch(
     { immediate: true }
 )
 
-async function onAddParent(tag: Tag) {
-    await api.addParentByName(props.tagId, [tag.name])
+async function onAddParents(tags: Tag[]) {
+    if (tags.length === 0) return
+    await api.addParentByName(
+        props.tagId,
+        tags.map((t) => t.name)
+    )
 }
 
-async function onRemoveParent(tag: Tag) {
-    await api.removeParent(props.tagId, tag.id)
+async function onRemoveParents(tags: Tag[]) {
+    if (tags.length === 0) return
+    await api.removeParent(
+        props.tagId,
+        tags.map((t) => t.id)
+    )
 }
 
-async function onAddChild(tag: Tag) {
-    await api.addChildByName(props.tagId, [tag.name])
+async function onAddChildren(tags: Tag[]) {
+    if (tags.length === 0) return
+    await api.addChildByName(
+        props.tagId,
+        tags.map((t) => t.name)
+    )
 }
 
-async function onRemoveChild(tag: Tag) {
-    await api.removeChild(props.tagId, tag.id)
+async function onRemoveChildren(tags: Tag[]) {
+    if (tags.length === 0) return
+    await api.removeChild(
+        props.tagId,
+        tags.map((t) => t.id)
+    )
 }
 
 async function onEditTag(tag: Tag, newName: string) {
@@ -71,8 +87,8 @@ async function onEditTag(tag: Tag, newName: string) {
                 autocomplete
                 :exclude-ids="[tagId]"
                 placeholder="Add parent..."
-                @add="onAddParent"
-                @remove="onRemoveParent"
+                @add="onAddParents"
+                @remove="onRemoveParents"
                 @edit="onEditTag"
             />
         </div>
@@ -87,8 +103,8 @@ async function onEditTag(tag: Tag, newName: string) {
                 autocomplete
                 :exclude-ids="[tagId]"
                 placeholder="Add child..."
-                @add="onAddChild"
-                @remove="onRemoveChild"
+                @add="onAddChildren"
+                @remove="onRemoveChildren"
                 @edit="onEditTag"
             />
         </div>

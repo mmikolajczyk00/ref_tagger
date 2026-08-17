@@ -1,10 +1,7 @@
-import { MediaFile, Tag, TagOperation } from '@shared/types/models'
+import { MediaFile, Tag } from '@shared/types/models'
 import { computed, Ref } from 'vue'
 
-export function useTagEditorPanel(
-    selFiles: Ref<MediaFile[]>,
-    normalizeFn?: (input: string) => string
-) {
+export function useTagEditorPanel(selFiles: Ref<MediaFile[]>) {
     const filesSource = computed<MediaFile[]>(() => selFiles.value)
 
     const tagBuckets = computed(() => {
@@ -49,53 +46,9 @@ export function useTagEditorPanel(
         return [...ids]
     })
 
-    function submitTags(tagNames: string[]): TagOperation[] {
-        const normalizedTags = [
-            ...new Set(tagNames.map((n) => (normalizeFn ? normalizeFn(n) : n)).filter(Boolean))
-        ]
-
-        const operations: TagOperation[] = []
-
-        for (const tagName of normalizedTags) {
-            for (const file of filesSource.value) {
-                const fileHasTag = file.tags.some((t) => t.name === tagName)
-
-                if (!fileHasTag) {
-                    operations.push({
-                        action: 'add',
-                        fileId: file.id,
-                        tagName: tagName
-                    })
-                }
-            }
-        }
-
-        return operations
-    }
-
-    function removeTag(targetTag: Tag): TagOperation[] {
-        const operations: TagOperation[] = []
-
-        for (const file of filesSource.value) {
-            const fileHasTag = file.tags.some((t) => t.id === targetTag.id)
-
-            if (fileHasTag) {
-                operations.push({
-                    action: 'remove',
-                    fileId: file.id,
-                    tagId: targetTag.id
-                })
-            }
-        }
-
-        return operations
-    }
-
     return {
         allGroup,
         someGroup,
-        existingTagIds,
-        submitTags,
-        removeTag
+        existingTagIds
     }
 }

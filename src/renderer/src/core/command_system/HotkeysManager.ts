@@ -4,6 +4,27 @@ import { ICommandRegistration } from './UndoRedoManager'
 
 import hotkeys from 'hotkeys-js'
 
+hotkeys.filter = (event: KeyboardEvent) => {
+    const target = event.target as HTMLElement | null
+    if (!target) return true
+    const tag = target.tagName
+    const isInput =
+        tag === 'INPUT' &&
+        !['checkbox', 'radio', 'range', 'button', 'file', 'reset', 'submit', 'color'].includes(
+            (target as HTMLInputElement).type
+        )
+    const isEditable =
+        target.isContentEditable ||
+        ((isInput || tag === 'TEXTAREA' || tag === 'SELECT') &&
+            !(target as HTMLInputElement).readOnly)
+
+    if (isEditable && (event.ctrlKey || event.metaKey)) {
+        const k = event.key.toLowerCase()
+        if (k === 'z' || k === 'y') return true
+    }
+    return !isEditable
+}
+
 class HotkeysManager {
     private keybindMap = new Map<string, () => void>()
     public context: AppContext | undefined

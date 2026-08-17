@@ -76,12 +76,7 @@ class UploadQueueProcessor {
 
             const tagsToAttach = [...file.dropData.tags, ...file.userTags].filter(Boolean)
             if (tagsToAttach.length) {
-                const ops = tagsToAttach.map((name) => ({
-                    action: 'add' as const,
-                    fileId: result.data.id,
-                    tagName: name
-                }))
-                const tagRes = await window.api.files.applyTagOperations(ops)
+                const tagRes = await window.api.tags.addToFiles(tagsToAttach, [result.data.id])
                 if (!tagRes.success) {
                     console.error('tag attach failed', file.id, tagRes.error)
                 }

@@ -23,41 +23,16 @@ export function useBlacklistPanel() {
         return id
     }
 
-    async function addTag(listId: number, tag: string) {
-        const list = blacklists.value.find((b) => b.id === listId)
-        if (!list) return
-        const res = await window.api.tagsProcessing.blacklist.addTags(listId, [tag])
-        if (!res.success) {
-            console.error('Failed to add blacklist tag:', res.error)
-            list.tags = list.tags.filter((t) => t !== tag)
-        }
+    async function addTags(listId: number, tags: string[]) {
+        await store.addBlacklistTags(listId, tags)
     }
 
-    async function removeTag(listId: number, tag: string) {
-        const list = blacklists.value.find((b) => b.id === listId)
-        if (!list) return
-        const res = await window.api.tagsProcessing.blacklist.removeTag(listId, tag)
-        if (!res.success) {
-            console.error('Failed to remove blacklist tag:', res.error)
-            if (!list.tags.includes(tag)) list.tags = [...list.tags, tag]
-        }
+    async function removeTags(listId: number, tags: string[]) {
+        await store.removeBlacklistTags(listId, tags)
     }
 
     async function editTag(listId: number, oldName: string, newName: string) {
-        const list = blacklists.value.find((b) => b.id === listId)
-        if (!list) return
-        const removeRes = await window.api.tagsProcessing.blacklist.removeTag(listId, oldName)
-        if (!removeRes.success) {
-            console.error('Failed to rename blacklist tag (remove):', removeRes.error)
-            return
-        }
-        const addRes = await window.api.tagsProcessing.blacklist.addTags(listId, [newName])
-        if (!addRes.success) {
-            console.error('Failed to rename blacklist tag (add):', addRes.error)
-            list.tags = [...list.tags, oldName]
-            return
-        }
-        list.tags = [...list.tags.filter((t) => t !== oldName), newName]
+        await store.editBlacklistTag(listId, oldName, newName)
     }
 
     async function renameBlacklist(id: number, newName: string) {
@@ -80,8 +55,8 @@ export function useBlacklistPanel() {
         refetch,
         selectList,
         createBlacklist,
-        addTag,
-        removeTag,
+        addTags,
+        removeTags,
         editTag,
         renameBlacklist,
         deleteBlacklist
