@@ -110,12 +110,17 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
         }
     }
 
+    function updateFiles(fileIds: string[], mutator: (f: QueuedFile) => QueuedFile) {
+        const idSet = new Set(fileIds)
+        scrapeFiles.value = scrapeFiles.value.map((f) => (idSet.has(f.id) ? mutator(f) : f))
+        uploadFiles.value = uploadFiles.value.map((f) => (idSet.has(f.id) ? mutator(f) : f))
+    }
+
     function addUserTags(fileIds: string[], tags: string[]) {
         const normalized = [...new Set(tags.map(normalizeTag).filter(Boolean))]
         if (!normalized.length) return
 
-        scrapeFiles.value = scrapeFiles.value.map((f) => {
-            if (!fileIds.includes(f.id)) return f
+        updateFiles(fileIds, (f) => {
             const current = new Set(f.userTags)
             normalized.forEach((t) => current.add(t))
             return { ...f, userTags: [...current] }
@@ -124,63 +129,51 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
 
     function removeUserTags(fileIds: string[], tags: string[]) {
         const tagSet = new Set(tags)
-        scrapeFiles.value = scrapeFiles.value.map((f) => {
-            if (!fileIds.includes(f.id)) return f
-            return { ...f, userTags: f.userTags.filter((t) => !tagSet.has(t)) }
-        })
+        updateFiles(fileIds, (f) => ({
+            ...f,
+            userTags: f.userTags.filter((t) => !tagSet.has(t))
+        }))
     }
 
     function removeDropDataTags(fileIds: string[], tags: string[]) {
         const tagSet = new Set(tags)
-        scrapeFiles.value = scrapeFiles.value.map((f) => {
-            if (!fileIds.includes(f.id)) return f
-            return {
-                ...f,
-                dropData: {
-                    ...f.dropData,
-                    tags: f.dropData.tags.filter((t) => !tagSet.has(t))
-                }
+        updateFiles(fileIds, (f) => ({
+            ...f,
+            dropData: {
+                ...f.dropData,
+                tags: f.dropData.tags.filter((t) => !tagSet.has(t))
             }
-        })
+        }))
     }
 
     function clearDropDataTags(fileIds: string[]) {
-        scrapeFiles.value = scrapeFiles.value.map((f) => {
-            if (!fileIds.includes(f.id)) return f
-            return {
-                ...f,
-                dropData: {
-                    ...f.dropData,
-                    tags: []
-                }
+        updateFiles(fileIds, (f) => ({
+            ...f,
+            dropData: {
+                ...f.dropData,
+                tags: []
             }
-        })
+        }))
     }
 
     function updateName(fileIds: string[], name: string) {
-        scrapeFiles.value = scrapeFiles.value.map((f) => {
-            if (!fileIds.includes(f.id)) return f
-            return {
-                ...f,
-                dropData: {
-                    ...f.dropData,
-                    name
-                }
+        updateFiles(fileIds, (f) => ({
+            ...f,
+            dropData: {
+                ...f.dropData,
+                name
             }
-        })
+        }))
     }
 
     function updateOriginalSourceUrl(fileIds: string[], url: string) {
-        scrapeFiles.value = scrapeFiles.value.map((f) => {
-            if (!fileIds.includes(f.id)) return f
-            return {
-                ...f,
-                dropData: {
-                    ...f.dropData,
-                    originalSourceUrl: url
-                }
+        updateFiles(fileIds, (f) => ({
+            ...f,
+            dropData: {
+                ...f.dropData,
+                originalSourceUrl: url
             }
-        })
+        }))
     }
 
     function setUploadStatus(id: string, status: string, errorMessage?: string) {
