@@ -31,6 +31,14 @@ export function registerIPCFilesHandlers(
         return fileService.insertFile(payload)
     })
 
+    ipcMain.handle('api:files:delete', (_event, ids: number[]) => {
+        return fileService.softDeleteFiles(ids)
+    })
+
+    ipcMain.handle('api:files:restore', (_event, ids: number[]) => {
+        return fileService.restoreFiles(ids)
+    })
+
     ipcMain.handle('api:files:updateTags', (_event, ops: TagOperation[]) => {
         return tagService.processTagOperations(ops)
     })

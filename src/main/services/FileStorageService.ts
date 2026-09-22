@@ -123,6 +123,11 @@ export class FileStorageService {
         }
     }
 
+    async deleteStoredFile(storedPath: string): Promise<void> {
+        await fs.unlink(storedPath).catch(() => {})
+        await fs.unlink(this.thumbPathFor(storedPath)).catch(() => {})
+    }
+
     async clearTempThumbs(): Promise<Result<void>> {
         try {
             const entries = await fs.readdir(this.tempThumbsDir)

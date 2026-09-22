@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, onActivated, onMounted, ref, watch } from 'vue'
+import { computed, inject, onActivated, onMounted, ref, watch } from 'vue'
 import { clamp } from '@vueuse/core'
 import { useDialog } from 'primevue/usedialog'
 import { ExplorerTabPayload } from '../../tab_system/Tabs'
+import { CommandService } from '../../../core/command_system/CommandService'
+import { EXPLORER_COMMANDS } from '../commands/ExplorerCmd'
 
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
@@ -17,6 +19,7 @@ import AddToCanvasDialog from './AddToCanvasDialog.vue'
 
 const canvasStore = useCanvasStore()
 const dialog = useDialog()
+const commandService = inject<CommandService>('commandService')!
 const props = defineProps<ExplorerTabPayload>()
 
 const explorerStore = useExplorerStore()
@@ -69,7 +72,7 @@ function onContextMenu(e: MouseEvent, which: 'canvas' | 'media') {
 }
 
 function onDeleteSelected() {
-    console.log('delete selected', explorer.selectedItems.length)
+    commandService.execute(EXPLORER_COMMANDS.DELETE_SELECTED)
 }
 
 const selectedFileIds = computed(() => explorer.selectedItems.map((f) => f.id))

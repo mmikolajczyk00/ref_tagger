@@ -70,12 +70,13 @@ export class FileService {
             const skip = (page - 1) * limit
             const [files, total] = await Promise.all([
                 this.prisma.file.findMany({
+                    where: { deleted: false },
                     include: { tags: { include: { tag: true } } },
                     orderBy: { createdAt: 'desc' },
                     skip,
                     take: limit
                 }),
-                this.prisma.file.count()
+                this.prisma.file.count({ where: { deleted: false } })
             ])
             return {
                 success: true,
@@ -97,7 +98,7 @@ export class FileService {
     async getFilesOfIds(ids: number[]): Promise<Result<Array<[number, MediaFile]>>> {
         try {
             const files = await this.prisma.file.findMany({
-                where: { id: { in: ids } },
+                where: { id: { in: ids }, deleted: false },
                 include: { tags: { include: { tag: true } } }
             })
             return { success: true, data: filesToEntries(files) }
@@ -115,7 +116,7 @@ export class FileService {
                 where: { id },
                 include: { tags: { include: { tag: true } } }
             })
-            if (!file) {
+            if (!file || file.deleted) {
                 return { success: false, error: `File of id=${id} might not exist` }
             }
             return { success: true, data: fileToResponse(file) }
@@ -201,5 +202,72 @@ export class FileService {
         }
 
         return { success: true, data: { id: row.id } }
+    }
+
+    async softDeleteFiles(ids: number[]): Promise<Result<{ deleted: number }>> {
+        try {
+            const { count } = await this.prisma.file.updateMany({
+                where: { id: { in: ids } },
+                data: { deleted: true }
+            })
+            return { success: true, data: { deleted: count } }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to delete files.'
+            }
+        }
+    }
+
+    async restoreFiles(ids: number[]): Promise<Result<{ restored: number }>> {
+        try {
+            const { count } = await this.prisma.file.updateMany({
+                where: { id: { in: ids } },
+                data: { deleted: false }
+            })
+            return { success: true, data: { restored: count } }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to restore files.'
+            }
+        }
+    }
+
+    async hardDeleteFiles(ids: number[]): Promise<Result<{ deleted: number }>> {
+        try {
+            const rows = await this.prisma.file.findMany({
+                where: { id: { in: ids } },
+                select: { id: true, filePath: true }
+            })
+            await Promise.all(rows.map((r) => this.fileStorage.deleteStoredFile(r.filePath)))
+            const { count } = await this.prisma.file.deleteMany({
+                where: { id: { in: ids } }
+            })
+            return { success: true, data: { deleted: count } }
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to delete files.'
+            }
+        }
+    }
+
+    async purgeDeletedFiles(): Promise<Result<{ deleted: number }>> {
+        try {
+            const rows = await this.prisma.file.findMany({
+                where: { deleted: true },
+                select: { id: true }
+            })
+            if (rows.length === 0) {
+                return { success: true, data: { deleted: 0 } }
+            }
+            return this.hardDeleteFiles(rows.map((r) => r.id))
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Failed to purge deleted files.'
+            }
+        }
     }
 }

@@ -14,7 +14,8 @@ export const useFileStore = defineStore('file', () => {
 
     async function fetchFilesOfIds(ids: number[]): Promise<MediaFile[]> {
         if (ids.length === 0) return []
-        const result = await window.api.files.getFilesOfIds(ids)
+        const result = await window.api.files.getFilesOfIds([...ids])
+
         if (!result.success) {
             console.error('fetchFilesOfIds failed:', result.error)
             return []
@@ -48,5 +49,33 @@ export const useFileStore = defineStore('file', () => {
         return true
     }
 
-    return { getFileOfId, fetchFilesOfIds, addTagsToFiles, removeTagsFromFiles, deleteTag }
+    async function deleteFiles(ids: number[]): Promise<boolean> {
+        if (ids.length === 0) return true
+        const result = await window.api.files.deleteFiles([...ids])
+        if (!result.success) {
+            console.error('deleteFiles failed:', result.error)
+            return false
+        }
+        return true
+    }
+
+    async function restoreFiles(ids: number[]): Promise<boolean> {
+        if (ids.length === 0) return true
+        const result = await window.api.files.restoreFiles([...ids])
+        if (!result.success) {
+            console.error('restoreFiles failed:', result.error)
+            return false
+        }
+        return true
+    }
+
+    return {
+        getFileOfId,
+        fetchFilesOfIds,
+        addTagsToFiles,
+        removeTagsFromFiles,
+        deleteTag,
+        deleteFiles,
+        restoreFiles
+    }
 })

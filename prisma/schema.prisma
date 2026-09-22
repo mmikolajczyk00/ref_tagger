@@ -14,6 +14,7 @@ model File {
   mediaType String   @map("media_type")
   sourceUrl String?  @map("source_url")
   createdAt DateTime @default(now()) @map("created_at")
+  deleted   Boolean  @default(false)
 
   tags FileTag[]
 

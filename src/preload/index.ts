@@ -45,7 +45,9 @@ const api = {
         applyTagOperations: (operations: TagOperation[]) =>
             ipcRenderer.invoke('api:files:updateTags', operations),
         searchFiles: (query: TagSearchQuery) => ipcRenderer.invoke('api:files:search', query),
-        getFilesOfIds: (ids: number[]) => ipcRenderer.invoke('api:files:getByIds', ids)
+        getFilesOfIds: (ids: number[]) => ipcRenderer.invoke('api:files:getByIds', ids),
+        deleteFiles: (ids: number[]) => ipcRenderer.invoke('api:files:delete', ids),
+        restoreFiles: (ids: number[]) => ipcRenderer.invoke('api:files:restore', ids)
     },
 
     tags: {

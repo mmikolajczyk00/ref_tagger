@@ -10,6 +10,7 @@ type FileRow = {
     mediaType: string
     sourceUrl: string | null
     createdAt: Date
+    deleted: boolean
     tags: {
         fileId: number
         tagId: number
@@ -74,7 +75,7 @@ export class SearchService {
 
             const candidateIds = candidates.map((c) => c.id)
             const files = await this.prisma.file.findMany({
-                where: { id: { in: candidateIds } },
+                where: { id: { in: candidateIds }, deleted: false },
                 include: { tags: { include: { tag: true } } }
             })
 
@@ -330,11 +331,14 @@ export class SearchService {
 
         if (!hasPositive) {
             const excludedWhere = whereClause.replace(/fs\.file_id/g, 'f.id')
+            const fileWhere = excludedWhere
+                ? `${excludedWhere} AND f.deleted = 0`
+                : 'WHERE f.deleted = 0'
             const countSql = `
         WITH ${cteParts.join(',\n')}
         SELECT COUNT(*) as total
         FROM files f
-        ${excludedWhere}
+        ${fileWhere}
         `
             const [{ total }] = await this.prisma.$queryRawUnsafe<[{ total: number }]>(
                 countSql,
@@ -346,7 +350,7 @@ export class SearchService {
         WITH ${cteParts.join(',\n')}
         SELECT f.id, 0 as score
         FROM files f
-        ${excludedWhere}
+        ${fileWhere}
         ORDER BY f.created_at DESC
         LIMIT ? OFFSET ?
         `
@@ -356,11 +360,16 @@ export class SearchService {
             return { candidates, total }
         }
 
+        const deletedFilter = 'fs.file_id NOT IN (SELECT id FROM files WHERE deleted = 1)'
+        const scoreWhere = whereClause
+            ? `${whereClause} AND ${deletedFilter}`
+            : `WHERE ${deletedFilter}`
+
         const countSql = `
         WITH ${cteParts.join(',\n')}
         SELECT COUNT(DISTINCT fs.file_id) as total
         FROM file_scores fs
-        ${whereClause}
+        ${scoreWhere}
         `
         const [{ total }] = await this.prisma.$queryRawUnsafe<[{ total: number }]>(
             countSql,
@@ -372,7 +381,7 @@ export class SearchService {
         WITH ${cteParts.join(',\n')}
         SELECT fs.file_id as id, fs.score as score
         FROM file_scores fs
-        ${whereClause}
+        ${scoreWhere}
         ORDER BY fs.score DESC
         LIMIT ? OFFSET ?
         `

@@ -16,7 +16,8 @@ const initDDL = `
         file_name TEXT NOT NULL,
         media_type TEXT NOT NULL,
         source_url TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        deleted INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS tags (
@@ -107,6 +108,12 @@ export class LocalDatabaseService {
 
         try {
             initDb.exec('ALTER TABLE files ADD COLUMN source_url TEXT')
+        } catch {
+            // column already exists on existing databases — safe to ignore
+        }
+
+        try {
+            initDb.exec('ALTER TABLE files ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0')
         } catch {
             // column already exists on existing databases — safe to ignore
         }

@@ -104,9 +104,7 @@ export function createExplorer() {
     }
 
     function applyFilesUpdate(updated: MediaFile[]) {
-        const next = new Map(mediaFiles.value)
-        for (const f of updated) next.set(f.id, f)
-        mediaFiles.value = next
+        for (const f of updated) mediaFiles.value.set(f.id, f)
     }
 
     return proxyRefs({

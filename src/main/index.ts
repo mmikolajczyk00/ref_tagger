@@ -97,6 +97,10 @@ app.whenReady().then(() => {
     const userDataPath = app.getPath('userData')
     const dbService = new LocalDatabaseService(userDataPath, FILE_ROOT_DIR)
 
+    dbService.fileService
+        .purgeDeletedFiles()
+        .catch((e) => console.warn('Failed to purge deleted files on launch:', e))
+
     registerIPCFilesHandlers(
         ipcMain,
         dbService.fileService,

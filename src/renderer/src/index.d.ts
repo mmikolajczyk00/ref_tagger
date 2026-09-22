@@ -16,6 +16,8 @@ type iapi = {
         applyTagOperations: (operations: TagOperation[]) => Promise<Result<void>>
         searchFiles: (query: TagSearchQuery) => Promise<Result<void>>
         getFilesOfIds: (ids: number[]) => Promise<Result<void>>
+        deleteFiles: (ids: number[]) => Promise<Result<{ deleted: number }>>
+        restoreFiles: (ids: number[]) => Promise<Result<{ restored: number }>>
     }
 
     tags: {

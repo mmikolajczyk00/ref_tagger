@@ -38,11 +38,25 @@ class DeleteSelectedCommand implements ICommand {
         this.deletedIds = [...this.explorer.selection.selectedIds]
     }
 
-    execute(): void {
-        console.log('TODO: DELETE_SELECTED — implement IPC api:files:delete', this.deletedIds)
+    async execute(): Promise<void> {
+        if (this.deletedIds.length === 0) return
+
+        const ok = await useFileStore().deleteFiles(this.deletedIds)
+        if (!ok) return
+
+        for (const id of this.deletedIds) this.explorer.mediaFiles.delete(id)
+        this.explorer.selection.clearSelection()
     }
-    undo(): void {
-        console.log('TODO: undo DELETE_SELECTED')
+
+    async undo(): Promise<void> {
+        if (this.deletedIds.length === 0) return
+
+        const ok = await useFileStore().restoreFiles(this.deletedIds)
+        if (!ok) return
+
+        const files = await useFileStore().fetchFilesOfIds(this.deletedIds)
+        console.log(files)
+        if (files.length > 0) this.explorer.applyFilesUpdate(files)
     }
 }
 
@@ -209,7 +223,7 @@ export function registerExplorerCommands(commandRegistry: CommandRegistry) {
         label: 'Delete Selected',
         scope,
         showInPalette: false,
-        keybind: '',
+        keybind: 'delete',
         when: hasSelection,
         create: () => new DeleteSelectedCommand(activeExplorer()!)
     })
