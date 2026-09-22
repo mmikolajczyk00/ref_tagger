@@ -3,7 +3,6 @@ import { defineStore } from 'pinia'
 import { useTabStore } from '../../../core/stores/useTabStore'
 import { AppTabType } from '@renderer/features/tab_system/Tabs'
 import CanvasScene from './scene/CanvasScene'
-import { Coordinates } from './scene/CanvasUtils'
 import { Canvas } from '@shared/types/models'
 import { validateCanvasName } from './validateCanvasName'
 
@@ -46,6 +45,11 @@ export const useCanvasStore = defineStore('canvasStore', () => {
                 tabStore.setActiveTab(index)
                 return openCanvases.value.get(id)
             }
+            // scene still loaded but its tab was closed -> reopen it
+            const scene = openCanvases.value.get(id)!
+            const newIndex = tabStore.openTab(AppTabType.Canvas, scene.name, { canvasId: id })
+            tabStore.setActiveTab(newIndex)
+            return scene
         }
 
         const result = await window.api.canvases.get(id)
@@ -60,17 +64,34 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         const tabStore = useTabStore()
         const index = tabStore.openTab(AppTabType.Canvas, meta.name, { canvasId: scene.id })
         tabStore.setActiveTab(index)
+        return openCanvases.value.get(scene.id)
+    }
+
+    function addAndOpenNewCanvas(files: number[] = [], title = 'Untitled canvas') {
+        const scene = new CanvasScene(Date.now(), title, false)
+        openCanvases.value.set(scene.id, scene)
+        const opened = openCanvases.value.get(scene.id)!
+        opened.unsavedChanges = true
+        opened.addMediaFilesCentered(files)
+        const tabStore = useTabStore()
+        const index = tabStore.openTab(AppTabType.Canvas, title, { canvasId: opened.id })
+        tabStore.setActiveTab(index)
+        return opened
+    }
+
+    async function addFilesToCanvas(canvasId: number, fileIds: number[]) {
+        const scene = await fetchAndOpenCanvas(canvasId)
+        if (!scene) return
+        scene.addMediaFilesCentered(fileIds)
+        scene.unsavedChanges = true
         return scene
     }
 
-    function addAndOpenNewCanvas(files: number[] = [], title = 'new canvas') {
-        const scene = new CanvasScene(Date.now(), title, false)
-        scene.unsavedChanges = true
+    function getOpenCanvasTabs(): { canvasId: number; title: string }[] {
         const tabStore = useTabStore()
-        tabStore.openTab(AppTabType.Canvas, title, { canvasId: scene.id })
-        openCanvases.value.set(scene.id, scene)
-        scene.addMediaFiles(files, { x: 100, y: 100 } as Coordinates)
-        return scene
+        return tabStore.openTabs
+            .filter((tab) => tab.type === AppTabType.Canvas)
+            .map((tab) => ({ canvasId: tab.data.canvasId, title: tab.title }))
     }
 
     function getExistingNames(ignoreId?: number): Set<string> {
@@ -199,6 +220,8 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         getActiveCanvas,
         isSaved,
         addAndOpenNewCanvas,
+        addFilesToCanvas,
+        getOpenCanvasTabs,
         fetchCanvases,
         fetchAndOpenCanvas,
         saveCanvas,

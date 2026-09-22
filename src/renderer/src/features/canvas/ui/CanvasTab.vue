@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onActivated, onDeactivated, useTemplateRef, watch } from 'vue'
+import { computed, onActivated, onDeactivated, onMounted, useTemplateRef, watch } from 'vue'
 import { useDialog } from 'primevue/usedialog'
 import CanvasElementWrapper from './CanvasElementWrapper.vue'
 import {
@@ -86,6 +86,10 @@ const sortedCanvasElements = computed(() => {
 })
 
 const canvasBg = useTemplateRef('canvas-bg')
+
+onMounted(() => {
+    canvasScene.viewportElement = canvasBg.value ?? undefined
+})
 
 const handleGlobalMouseMove = (event: MouseEvent) => {
     const container = canvasBg.value

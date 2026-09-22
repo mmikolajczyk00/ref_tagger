@@ -28,6 +28,7 @@ export default class CanvasScene {
     transform: Transform
     zoom: number = 1
     htmlElement: HTMLDivElement | undefined
+    viewportElement: HTMLDivElement | undefined
     selectedElements: Array<CanvasElement> = []
     isGrabbed: boolean = false
 
@@ -77,6 +78,27 @@ export default class CanvasScene {
             ids.push(this.addMediaFile(f, position))
         })
         return ids
+    }
+    addMediaFilesCentered(files: number[], viewportSize?: { width: number; height: number }) {
+        const size = viewportSize ?? this.getViewportSize()
+        const centerX = (size.width / 2 - this.transform.position.x) / this.zoom
+        const centerY = (size.height / 2 - this.transform.position.y) / this.zoom
+        const offsetStep = 24
+        const ids: string[] = []
+        files.forEach((f, i) => {
+            const pos = new Vector2(centerX + i * offsetStep, centerY + i * offsetStep)
+            ids.push(this.addMediaFile(f, pos))
+        })
+        return ids
+    }
+    private getViewportSize(): { width: number; height: number } {
+        if (this.viewportElement) {
+            return {
+                width: this.viewportElement.clientWidth,
+                height: this.viewportElement.clientHeight
+            }
+        }
+        return { width: window.innerWidth, height: window.innerHeight }
     }
     removeMediaFile(id: string) {
         this.mediaFileElements = this.mediaFileElements.filter((e) => e.elementId !== id)
