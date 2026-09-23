@@ -8,6 +8,8 @@ import { processDroppedTags } from './processDroppedTags'
 import { useTagsProcessingStore } from '../../../core/stores/useTagsProcessingStore'
 import { downloadQueueProcessor } from './downloadQueueProcessor'
 import { VideoInfo } from '@shared/types/models'
+import { isPreviewableMediaType, toPreviewSrc } from '../../../core/utils/mediaPreview'
+import type { PreviewItem } from '../../../core/utils/mediaPreview'
 
 export const useUploadQueueStore = defineStore('upload-queue', () => {
     const tpStore = useTagsProcessingStore()
@@ -234,6 +236,35 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
         }
     }
 
+    const previewItems = ref<PreviewItem[]>([])
+    const previewIndex = ref(0)
+    const isPreviewOpen = ref(false)
+
+    function openPreview(files: QueuedFile[], target: QueuedFile) {
+        const items: PreviewItem[] = []
+        let index = -1
+        files.forEach((f) => {
+            const mediaType = f.dropData.mediaType
+            if (!isPreviewableMediaType(mediaType)) return
+            if (f.id === target.id) index = items.length
+            items.push({
+                src: toPreviewSrc(f.dropData.src ?? f.dropData.thumb),
+                mediaType,
+                name: f.dropData.name
+            })
+        })
+        if (index === -1 || items.length === 0) return
+
+        previewItems.value = items
+        previewIndex.value = index
+        isPreviewOpen.value = true
+    }
+
+    function closePreview() {
+        isPreviewOpen.value = false
+        previewItems.value = []
+    }
+
     return {
         scrapeFiles,
         uploadFiles,
@@ -260,6 +291,11 @@ export const useUploadQueueStore = defineStore('upload-queue', () => {
         moveToUpload,
         downloadWithUrl,
         setPercentage,
-        setInfo
+        setInfo,
+        previewItems,
+        previewIndex,
+        isPreviewOpen,
+        openPreview,
+        closePreview
     }
 })

@@ -16,6 +16,10 @@ import MediaFileExplorerList from './MediaFileExplorerList.vue'
 import CanvasExplorerList from './CanvasExplorerList.vue'
 import TagEditorExplorerPanel from './TagEditorExplorerPanel.vue'
 import AddToCanvasDialog from './AddToCanvasDialog.vue'
+import MediaPreviewOverlay from '@renderer/core/ui/MediaPreviewOverlay.vue'
+import { isPreviewableMediaType, toPreviewSrc } from '@renderer/core/utils/mediaPreview'
+import type { PreviewItem } from '@renderer/core/utils/mediaPreview'
+import type { MediaFile } from '@shared/types/models'
 
 const canvasStore = useCanvasStore()
 const dialog = useDialog()
@@ -41,6 +45,32 @@ function clearSearch() {
 
 const mediaFilesArr = computed(() => Array.from(explorer.mediaFiles.values()))
 
+const previewItems = computed<PreviewItem[]>(() =>
+    mediaFilesArr.value.flatMap((f) =>
+        isPreviewableMediaType(f.mediaType)
+            ? [
+                  {
+                      src: toPreviewSrc(f.filePath),
+                      mediaType: f.mediaType,
+                      name: f.fileName
+                  }
+              ]
+            : []
+    )
+)
+const previewIndex = ref(0)
+const isPreviewOpen = ref(false)
+const contextFile = ref<MediaFile | null>(null)
+
+function openPreview(file: MediaFile) {
+    const index = mediaFilesArr.value
+        .filter((f) => isPreviewableMediaType(f.mediaType))
+        .findIndex((f) => f.id === file.id)
+    if (index === -1) return
+    previewIndex.value = index
+    isPreviewOpen.value = true
+}
+
 const thumbnailScale = ref(200 as number)
 const thumbnailScale_min = 100
 const thumbnailScale_max = 600
@@ -61,6 +91,7 @@ const canvasMenuItems = ref([
 ])
 
 const mediaMenuItems = ref([
+    { label: 'Preview', command: () => contextFile.value && openPreview(contextFile.value) },
     { label: 'Delete selected', command: onDeleteSelected },
     { label: 'Add to canvas', command: onAddToCanvas },
     { label: 'Add to new canvas', command: onAddToNewCanvas }
@@ -148,7 +179,12 @@ onMounted(() => {
                     @click="explorer.selection.clearSelection"
                     @contextmenu.prevent="(e) => onContextMenu(e, 'media')"
                 >
-                    <MediaFileExplorerList :files="mediaFilesArr" :explorer="explorer" />
+                    <MediaFileExplorerList
+                        :files="mediaFilesArr"
+                        :explorer="explorer"
+                        @preview="openPreview"
+                        @context="(f) => (contextFile = f)"
+                    />
                 </SplitterPanel>
             </Splitter>
         </SplitterPanel>
@@ -161,4 +197,11 @@ onMounted(() => {
 
     <ContextMenu ref="canvasMenu" :model="canvasMenuItems" />
     <ContextMenu ref="mediaMenu" :model="mediaMenuItems" />
+
+    <MediaPreviewOverlay
+        v-if="isPreviewOpen && previewItems.length > 0"
+        v-model="previewIndex"
+        :items="previewItems"
+        @close="isPreviewOpen = false"
+    />
 </template>

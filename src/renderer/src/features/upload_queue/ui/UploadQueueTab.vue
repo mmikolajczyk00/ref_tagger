@@ -4,8 +4,8 @@ import { useUploadQueueStore } from '../ts/useUploadQueueStore'
 import ScrapePanel from './ScrapePanel.vue'
 import UploadPanel from './UploadPanel.vue'
 import { handleDrop } from '../ts/DropHandler'
-import TagProcessingPanel from './TagProcessingPanel.vue'
 import TagsProcessingPanel from './TagsProcessingPanel.vue'
+import MediaPreviewOverlay from '@renderer/core/ui/MediaPreviewOverlay.vue'
 
 const isDragging = ref(false)
 let dragCounter = 0
@@ -147,5 +147,12 @@ onUnmounted(() => {
                 <span class="text-primary-300 text-lg font-medium">drop files here</span>
             </div>
         </div>
+
+        <MediaPreviewOverlay
+            v-if="store.isPreviewOpen && store.previewItems.length > 0"
+            v-model="store.previewIndex"
+            :items="store.previewItems"
+            @close="store.closePreview()"
+        />
     </div>
 </template>

@@ -1,9 +1,10 @@
-import { app, shell, BrowserWindow, ipcMain, globalShortcut, protocol, net } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, globalShortcut, protocol } from 'electron'
 import path, { join } from 'path'
+import { createReadStream, statSync } from 'fs'
+import { Readable } from 'stream'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { LocalDatabaseService } from './services/LocalDatabaseService'
-import { pathToFileURL } from 'url'
 import { FILE_ROOT_DIR } from './env'
 import { registerIPCFilesHandlers } from './ipc/handleIPCFiles'
 import { registerIPCTagsHandlers } from './ipc/handleIPCTags'
@@ -12,8 +13,36 @@ import { registerIPCTagsProcessingHandlers } from './ipc/handleIPCTagsProcessing
 import { registerIPCDownloadHandlers } from './ipc/handleIPCDownload'
 
 protocol.registerSchemesAsPrivileged([
-    { scheme: 'media', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+    {
+        scheme: 'media',
+        privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true }
+    }
 ])
+
+const MIME_BY_EXT: Record<string, string> = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+    '.bmp': 'image/bmp',
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm',
+    '.mkv': 'video/x-matroska',
+    '.mov': 'video/quicktime',
+    '.avi': 'video/x-msvideo',
+    '.flv': 'video/x-flv',
+    '.m4v': 'video/x-m4v',
+    '.ogv': 'video/ogg',
+    '.mp3': 'audio/mpeg',
+    '.wav': 'audio/wav',
+    '.ogg': 'audio/ogg',
+    '.m4a': 'audio/mp4',
+    '.flac': 'audio/flac',
+    '.opus': 'audio/opus',
+    '.aac': 'audio/aac'
+}
 
 function createWindow(): void {
     const mainWindow = new BrowserWindow({
@@ -85,9 +114,52 @@ app.whenReady().then(() => {
 
             const normalizedPath = path.normalize(decodeURIComponent(targetPath))
 
-            const fileUrl = pathToFileURL(normalizedPath).toString()
+            let size: number
+            try {
+                size = statSync(normalizedPath).size
+            } catch {
+                return new Response('Not Found', { status: 404 })
+            }
 
-            return net.fetch(fileUrl)
+            const contentType =
+                MIME_BY_EXT[path.extname(normalizedPath).toLowerCase()] ??
+                'application/octet-stream'
+
+            let start = 0
+            let end = size - 1
+
+            const rangeHeader = request.headers.get('Range')
+            let partial = false
+            if (rangeHeader) {
+                const match = /bytes=(\d*)-(\d*)/.exec(rangeHeader)
+                if (match) {
+                    const rangeStart = match[1] ? parseInt(match[1], 10) : start
+                    const rangeEnd = match[2] ? parseInt(match[2], 10) : end
+                    if (!Number.isNaN(rangeStart) && rangeStart <= rangeEnd && rangeStart < size) {
+                        start = rangeStart
+                        end = Math.min(rangeEnd, size - 1)
+                        partial = true
+                    }
+                }
+            }
+
+            const headers: Record<string, string> = {
+                'Content-Type': contentType,
+                'Accept-Ranges': 'bytes',
+                'Content-Length': String(end - start + 1)
+            }
+            if (partial) {
+                headers['Content-Range'] = `bytes ${start}-${end}/${size}`
+            }
+
+            if (request.method === 'HEAD') {
+                return new Response(null, { status: partial ? 206 : 200, headers })
+            }
+
+            const stream = createReadStream(normalizedPath, { start, end })
+            const body = Readable.toWeb(stream) as unknown as ReadableStream
+
+            return new Response(body, { status: partial ? 206 : 200, headers })
         } catch (error) {
             console.error('Custom Protocol Error:', error)
             return new Response('Internal Protocol Error', { status: 500 })

@@ -56,6 +56,7 @@ function retryFailed() {
                         @item-click="onItemClick"
                         @clear-selection="onClearSelection"
                         @remove="onRemove"
+                        @preview="(f) => store.openPreview(store.uploadFiles, f)"
                     />
                 </div>
             </SplitterPanel>

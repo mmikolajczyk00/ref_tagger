@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import ContextMenu from 'primevue/contextmenu'
 import { QueuedFile } from '../ts/UploadQueue'
+import { isPreviewableMediaType } from '@renderer/core/utils/mediaPreview'
 
 defineProps<{
     files: QueuedFile[]
@@ -12,11 +15,28 @@ const emit = defineEmits<{
     (e: 'itemClick', event: MouseEvent, item: QueuedFile, index: number): void
     (e: 'clearSelection'): void
     (e: 'remove', id: string): void
+    (e: 'preview', item: QueuedFile): void
 }>()
+
+const previewMenu = ref()
+const contextItem = ref<QueuedFile | null>(null)
+
+const menuItems = ref([
+    {
+        label: 'Preview',
+        command: () => contextItem.value && emit('preview', contextItem.value)
+    }
+])
 
 function onClick(event: MouseEvent, item: QueuedFile, index: number) {
     console.log(item.dropData)
     emit('itemClick', event, item, index)
+}
+
+function onContextMenu(event: MouseEvent, item: QueuedFile) {
+    if (!isPreviewableMediaType(item.dropData.mediaType)) return
+    contextItem.value = item
+    previewMenu.value?.show(event)
 }
 
 function onGridClick(event: MouseEvent) {
@@ -37,6 +57,8 @@ function onGridClick(event: MouseEvent) {
             v-tooltip.bottom="f.errorMessage"
             class="media-file border-surface-200 dark:border-surface-800 bg-surface-0 dark:bg-surface-900 hover:border-surface-400 dark:hover:border-surface-600 group relative flex aspect-square flex-col overflow-hidden border transition-colors select-none"
             @click.left.stop="onClick($event, f, index)"
+            @dblclick.left.stop="emit('preview', f)"
+            @contextmenu.prevent.stop="onContextMenu($event, f)"
         >
             <div
                 v-show="isSelected(getItemId(f))"
@@ -99,6 +121,8 @@ function onGridClick(event: MouseEvent) {
             ></ProgressBar>
         </div>
     </div>
+
+    <ContextMenu ref="previewMenu" :model="menuItems" />
 </template>
 
 <style scoped>

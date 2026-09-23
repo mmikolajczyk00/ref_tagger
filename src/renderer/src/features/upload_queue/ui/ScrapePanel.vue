@@ -53,6 +53,7 @@ function onDownloadWithUrl() {
                         @item-click="onItemClick"
                         @clear-selection="onClearSelection"
                         @remove="onRemove"
+                        @preview="(f) => store.openPreview(store.scrapeFiles, f)"
                     />
                     <div class="absolute right-2 bottom-2">
                         <InputText
