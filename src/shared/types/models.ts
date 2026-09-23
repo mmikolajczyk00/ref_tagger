@@ -66,7 +66,7 @@ export interface FileDownloadResult {
 }
 export interface DownloadProgressEvent {
     sessionId: string
-    percent: number
+    percentage: number
 }
 
 export interface DownloadInfoEvent {
@@ -100,7 +100,6 @@ export interface PaginatedCanvases {
 export interface Canvas {
     id: number
     name: string
-    dataPath: string
     createdAt: string
     updatedAt: string
 }
@@ -133,4 +132,33 @@ export type VideoInfo = {
     ext: string
     tags: string[]
     mediaType?: MediaType
+}
+
+export type BackupDomain = 'files' | 'tags' | 'file_tags' | 'canvases' | 'blacklists' | 'aliases'
+
+export interface BackupManifest {
+    version: 1
+    createdAt: string
+    domains: BackupDomain[]
+    domainCounts: Partial<Record<BackupDomain, number>>
+}
+
+export interface BackupSaveOptions {
+    domains: BackupDomain[]
+}
+
+export interface BackupLoadOptions {
+    mode: 'replace' | 'append'
+    domains: BackupDomain[]
+    skipSameSourceUrl: boolean
+    skipSameName: boolean
+}
+
+export interface TaskInfo {
+    id: string
+    label: string
+    percentage: number
+    status: 'running' | 'done' | 'error'
+    error?: string
+    warning?: string
 }

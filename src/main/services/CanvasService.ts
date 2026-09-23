@@ -28,14 +28,12 @@ export class CanvasService {
     toCanvas(row: {
         id: number
         name: string
-        dataPath: string
         createdAt: Date | string
         updatedAt: Date | string
     }): Canvas {
         return {
             id: row.id,
             name: row.name,
-            dataPath: row.dataPath,
             createdAt:
                 row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
             updatedAt:
@@ -44,24 +42,13 @@ export class CanvasService {
     }
 
     async createCanvas(name: string, data: CanvasSceneData): Promise<Result<Canvas>> {
-        let row:
-            | { id: number; name: string; dataPath: string; createdAt: Date; updatedAt: Date }
-            | undefined
+        let row: { id: number; name: string; createdAt: Date; updatedAt: Date } | undefined
         try {
-            const filePath = this.dataFilePath(-1)
-            row = await this.prisma.canvas.create({
-                data: { name, dataPath: filePath }
-            })
+            row = await this.prisma.canvas.create({ data: { name } })
 
-            const actualPath = this.dataFilePath(row.id)
-            await this.prisma.canvas.update({
-                where: { id: row.id },
-                data: { dataPath: actualPath }
-            })
+            this.writeJsonAtomic(this.dataFilePath(row.id), data)
 
-            this.writeJsonAtomic(actualPath, data)
-
-            return { success: true, data: this.toCanvas({ ...row, dataPath: actualPath }) }
+            return { success: true, data: this.toCanvas(row) }
         } catch (err: any) {
             if (err?.code === 'P2002') {
                 return { success: false, error: 'Canvas name already exists.' }
@@ -144,12 +131,14 @@ export class CanvasService {
                 return { success: false, error: `Canvas with id=${id} not found.` }
             }
 
+            const filePath = this.dataFilePath(row.id)
+
             let raw: string
             try {
-                raw = fs.readFileSync(row.dataPath, 'utf-8')
+                raw = fs.readFileSync(filePath, 'utf-8')
             } catch (err: any) {
                 if (err?.code === 'ENOENT') {
-                    return { success: false, error: `Canvas data file not found: ${row.dataPath}` }
+                    return { success: false, error: `Canvas data file not found: ${filePath}` }
                 }
                 throw err
             }
@@ -192,13 +181,13 @@ export class CanvasService {
         try {
             const row = await this.prisma.canvas.findUnique({
                 where: { id },
-                select: { dataPath: true }
+                select: { id: true }
             })
             if (!row) {
                 return { success: false, error: `Canvas with id=${id} not found.` }
             }
 
-            this.writeJsonAtomic(row.dataPath, data)
+            this.writeJsonAtomic(this.dataFilePath(row.id), data)
             await this.prisma.canvas.update({
                 where: { id },
                 data: { updatedAt: new Date() }
@@ -217,14 +206,14 @@ export class CanvasService {
         try {
             const row = await this.prisma.canvas.findUnique({
                 where: { id },
-                select: { dataPath: true }
+                select: { id: true }
             })
             if (!row) {
                 return { success: false, error: `Canvas with id=${id} not found.` }
             }
 
             try {
-                fs.unlinkSync(row.dataPath)
+                fs.unlinkSync(this.dataFilePath(row.id))
             } catch (err: any) {
                 if (err?.code !== 'ENOENT') throw err
             }

@@ -3,12 +3,14 @@ import { useUploadQueueStore } from '../ts/useUploadQueueStore'
 import { QueuedFile } from '../ts/UploadQueue'
 import MediaFileGrid from './MediaFileGrid.vue'
 import UploadQueueDetailsPanel from './UploadQueueDetailsPanel.vue'
+import { useTaskStore } from '@renderer/core/stores/useTaskStore'
 
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { ref } from 'vue'
 
 const store = useUploadQueueStore()
+const taskStore = useTaskStore()
 
 function onItemClick(event: MouseEvent, item: QueuedFile, index: number) {
     store.scrapeSelection.handleItemClick(event, item, index)
@@ -59,6 +61,8 @@ function onDownloadWithUrl() {
                         <InputText
                             v-model="downloadUrl"
                             placeholder="Paste url here"
+                            :disabled="taskStore.isLocked"
+                            :title="taskStore.isLocked ? 'Backup in progress' : undefined"
                             @change="onDownloadWithUrl"
                         />
                     </div>

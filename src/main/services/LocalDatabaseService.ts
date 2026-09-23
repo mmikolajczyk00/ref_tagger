@@ -12,7 +12,7 @@ import { TagsProcessingService } from './TagsProcessingService'
 const initDDL = `
     CREATE TABLE IF NOT EXISTS files (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        file_path TEXT NOT NULL UNIQUE,
+        ext TEXT NOT NULL,
         file_name TEXT NOT NULL,
         media_type TEXT NOT NULL,
         source_url TEXT,
@@ -51,7 +51,6 @@ const initDDL = `
     CREATE TABLE IF NOT EXISTS canvases (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
-        data_path TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -89,8 +88,12 @@ const initDDL = `
     CREATE INDEX IF NOT EXISTS idx_alias_tags_alias ON alias_tags(alias_id);
 `
 
+export { initDDL }
+
 export class LocalDatabaseService {
+    public readonly dbPath: string
     private prisma: PrismaClient
+    private _locked = false
     public readonly canvasService: CanvasService
     public readonly fileStorage: FileStorageService
     public readonly fileService: FileService
@@ -100,30 +103,19 @@ export class LocalDatabaseService {
 
     constructor(dbFolderPath: string, fileRootDir: string) {
         const dbPath = path.join(dbFolderPath, 'ref-sheeter.sqlite')
+        this.dbPath = dbPath
 
         const initDb = new Database(dbPath)
         initDb.pragma('journal_mode = WAL')
         initDb.pragma('foreign_keys = ON')
         initDb.exec(initDDL)
 
-        try {
-            initDb.exec('ALTER TABLE files ADD COLUMN source_url TEXT')
-        } catch {
-            // column already exists on existing databases — safe to ignore
-        }
-
-        try {
-            initDb.exec('ALTER TABLE files ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0')
-        } catch {
-            // column already exists on existing databases — safe to ignore
-        }
-
         initDb.close()
 
         const adapterFactory = new PrismaBetterSqlite3({ url: dbPath })
         this.prisma = new PrismaClient({ adapter: adapterFactory })
 
-        this.canvasService = new CanvasService(this.prisma, path.join(dbFolderPath, 'canvases'))
+        this.canvasService = new CanvasService(this.prisma, path.join(fileRootDir, 'canvases'))
         this.fileStorage = new FileStorageService(fileRootDir)
         this.fileStorage
             .clearTempThumbs()
@@ -132,5 +124,25 @@ export class LocalDatabaseService {
         this.tagService = new TagService(this.prisma)
         this.searchService = new SearchService(this.prisma, this.fileService)
         this.tagsProcessingService = new TagsProcessingService(this.prisma)
+    }
+
+    get prismaClient(): PrismaClient {
+        return this.prisma
+    }
+
+    get isLocked(): boolean {
+        return this._locked
+    }
+
+    lock(): void {
+        this._locked = true
+    }
+
+    unlock(): void {
+        this._locked = false
+    }
+
+    async prismaDisconnect(): Promise<void> {
+        await this.prisma.$disconnect()
     }
 }

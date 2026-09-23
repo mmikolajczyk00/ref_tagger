@@ -8,23 +8,34 @@ import { mediaTypeFromExt } from '../../shared/utils/mediaType'
 import ffmpegPath from 'ffmpeg-static'
 
 export class FileStorageService {
+    private readonly rootDir: string
     private readonly filesDir: string
     private readonly tempThumbsDir: string
 
     constructor(rootDir: string) {
-        this.filesDir = path.join(rootDir, 'files')
-        this.tempThumbsDir = path.join(rootDir, 'tempThumbs')
+        this.rootDir = path.resolve(rootDir)
+        this.filesDir = path.join(this.rootDir, 'files')
+        this.tempThumbsDir = path.join(this.rootDir, 'tempThumbs')
         fs.mkdir(this.filesDir, { recursive: true })
         fs.mkdir(this.tempThumbsDir, { recursive: true })
     }
 
-    getRootDir(): string {
+    getStorageRoot(): string {
+        return this.rootDir
+    }
+
+    getFilesDir(): string {
         return path.resolve(this.filesDir)
     }
 
-    private thumbPathFor(storedPath: string): string {
-        return `${storedPath}_thumb.webp`
+    filePathFor(id: number, ext: string): string {
+        return path.join(this.filesDir, `${id}${ext}`)
     }
+
+    thumbPathFor(id: number, ext: string): string {
+        return `${this.filePathFor(id, ext)}_thumb.webp`
+    }
+
     private tempThumbPathFor(storedPath: string): string {
         return `${path.join(this.tempThumbsDir, path.basename(storedPath))}_temp_thumb.webp`
     }
@@ -123,9 +134,9 @@ export class FileStorageService {
         }
     }
 
-    async deleteStoredFile(storedPath: string): Promise<void> {
-        await fs.unlink(storedPath).catch(() => {})
-        await fs.unlink(this.thumbPathFor(storedPath)).catch(() => {})
+    async deleteStoredFile(id: number, ext: string): Promise<void> {
+        await fs.unlink(this.filePathFor(id, ext)).catch(() => {})
+        await fs.unlink(this.thumbPathFor(id, ext)).catch(() => {})
     }
 
     async clearTempThumbs(): Promise<Result<void>> {
@@ -148,7 +159,7 @@ export class FileStorageService {
         ext: string,
         thumb: string
     ): Promise<Result<{ storedPath: string; thumbPath?: string }>> {
-        const target = path.join(this.filesDir, `${id}${ext}`)
+        const target = this.filePathFor(id, ext)
         try {
             await fs.rename(sourcePath, target)
         } catch (err) {
@@ -158,7 +169,7 @@ export class FileStorageService {
             }
         }
 
-        const thumbTarget = this.thumbPathFor(target)
+        const thumbTarget = this.thumbPathFor(id, ext)
         let success = false
         if (/^https?:\/\//i.test(thumb)) {
             success = await this.generateThumbnailFromUrl(thumb, thumbTarget)
@@ -177,7 +188,7 @@ export class FileStorageService {
         sourcePath: string,
         ext: string
     ): Promise<Result<{ storedPath: string; thumbPath?: string }>> {
-        const target = path.join(this.filesDir, `${id}${ext}`)
+        const target = this.filePathFor(id, ext)
         try {
             await fs.copyFile(sourcePath, target)
         } catch (err) {
@@ -190,7 +201,7 @@ export class FileStorageService {
 
         const mediaType = mediaTypeFromExt(ext)
 
-        const thumbTarget = this.thumbPathFor(target)
+        const thumbTarget = this.thumbPathFor(id, ext)
 
         let success = false
 
@@ -218,7 +229,7 @@ export class FileStorageService {
         url: string,
         ext: string
     ): Promise<Result<{ storedPath: string; thumbPath?: string }>> {
-        const target = path.join(this.filesDir, `${id}${ext}`)
+        const target = this.filePathFor(id, ext)
         let buffer: Buffer
         try {
             const response = await net.fetch(url)
@@ -238,7 +249,7 @@ export class FileStorageService {
             }
         }
 
-        const thumbTarget = this.thumbPathFor(target)
+        const thumbTarget = this.thumbPathFor(id, ext)
         const success = await this.generateThumbnailFromBuffer(buffer, thumbTarget)
 
         return {

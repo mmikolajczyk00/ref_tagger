@@ -14,17 +14,9 @@ export function mediaTypeFromExt(ext: string): MediaType | undefined {
 
 export function extFromMediaType(mediaType: string): string {
     const map: Record<string, string> = {
-        'image/jpeg': '.jpg',
-        'image/png': '.png',
-        'image/gif': '.gif',
-        'image/webp': '.webp',
-        'image/svg+xml': '.svg',
-        'video/mp4': '.mp4',
-        'video/webm': '.webm',
-        'video/quicktime': '.mov',
-        'audio/mpeg': '.mp3',
-        'audio/wav': '.wav',
-        'audio/ogg': '.ogg'
+        image: '.jpg',
+        video: '.mp4',
+        audio: '.mp3'
     }
     return map[mediaType] ?? '.bin'
 }

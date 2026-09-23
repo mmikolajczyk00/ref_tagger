@@ -4,11 +4,13 @@ import { QueuedFile, UPLOAD_STATUS, isLocked } from '../ts/UploadQueue'
 import MediaFileGrid from './MediaFileGrid.vue'
 import UploadQueueDetailsPanel from './UploadQueueDetailsPanel.vue'
 import { uploadQueueProcessor } from '../ts/uploadQueueProcessor'
+import { useTaskStore } from '@renderer/core/stores/useTaskStore'
 
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 
 const store = useUploadQueueStore()
+const taskStore = useTaskStore()
 
 function onItemClick(event: MouseEvent, item: QueuedFile, index: number) {
     store.uploadSelection.handleItemClick(event, item, index)
@@ -67,19 +69,25 @@ function retryFailed() {
 
         <div class="flex shrink-0 items-center gap-3">
             <button
-                class="bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 rounded px-3 py-1.5 text-sm transition-colors"
+                class="bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 rounded px-3 py-1.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="taskStore.isLocked"
+                :title="taskStore.isLocked ? 'Backup in progress' : undefined"
                 @click="uploadSelected"
             >
                 upload selected
             </button>
             <button
-                class="bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 rounded px-3 py-1.5 text-sm transition-colors"
+                class="bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 rounded px-3 py-1.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="taskStore.isLocked"
+                :title="taskStore.isLocked ? 'Backup in progress' : undefined"
                 @click="uploadAll"
             >
                 upload all
             </button>
             <button
-                class="bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 rounded px-3 py-1.5 text-sm transition-colors"
+                class="bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 rounded px-3 py-1.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="taskStore.isLocked"
+                :title="taskStore.isLocked ? 'Backup in progress' : undefined"
                 @click="retryFailed"
             >
                 retry failed

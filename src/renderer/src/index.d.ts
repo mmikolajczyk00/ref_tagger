@@ -1,4 +1,11 @@
-import type { DownloadProgressEvent, FileDownloadResult } from '../shared/types/models'
+import type {
+    BackupLoadOptions,
+    BackupManifest,
+    BackupSaveOptions,
+    DownloadProgressEvent,
+    FileDownloadResult,
+    TaskInfo
+} from '../shared/types/models'
 
 type iapi = {
     scrape: {
@@ -82,6 +89,14 @@ type iapi = {
     }
     shell: {
         openExternal: (url: string) => Promise<void>
+    }
+    backup: {
+        inspect: () => Promise<Result<{ manifest: BackupManifest | null }>>
+        save: (options: BackupSaveOptions) => Promise<Result<void>>
+        load: (options: BackupLoadOptions) => Promise<Result<void>>
+        isLocked: () => Promise<Result<boolean>>
+        purge: () => Promise<Result<void>>
+        onTaskUpdate: (handler: (task: TaskInfo) => void) => () => void
     }
 }
 

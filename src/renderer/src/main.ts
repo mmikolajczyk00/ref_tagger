@@ -12,6 +12,8 @@ import { CommandRegistry, UndoRedoManager } from './core/command_system/UndoRedo
 import { HotkeysManager } from './core/command_system/HotkeysManager'
 import { CommandService } from './core/command_system/CommandService'
 import DialogService from 'primevue/dialogservice'
+import ToastService from 'primevue/toastservice'
+import ConfirmationService from 'primevue/confirmationservice'
 import { useCanvasStore } from './features/canvas/ts/useCanvasStore'
 import { useTabStore } from './core/stores/useTabStore'
 import { AppTabType } from './features/tab_system/Tabs'
@@ -26,6 +28,8 @@ const pinia = createPinia()
 const app = createApp(App)
 
 app.use(DialogService)
+app.use(ToastService)
+app.use(ConfirmationService)
 app.use(pinia)
 
 app.use(VueLazyload, {

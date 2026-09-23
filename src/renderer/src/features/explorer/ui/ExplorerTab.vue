@@ -20,8 +20,10 @@ import MediaPreviewOverlay from '@renderer/core/ui/MediaPreviewOverlay.vue'
 import { isPreviewableMediaType, toPreviewSrc } from '@renderer/core/utils/mediaPreview'
 import type { PreviewItem } from '@renderer/core/utils/mediaPreview'
 import type { MediaFile } from '@shared/types/models'
+import { useTaskStore } from '@renderer/core/stores/useTaskStore'
 
 const canvasStore = useCanvasStore()
+const taskStore = useTaskStore()
 const dialog = useDialog()
 const commandService = inject<CommandService>('commandService')!
 const props = defineProps<ExplorerTabPayload>()
@@ -90,9 +92,9 @@ const canvasMenuItems = ref([
     { label: 'Delete', command: () => console.log('delete canvas') }
 ])
 
-const mediaMenuItems = ref([
+const mediaMenuItems = computed(() => [
     { label: 'Preview', command: () => contextFile.value && openPreview(contextFile.value) },
-    { label: 'Delete selected', command: onDeleteSelected },
+    { label: 'Delete selected', command: onDeleteSelected, disabled: taskStore.isLocked },
     { label: 'Add to canvas', command: onAddToCanvas },
     { label: 'Add to new canvas', command: onAddToNewCanvas }
 ])

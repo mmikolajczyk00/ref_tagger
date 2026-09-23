@@ -1,17 +1,24 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
 import { updatePrimaryPalette } from '@primeuix/themes'
+import { useToast } from 'primevue/usetoast'
 import { useTagStore } from './core/stores/useTagStore'
 import { useTagsProcessingStore } from './core/stores/useTagsProcessingStore'
 import { useSettingsStore } from './core/stores/useSettingsStore'
+import { useTaskStore } from './core/stores/useTaskStore'
 import { primaryPalettes } from './core/theme/presets'
 import TabBar from './features/tab_system/ui/TabBar.vue'
 import Tabwindow from './features/tab_system/ui/Tabwindow.vue'
+import SettingsOverlay from './features/settings/ui/SettingsOverlay.vue'
 import DynamicDialog from 'primevue/dynamicdialog'
 
 const tagStore = useTagStore()
 const tpStore = useTagsProcessingStore()
 const settings = useSettingsStore()
+const taskStore = useTaskStore()
+const toast = useToast()
+
+taskStore.bindToast(toast)
 
 function applyPrimaryPalette(palette: Record<string, string>) {
     const root = document.documentElement
@@ -57,5 +64,8 @@ onMounted(() => {
         <TabBar></TabBar>
         <Tabwindow></Tabwindow>
         <DynamicDialog />
+        <Toast />
+        <ConfirmDialog />
+        <SettingsOverlay v-if="settings.settingsOpen" @close="settings.settingsOpen = false" />
     </div>
 </template>

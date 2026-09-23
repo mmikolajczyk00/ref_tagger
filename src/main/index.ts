@@ -5,12 +5,15 @@ import { Readable } from 'stream'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { LocalDatabaseService } from './services/LocalDatabaseService'
+import { TaskManager } from './services/TaskManager'
+import { BackupService } from './services/BackupService'
 import { FILE_ROOT_DIR } from './env'
 import { registerIPCFilesHandlers } from './ipc/handleIPCFiles'
 import { registerIPCTagsHandlers } from './ipc/handleIPCTags'
 import { registerIPCCanvasesHandlers } from './ipc/handleIPCCanvases'
 import { registerIPCTagsProcessingHandlers } from './ipc/handleIPCTagsProcessing'
 import { registerIPCDownloadHandlers } from './ipc/handleIPCDownload'
+import { registerIPCBackupHandlers } from './ipc/handleIPCBackup'
 
 protocol.registerSchemesAsPrivileged([
     {
@@ -168,6 +171,8 @@ app.whenReady().then(() => {
 
     const userDataPath = app.getPath('userData')
     const dbService = new LocalDatabaseService(userDataPath, FILE_ROOT_DIR)
+    const taskManager = new TaskManager()
+    const backupService = new BackupService(dbService, taskManager)
 
     dbService.fileService
         .purgeDeletedFiles()
@@ -175,15 +180,17 @@ app.whenReady().then(() => {
 
     registerIPCFilesHandlers(
         ipcMain,
+        dbService,
         dbService.fileService,
         dbService.tagService,
         dbService.searchService,
         dbService.fileStorage
     )
-    registerIPCTagsHandlers(ipcMain, dbService.tagService)
-    registerIPCDownloadHandlers(ipcMain, dbService.fileStorage)
-    registerIPCCanvasesHandlers(ipcMain, dbService.canvasService)
-    registerIPCTagsProcessingHandlers(ipcMain, dbService.tagsProcessingService)
+    registerIPCTagsHandlers(ipcMain, dbService, dbService.tagService)
+    registerIPCDownloadHandlers(ipcMain, dbService, dbService.fileStorage)
+    registerIPCCanvasesHandlers(ipcMain, dbService, dbService.canvasService)
+    registerIPCTagsProcessingHandlers(ipcMain, dbService, dbService.tagsProcessingService)
+    registerIPCBackupHandlers(ipcMain, dbService, backupService)
 
     ipcMain.handle('shell:openExternal', (_event, url: string) => {
         return shell.openExternal(url)

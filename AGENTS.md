@@ -42,3 +42,4 @@ Do not run git commands unless explicitly asked by the user
 - `media://` custom protocol serves local files via `path` query param — used for displaying media in renderer without `file://` restrictions
 - `postinstall` runs `electron-builder install-app-deps` to rebuild native modules; don't skip it
 - `vue-tsc` is used for renderer typechecking (NOT plain `tsc`)
+- **Never pass Vue reactive proxies through IPC.** `ref([...])` / `reactive()` wrap values in a `Proxy`, and `ipcRenderer.invoke` uses structured clone, which cannot clone proxies — it throws `An object could not be cloned`. When calling `window.api.*` with store/ref state, pass plain data: spread arrays (`[...ref.value]`), `toRaw(obj)`, or build fresh plain objects/literals. Primitives are fine as-is.

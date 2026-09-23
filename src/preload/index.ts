@@ -2,11 +2,14 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { Result } from '../shared/types/api'
 import {
+    BackupLoadOptions,
+    BackupSaveOptions,
     DownloadInfoEvent,
     DownloadProgressEvent,
     FileDownloadResult,
     TagOperation,
     TagSearchQuery,
+    TaskInfo,
     UploadFilePayload
 } from '../shared/types/models'
 
@@ -125,6 +128,21 @@ const api = {
 
     shell: {
         openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url)
+    },
+
+    backup: {
+        inspect: () => ipcRenderer.invoke('api:backup:inspect'),
+        save: (options: BackupSaveOptions) => ipcRenderer.invoke('api:backup:save', options),
+        load: (options: BackupLoadOptions) => ipcRenderer.invoke('api:backup:load', options),
+        isLocked: () => ipcRenderer.invoke('api:backup:isLocked'),
+        purge: () => ipcRenderer.invoke('api:backup:purge'),
+        onTaskUpdate: (handler: (task: TaskInfo) => void) => {
+            const listener = (_: unknown, payload: TaskInfo) => handler(payload)
+            ipcRenderer.on('api:tasks:updated', listener)
+            return () => {
+                ipcRenderer.off('api:tasks:updated', listener)
+            }
+        }
     }
 }
 

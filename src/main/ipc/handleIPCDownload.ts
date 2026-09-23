@@ -1,11 +1,13 @@
 import { BrowserWindow, IpcMain } from 'electron'
 import { FileStorageService } from '../services/FileStorageService'
+import { LocalDatabaseService } from '../services/LocalDatabaseService'
 import { FileDownloadResult, VideoInfo } from '../../shared/types/models'
 import { downloadFile } from '../services/FileDownloadService'
 import { Result } from '../../shared/types/api'
 
 export function registerIPCDownloadHandlers(
     ipcMain: IpcMain,
+    dbService: LocalDatabaseService,
     fileStorage: FileStorageService
 ): void {
     ipcMain.handle(
@@ -14,6 +16,9 @@ export function registerIPCDownloadHandlers(
             event,
             payload: { url: string; sessionId: string }
         ): Promise<Result<FileDownloadResult>> => {
+            if (dbService.isLocked) {
+                return Promise.resolve({ success: false, error: 'Database is locked' })
+            }
             const win = BrowserWindow.fromWebContents(event.sender)
             const onProgress = (percentage: number) => {
                 if (win && !win.isDestroyed()) {
@@ -31,7 +36,7 @@ export function registerIPCDownloadHandlers(
                     })
                 }
             }
-            return downloadFile(payload.url, fileStorage.getRootDir(), onProgress, onInfo)
+            return downloadFile(payload.url, fileStorage.getFilesDir(), onProgress, onInfo)
         }
     )
 }

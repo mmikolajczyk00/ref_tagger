@@ -40,6 +40,8 @@ export const useSettingsStore = defineStore('settings', () => {
 
     const themeMode = ref<ThemeMode>(saved.themeMode)
     const themeId = ref<ThemeId>(saved.themeId)
+    const settingsOpen = ref(false)
+    const activeSettingsField = ref('palette')
 
     watch([themeMode, themeId], ([mode, id]) => {
         persistSettings({ themeMode: mode, themeId: id })
@@ -80,5 +82,14 @@ export const useSettingsStore = defineStore('settings', () => {
         }
     }
 
-    return { themeMode, themeId, setThemeMode, setThemeId, toggleDark, initTheme }
+    return {
+        themeMode,
+        themeId,
+        settingsOpen,
+        activeSettingsField,
+        setThemeMode,
+        setThemeId,
+        toggleDark,
+        initTheme
+    }
 })

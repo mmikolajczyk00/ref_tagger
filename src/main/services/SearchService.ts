@@ -1,38 +1,7 @@
 import { PrismaClient } from '../../generated/prisma/client'
 import { FileService } from './FileService'
 import { Result } from '../../shared/types/api'
-import { MediaType, PaginatedMediaFiles, TagSearchQuery } from '../../shared/types/models'
-
-type FileRow = {
-    id: number
-    filePath: string
-    fileName: string
-    mediaType: string
-    sourceUrl: string | null
-    createdAt: Date
-    deleted: boolean
-    tags: {
-        fileId: number
-        tagId: number
-        tag: { id: number; name: string; color: string }
-    }[]
-}
-
-function fileToResponse(f: FileRow) {
-    return {
-        id: f.id,
-        fileName: f.fileName,
-        filePath: f.filePath,
-        mediaType: f.mediaType as MediaType,
-        sourceUrl: f.sourceUrl ?? undefined,
-        createdAt: f.createdAt instanceof Date ? f.createdAt.toISOString() : String(f.createdAt),
-        tags: f.tags.map((ft) => ({ id: ft.tag.id, name: ft.tag.name, color: ft.tag.color }))
-    }
-}
-
-function filesToEntries(files: FileRow[]): Array<[number, ReturnType<typeof fileToResponse>]> {
-    return files.map((f) => [f.id, fileToResponse(f)])
-}
+import { PaginatedMediaFiles, TagSearchQuery } from '../../shared/types/models'
 
 export class SearchService {
     constructor(
@@ -82,12 +51,12 @@ export class SearchService {
             const fileById = new Map(files.map((f) => [f.id, f]))
             const orderedFiles = candidateIds
                 .map((id) => fileById.get(id))
-                .filter((f): f is FileRow => f !== undefined)
+                .filter((f) => f !== undefined)
 
             return {
                 success: true,
                 data: {
-                    data: filesToEntries(orderedFiles),
+                    data: orderedFiles.map((f) => [f.id, this.fileService.fileToResponse(f)]),
                     total,
                     page,
                     limit

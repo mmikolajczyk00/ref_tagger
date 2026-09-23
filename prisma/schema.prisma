@@ -9,7 +9,7 @@ datasource db {
 
 model File {
   id        Int      @id @default(autoincrement())
-  filePath  String   @unique @map("file_path")
+  ext       String
   fileName  String   @map("file_name")
   mediaType String   @map("media_type")
   sourceUrl String?  @map("source_url")
@@ -60,7 +60,6 @@ model FileTag {
 model Canvas {
   id        Int      @id @default(autoincrement())
   name      String   @unique
-  dataPath  String   @map("data_path")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
