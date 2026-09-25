@@ -147,11 +147,25 @@ export interface BackupSaveOptions {
     domains: BackupDomain[]
 }
 
+export type FileConflict = 'skip' | 'merge-tags' | 'replace'
+export type CanvasConflict = 'skip' | 'rename' | 'replace'
+export type BlacklistConflict = 'skip' | 'rename' | 'merge-tags' | 'replace'
+export type AliasConflict = 'skip' | 'merge-tags' | 'replace'
+
 export interface BackupLoadOptions {
-    mode: 'replace' | 'append'
-    domains: BackupDomain[]
-    skipSameSourceUrl: boolean
-    skipSameName: boolean
+    mode: 'replace' | 'advanced'
+    domains: BackupDomain[] // for advanced: subset of manifest domains
+    addFiles: boolean
+    fileConflict: FileConflict
+    addTags: boolean
+    replaceTags: boolean
+    importFileLinks: boolean // file_tags domain
+    addCanvases: boolean
+    canvasConflict: CanvasConflict
+    addBlacklists: boolean
+    blacklistConflict: BlacklistConflict
+    addAliases: boolean
+    aliasConflict: AliasConflict
 }
 
 export interface TaskInfo {
