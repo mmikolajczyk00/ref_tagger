@@ -31,9 +31,9 @@ class CloseActiveTabCommand implements ICommand {
 
     constructor() {}
 
-    execute(): void {
+    async execute(): Promise<void> {
         const tabStore = useTabStore()
-        tabStore.closeActiveTab()
+        await tabStore.closeActiveTab()
     }
     undo(): void {}
 }
@@ -43,9 +43,9 @@ class ReopenTabCommand implements ICommand {
 
     constructor() {}
 
-    execute(): void {
+    async execute(): Promise<void> {
         const tabStore = useTabStore()
-        tabStore.reopenTab()
+        await tabStore.reopenTab()
     }
     undo(): void {}
 }

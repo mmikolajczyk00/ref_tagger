@@ -1,8 +1,11 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useTabStore } from '../../../core/stores/useTabStore'
+import { dialogService } from '../../../core/dialogService'
+import { toastService } from '../../../core/toastService'
 import { AppTabType } from '@renderer/features/tab_system/Tabs'
 import CanvasScene from './scene/CanvasScene'
+import SaveCanvasDialog from '../ui/SaveCanvasDialog.vue'
 import { Canvas } from '@shared/types/models'
 import { validateCanvasName } from './validateCanvasName'
 
@@ -119,23 +122,37 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         return pendingSaveRequests.value.get(id)
     }
 
-    async function saveCanvas(id: number, name: string, opts?: { forceAsNew?: boolean }) {
+    async function saveCanvas(
+        id: number,
+        name: string,
+        opts?: { forceAsNew?: boolean }
+    ): Promise<boolean> {
         const scene = openCanvases.value.get(id)
         if (!scene) {
             console.error('Canvas not found:', id)
-            return
+            return false
         }
         const data = scene.saveToJSON()
         if (!scene.isPersisted || opts?.forceAsNew) {
             const validation = validateCanvasName(name, getExistingNames(scene.id))
             if (!validation.valid) {
                 console.error('Canvas name validation failed (save):', validation.message)
-                return
+                toastService.add({
+                    severity: 'error',
+                    summary: 'Save failed',
+                    detail: validation.message
+                })
+                return false
             }
             const result = await window.api.canvases.create(validation.name, data)
             if (!result.success) {
                 console.error('Failed to create canvas:', result.error)
-                return
+                toastService.add({
+                    severity: 'error',
+                    summary: 'Save failed',
+                    detail: `Could not create canvas: ${result.error}`
+                })
+                return false
             }
             const newId = result.data.id
             openCanvases.value.delete(scene.id)
@@ -160,11 +177,47 @@ export const useCanvasStore = defineStore('canvasStore', () => {
             const result = await window.api.canvases.saveData(id, data)
             if (!result.success) {
                 console.error('Failed to save canvas:', result.error)
-                return
+                toastService.add({
+                    severity: 'error',
+                    summary: 'Save failed',
+                    detail: `Could not save canvas: ${result.error}`
+                })
+                return false
             }
             console.log('Canvas saved:', id)
         }
         scene.unsavedChanges = false
+        return true
+    }
+
+    // Saves the canvas by id, prompting for a name via SaveCanvasDialog when the
+    // canvas is not yet persisted (or a new copy is forced). Returns false if the
+    // scene is missing, the user bails out of the name dialog, or the save itself
+    // failed; true only when the save succeeded.
+    async function saveCanvasWithPrompt(canvasId: number, forceAs = false): Promise<boolean> {
+        const scene = openCanvases.value.get(canvasId)
+        if (!scene) return false
+
+        if (scene.isPersisted && !forceAs) {
+            return await saveCanvas(scene.id, scene.name)
+        }
+
+        const initialName = scene.name?.trim() || 'Untitled canvas'
+        const existingNames = getExistingNames()
+
+        const newName = await new Promise<string | undefined>((resolve) => {
+            dialogService.open(SaveCanvasDialog, {
+                data: {
+                    initialName,
+                    existingNames: Array.from(existingNames)
+                },
+                onClose: (options) => resolve(options?.data?.name as string | undefined)
+            })
+        })
+
+        if (!newName) return false
+
+        return await saveCanvas(scene.id, newName, { forceAsNew: forceAs })
     }
 
     async function renameCanvas(id: number, newName: string) {
@@ -205,7 +258,7 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         availableCanvases.value.delete(id)
         openCanvases.value.delete(id)
         const tabStore = useTabStore()
-        tabStore.closeTabWhere((t) => t.type === AppTabType.Canvas && t.data?.canvasId === id)
+        await tabStore.closeTabWhere((t) => t.type === AppTabType.Canvas && t.data?.canvasId === id)
     }
 
     function closeCanvas(id: number) {
@@ -225,6 +278,7 @@ export const useCanvasStore = defineStore('canvasStore', () => {
         fetchCanvases,
         fetchAndOpenCanvas,
         saveCanvas,
+        saveCanvasWithPrompt,
         renameCanvas,
         deleteCanvas,
         closeCanvas,

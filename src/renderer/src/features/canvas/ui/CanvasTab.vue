@@ -1,4 +1,3 @@
-normalize
 <script setup lang="ts">
 import {
     computed,
@@ -10,7 +9,6 @@ import {
     useTemplateRef,
     watch
 } from 'vue'
-import { useDialog } from 'primevue/usedialog'
 import ContextMenu from 'primevue/contextmenu'
 import CanvasElementWrapper from './CanvasElementWrapper.vue'
 import {
@@ -30,7 +28,6 @@ import { CANVAS_COMMANDS } from '../commands/CanvasCmd'
 import GroupElement from './GroupElement.vue'
 import MediaFileElement from './MediaFileElement.vue'
 import NoteElement from './NoteElement.vue'
-import SaveCanvasDialog from './SaveCanvasDialog.vue'
 
 export interface CanvasTabProps {
     canvasId: number
@@ -39,7 +36,6 @@ export interface CanvasTabProps {
 const props = defineProps<CanvasTabProps>()
 
 const canvasStore = useCanvasStore()
-const dialog = useDialog()
 const commandService = inject<CommandService>('commandService')!
 const canvasMenu = ref()
 
@@ -80,8 +76,6 @@ const ctxMenuItems = computed(() => [
 watch(
     () => canvasStore.pendingSaveRequests.has(props.canvasId!),
     async (needsSave) => {
-        console.log(needsSave)
-
         if (!needsSave) return
 
         const scene = canvasStore.openCanvases.get(props.canvasId!)
@@ -93,28 +87,7 @@ watch(
         const req = canvasStore.getSaveRequest(props.canvasId!)
         const forceAs = req?.forceAs ?? false
 
-        if (scene.isPersisted && !forceAs) {
-            await canvasStore.saveCanvas(scene.id, scene.name)
-            canvasStore.clearSaveRequest(props.canvasId!)
-            return
-        }
-
-        const initialName = scene.name?.trim() || 'Untitled canvas'
-        const existingNames = canvasStore.getExistingNames()
-
-        const newName = await new Promise<string | undefined>((resolve) => {
-            dialog.open(SaveCanvasDialog, {
-                data: {
-                    initialName,
-                    existingNames: Array.from(existingNames)
-                },
-                onClose: (options) => resolve(options?.data?.name as string | undefined)
-            })
-        })
-
-        if (newName) {
-            await canvasStore.saveCanvas(props.canvasId!, newName, { forceAsNew: forceAs })
-        }
+        await canvasStore.saveCanvasWithPrompt(props.canvasId!, forceAs)
         canvasStore.clearSaveRequest(props.canvasId!)
     }
 )
