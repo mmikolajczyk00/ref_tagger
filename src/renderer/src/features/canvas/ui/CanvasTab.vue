@@ -1,6 +1,17 @@
+normalize
 <script setup lang="ts">
-import { computed, onActivated, onDeactivated, onMounted, useTemplateRef, watch } from 'vue'
+import {
+    computed,
+    inject,
+    onActivated,
+    onDeactivated,
+    onMounted,
+    ref,
+    useTemplateRef,
+    watch
+} from 'vue'
 import { useDialog } from 'primevue/usedialog'
+import ContextMenu from 'primevue/contextmenu'
 import CanvasElementWrapper from './CanvasElementWrapper.vue'
 import {
     CanvasElement,
@@ -14,6 +25,8 @@ import { initMouseAction, Vector2 } from '../ts/scene/CanvasUtils'
 import SelectionBoxOverlay from './SelectionBoxOverlay.vue'
 import { useCanvasStore } from '../ts/useCanvasStore'
 import { MouseButton } from '../../../core/utils/general'
+import { CommandService } from '../../../core/command_system/CommandService'
+import { CANVAS_COMMANDS } from '../commands/CanvasCmd'
 import GroupElement from './GroupElement.vue'
 import MediaFileElement from './MediaFileElement.vue'
 import NoteElement from './NoteElement.vue'
@@ -27,6 +40,42 @@ const props = defineProps<CanvasTabProps>()
 
 const canvasStore = useCanvasStore()
 const dialog = useDialog()
+const commandService = inject<CommandService>('commandService')!
+const canvasMenu = ref()
+
+const ctxMenuItems = computed(() => [
+    {
+        label: 'Delete',
+        icon: 'pi pi-trash',
+        command: () => {
+            commandService.execute(CANVAS_COMMANDS.DELETE)
+        }
+    },
+    {
+        label: 'Arrange',
+        icon: 'pi pi-th-large',
+        shortcut: 'Alt+A',
+        command: () => {
+            commandService.execute(CANVAS_COMMANDS.ARRANGE)
+        }
+    },
+    {
+        label: 'Normalize Size',
+        icon: 'pi pi-arrows-alt',
+        shortcut: 'Alt+S',
+        command: () => {
+            commandService.execute(CANVAS_COMMANDS.NORMALIZE_SIZE)
+        }
+    },
+    {
+        label: 'Normalize Scale',
+        icon: 'pi pi-expand',
+        shortcut: 'Alt+Shift+S',
+        command: () => {
+            commandService.execute(CANVAS_COMMANDS.NORMALIZE_SCALE)
+        }
+    }
+])
 
 watch(
     () => canvasStore.pendingSaveRequests.has(props.canvasId!),
@@ -75,14 +124,14 @@ const canvasMediaFileElements = computed(() => canvasScene.mediaFileElements)
 const canvasGroupElements = computed(() => canvasScene.groupElements)
 const canvasNoteElements = computed(() => canvasScene.noteElements)
 
-const sortedCanvasElements = computed(() => {
+const sortedCanvasElements = computed<CanvasElement[]>(() => {
     const all = [
         ...canvasMediaFileElements.value,
         ...canvasGroupElements.value,
         ...canvasNoteElements.value
     ]
     all.sort((a, b) => (a.transform.zIndex ?? 0) - (b.transform.zIndex ?? 0))
-    return all
+    return all.map((e) => e as unknown as CanvasElement)
 })
 
 const canvasBg = useTemplateRef('canvas-bg')
@@ -191,7 +240,7 @@ function handleBgClick(e: MouseEvent) {
                 canvasScene.selectionBox.end()
             }
         )
-    } else if (e.button == MouseButton.MIDDLE || e.button == MouseButton.RIGHT) {
+    } else if (e.button == MouseButton.MIDDLE) {
         initMouseAction(
             () => {
                 canvasScene.panStart()
@@ -214,6 +263,19 @@ function handleWheel(e: WheelEvent) {
     const rect = container.getBoundingClientRect()
 
     canvasScene.zoomUpdate(e.deltaY, { x: e.clientX - rect.left, y: e.clientY - rect.top })
+}
+
+function onBackgroundContextMenu(e: MouseEvent) {
+    canvasMenu.value?.show(e)
+}
+
+function onElementContextMenu(el: CanvasElement, e: MouseEvent) {
+    el = el.getOrGetSelectableAncestor()
+    if (!el) return
+    if (!el.isSelected) {
+        canvasScene.selectElement(el, false)
+    }
+    canvasMenu.value?.show(e)
 }
 
 function handleResizeStart(ev: { axis: CARDINAL_DIRECTIONS; e: MouseEvent }) {
@@ -262,6 +324,7 @@ const canvasBgStyle = computed(() => {
         class="relative size-full overflow-clip"
         @mousedown="handleBgClick($event)"
         @wheel="handleWheel($event)"
+        @contextmenu.prevent="onBackgroundContextMenu($event)"
     >
         <div class="absolute bottom-0 left-0 z-50">
             {{ canvasScene.mousePos }} || {{ canvasScene.zoom }}
@@ -289,6 +352,7 @@ const canvasBgStyle = computed(() => {
                     :is-selected="el.isSelected"
                     @mousedown.left.stop="handleElementMouseDown(el, $event)"
                     @dblclick.left.stop="handleDoubleClick(el, $event)"
+                    @contextmenu.prevent.stop="onElementContextMenu(el, $event)"
                 >
                     <MediaFileElement
                         v-if="el instanceof MediaFileCanvasElement"
@@ -305,5 +369,6 @@ const canvasBgStyle = computed(() => {
                 </CanvasElementWrapper>
             </div>
         </div>
+        <ContextMenu ref="canvasMenu" :model="ctxMenuItems" />
     </div>
 </template>

@@ -7,9 +7,12 @@ import { NoteTransformSnapshot, RotActionTransform } from '../ts/scene/Transform
 
 export const CANVAS_COMMANDS = {
     ARRANGE: 'arrange',
+    DELETE: 'delete',
     GROUP: 'group',
     UNGROUP: 'ungroup',
     MOVE: 'move',
+    NORMALIZE_SIZE: 'normalize_size',
+    NORMALIZE_SCALE: 'normalize_scale',
     BRING_TO_FRONT: 'bring_to_front',
     RESIZE: 'resize',
     ROTATE: 'rotate',
@@ -219,18 +222,162 @@ class ArrangeCommand implements ICommand {
     undoable: boolean = true
     timestamp: number | undefined
     private elements: Array<string>
+    private oldPositions = new Map<string, Coordinates>()
+    private newPositions = new Map<string, Coordinates>()
 
     constructor(private canvasScene: CanvasScene) {
-        this.elements = this.canvasScene.selectedElements.map((el) => el.elementId)
+        this.elements = this.canvasScene.getSelectedOrAll().map((el) => el.elementId)
+        this.elements.forEach((id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                this.oldPositions.set(id, el.transform.position.asCoordinates())
+            }
+        })
     }
 
     execute(): void {
+        if (this.elements.length === 0) return
         this.canvasScene.unsavedChanges = true
-        console.log('execute', this.canvasScene, this.elements)
+
+        this.canvasScene.arrange(this.canvasScene.getElementsById(this.elements))
+
+        this.newPositions.clear()
+        this.elements.forEach((id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                this.newPositions.set(id, el.transform.position.asCoordinates())
+            }
+        })
+        this.canvasScene.onSelectionChange()
     }
     undo(): void {
+        if (this.oldPositions.size === 0) return
         this.canvasScene.unsavedChanges = true
-        console.log('undo')
+        this.oldPositions.forEach((pos, id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                el.transform.setPos(pos)
+            }
+        })
+        this.canvasScene.onSelectionChange()
+    }
+}
+
+class DeleteCommand implements ICommand {
+    undoable: boolean = true
+    timestamp: number | undefined
+    private removed: CanvasElement[]
+
+    constructor(private canvasScene: CanvasScene) {
+        this.removed = this.canvasScene.getSelectedOrAll()
+    }
+
+    execute(): void {
+        if (this.removed.length === 0) return
+        this.canvasScene.unsavedChanges = true
+        this.canvasScene.removeElements(this.removed)
+    }
+    undo(): void {
+        if (this.removed.length === 0) return
+        this.canvasScene.unsavedChanges = true
+        this.canvasScene.restoreElements(this.removed)
+    }
+}
+
+class NormalizeSizeCommand implements ICommand {
+    undoable: boolean = true
+    timestamp: number | undefined
+    private elements: Array<string>
+    private oldScales = new Map<string, number>()
+    private newScales = new Map<string, number>()
+
+    constructor(private canvasScene: CanvasScene) {
+        this.elements = this.canvasScene.getSelectedOrAll().map((el) => el.elementId)
+        this.elements.forEach((id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                this.oldScales.set(id, el.transform.scale)
+            }
+        })
+    }
+
+    execute(): void {
+        if (this.elements.length === 0) return
+        this.canvasScene.unsavedChanges = true
+
+        let target = 0
+        this.elements.forEach((id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                target = Math.max(
+                    target,
+                    Math.max(el.transform.scaledWidth(), el.transform.scaledHeight())
+                )
+            }
+        })
+
+        this.newScales.clear()
+        this.elements.forEach((id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (!el) return
+            const longerEdge = Math.max(el.transform.scaledWidth(), el.transform.scaledHeight())
+            if (longerEdge > 0 && longerEdge < target) {
+                el.transform.rescale(target / longerEdge)
+            }
+            this.newScales.set(id, el.transform.scale)
+        })
+        this.canvasScene.onSelectionChange()
+    }
+    undo(): void {
+        if (this.oldScales.size === 0) return
+        this.canvasScene.unsavedChanges = true
+        this.oldScales.forEach((scale, id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                el.transform.setScale(scale)
+            }
+        })
+        this.canvasScene.onSelectionChange()
+    }
+}
+
+class NormalizeScaleCommand implements ICommand {
+    undoable: boolean = true
+    timestamp: number | undefined
+    private elements: Array<string>
+    private oldScales = new Map<string, number>()
+
+    constructor(private canvasScene: CanvasScene) {
+        this.elements = this.canvasScene.getSelectedOrAll().map((el) => el.elementId)
+        this.elements.forEach((id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                this.oldScales.set(id, el.transform.scale)
+            }
+        })
+    }
+
+    execute(): void {
+        if (this.elements.length === 0) return
+        this.canvasScene.unsavedChanges = true
+        this.elements.forEach((id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el && el.transform.scale !== 1) {
+                el.transform.setScale(1)
+            }
+        })
+        this.canvasScene.onSelectionChange()
+    }
+    undo(): void {
+        if (this.oldScales.size === 0) return
+        this.canvasScene.unsavedChanges = true
+        this.oldScales.forEach((scale, id) => {
+            const el = this.canvasScene.elementsDict.get(id)
+            if (el) {
+                el.transform.setScale(scale)
+            }
+        })
+        this.canvasScene.onSelectionChange()
     }
 }
 
@@ -407,14 +554,19 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
         if (!scene) return false
         return scene.selectedElements.length > 0
     }
+    const hasCanvasElements = () => {
+        const scene = activeScene()
+        if (!scene) return false
+        return scene.getAllSelectable().length > 0
+    }
 
     commandRegistry.register({
         id: CANVAS_COMMANDS.ARRANGE,
         label: 'Arrange',
         scope,
         showInPalette: true,
-        keybind: 'shift+a',
-        when: hasSelectedElements,
+        keybind: 'alt+a',
+        when: hasCanvasElements,
         create: () => new ArrangeCommand(activeScene()!)
     })
 
@@ -524,5 +676,35 @@ export function registerCanvasCommands(commandRegistry: CommandRegistry) {
         keybind: '',
         when: hasSelectedElements,
         create: () => new BringToFrontCommand(activeScene()!)
+    })
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.NORMALIZE_SIZE,
+        label: 'Normalize Size',
+        scope,
+        showInPalette: true,
+        keybind: 'alt+s',
+        when: hasCanvasElements,
+        create: () => new NormalizeSizeCommand(activeScene()!)
+    })
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.NORMALIZE_SCALE,
+        label: 'Normalize Scale',
+        scope,
+        showInPalette: true,
+        keybind: 'alt+shift+s',
+        when: hasCanvasElements,
+        create: () => new NormalizeScaleCommand(activeScene()!)
+    })
+
+    commandRegistry.register({
+        id: CANVAS_COMMANDS.DELETE,
+        label: 'Delete',
+        scope,
+        showInPalette: true,
+        keybind: 'delete',
+        when: hasCanvasElements,
+        create: () => new DeleteCommand(activeScene()!)
     })
 }

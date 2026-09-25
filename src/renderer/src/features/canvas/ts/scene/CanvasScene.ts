@@ -11,6 +11,7 @@ import potpack from 'potpack'
 import { CmdService } from '@renderer/main'
 import { CANVAS_COMMANDS } from '../../commands/CanvasCmd'
 import {
+    calculateBBoxByChildren,
     Coordinates,
     pushCanvElToArray,
     removeCanvElFromArray,
@@ -108,6 +109,79 @@ export default class CanvasScene {
         files.forEach((f) => {
             this.removeMediaFile(f)
         })
+    }
+
+    // removes a single element (and its whole subtree for groups), without unlinking to root
+    removeElement(el: CanvasElement) {
+        if (el instanceof GroupCanvasElement) {
+            el.children.slice().forEach((c) => this.removeElement(c))
+        }
+
+        if (el instanceof MediaFileCanvasElement) {
+            this.mediaFileElements = this.mediaFileElements.filter(
+                (e) => e.elementId !== el.elementId
+            )
+        } else if (el instanceof NoteCanvasElement) {
+            this.noteElements = this.noteElements.filter((e) => e.elementId !== el.elementId)
+        } else if (el instanceof GroupCanvasElement) {
+            this.groupElements = this.groupElements.filter((g) => g.elementId !== el.elementId)
+        }
+
+        this.elementsDict.delete(el.elementId)
+
+        const parentId = el.transform.parentTransform?.elementId
+        if (parentId && parentId !== 'root') {
+            const parent = this.elementsDict.get(parentId)
+            if (parent instanceof GroupCanvasElement) {
+                parent.transform.children.delete(el.elementId)
+            }
+        }
+    }
+
+    // removes the full (deduped) subtrees of the given roots at once
+    removeElements(els: CanvasElement[]) {
+        const removedIds = new Set<string>()
+        const toRemove: CanvasElement[] = []
+
+        for (const root of els) {
+            for (const el of this.collectSubtree(root)) {
+                if (!removedIds.has(el.elementId)) {
+                    removedIds.add(el.elementId)
+                    toRemove.push(el)
+                }
+            }
+        }
+
+        toRemove.forEach((el) => this.removeElement(el))
+
+        this.selectedElements = this.selectedElements.filter((e) => !removedIds.has(e.elementId))
+
+        this.onSelectionChange()
+    }
+
+    // re-inserts a previously removed element (undo path); element objects keep their state
+    restoreElement(el: CanvasElement) {
+        if (el instanceof MediaFileCanvasElement) {
+            this.mediaFileElements.push(el)
+        } else if (el instanceof NoteCanvasElement) {
+            this.noteElements.push(el)
+        } else if (el instanceof GroupCanvasElement) {
+            this.groupElements.push(el)
+        }
+
+        this.elementsDict.set(el.elementId, el)
+
+        const parentId = el.transform.parentTransform?.elementId
+        if (parentId && parentId !== 'root') {
+            const parent = this.elementsDict.get(parentId)
+            if (parent instanceof GroupCanvasElement) {
+                parent.transform.children.set(el.elementId, el.transform)
+            }
+        }
+    }
+
+    restoreElements(els: CanvasElement[]) {
+        els.forEach((el) => this.restoreElement(el))
     }
 
     private collectSubtree(root: CanvasElement): CanvasElement[] {
@@ -416,9 +490,15 @@ export default class CanvasScene {
     }
 
     arrange(elements: Array<CanvasElement>) {
+        if (elements.length === 0) return
         const boxes = [] as any
 
-        const pivot = this.transformBox.transform.getBottomLeft()
+        let pivot = this.transformBox.transform.getBottomLeft()
+        if (this.selectedElements.length === 0) {
+            // no selection -> arrange uses the elements' own union box as the pivot
+            const bbox = calculateBBoxByChildren(elements)
+            pivot = new Vector2(bbox.left, bbox.bottom)
+        }
 
         for (let i = 0; i < elements.length; i++) {
             const element = elements[i]
