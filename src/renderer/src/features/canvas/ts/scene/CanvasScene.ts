@@ -493,11 +493,11 @@ export default class CanvasScene {
         if (elements.length === 0) return
         const boxes = [] as any
 
-        let pivot = this.transformBox.transform.getBottomLeft()
+        let pivot = this.transformBox.transform.getTopLeft()
         if (this.selectedElements.length === 0) {
             // no selection -> arrange uses the elements' own union box as the pivot
             const bbox = calculateBBoxByChildren(elements)
-            pivot = new Vector2(bbox.left, bbox.bottom)
+            pivot = new Vector2(bbox.left, bbox.top)
         }
 
         for (let i = 0; i < elements.length; i++) {
@@ -507,9 +507,9 @@ export default class CanvasScene {
 
             boxes.push({
                 w: bbox.right - bbox.left,
-                h: bbox.top - bbox.bottom,
+                h: bbox.bottom - bbox.top,
                 id: element.elementId,
-                offset: element.transform.position.subtract(new Vector2(bbox.left, bbox.bottom))
+                offset: element.transform.position.subtract(new Vector2(bbox.left, bbox.top))
             })
         }
 
@@ -542,6 +542,10 @@ export default class CanvasScene {
 
     getElementsById(elements: string[]) {
         return elements.map((id) => this.elementsDict.get(id)!)
+    }
+
+    serializeSelected() {
+        return this.selectedElements.map((x) => x.toJSON())
     }
 
     saveToJSON() {

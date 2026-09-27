@@ -94,6 +94,7 @@ const canvasMenuItems = ref([
 
 const mediaMenuItems = computed(() => [
     { label: 'Preview', command: () => contextFile.value && openPreview(contextFile.value) },
+    { label: 'Copy', command: () => commandService.execute(EXPLORER_COMMANDS.COPY) },
     { label: 'Delete selected', command: onDeleteSelected, disabled: taskStore.isLocked },
     { label: 'Add to canvas', command: onAddToCanvas },
     { label: 'Add to new canvas', command: onAddToNewCanvas }

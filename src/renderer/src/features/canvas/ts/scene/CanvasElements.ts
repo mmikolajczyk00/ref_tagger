@@ -16,9 +16,7 @@ export abstract class CanvasElement {
     canvas: CanvasScene
     elementId: string
     htmlElement: HTMLDivElement | undefined
-    mouseDown = false
     locked = false
-    isGrabbed = false
     isSelected = false
 
     constructor(canvas: CanvasScene, elementId: string = crypto.randomUUID()) {

@@ -176,3 +176,25 @@ export interface TaskInfo {
     error?: string
     warning?: string
 }
+
+// Clipboard feature (canvas/explorer copy & canvas paste)
+
+export interface SceneClipboardPayload {
+    app: 'ref-sheeter'
+    version: 1
+    elements: unknown[]
+}
+
+export interface ClipboardReadResult {
+    scene: string | null
+    text: string
+    imageDataUrl: string | null
+    uriListText: string
+}
+
+export interface ClipboardWriteOptions {
+    scene?: string
+    text?: string
+    imageDataUrl?: string
+    uriList?: string[]
+}

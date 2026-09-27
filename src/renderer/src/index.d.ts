@@ -2,6 +2,8 @@ import type {
     BackupLoadOptions,
     BackupManifest,
     BackupSaveOptions,
+    ClipboardReadResult,
+    ClipboardWriteOptions,
     DownloadProgressEvent,
     FileDownloadResult,
     TaskInfo
@@ -19,7 +21,7 @@ type iapi = {
         getMediaFileOfId(id: number): Promise<Result<MediaFile>>
         getFilePath: (file: File) => Promise<string> // webutils stuff
         getVideoThumb: (srcPath: string) => Promise<Result<{ thumb: string }>>
-        insertMediaFile: (payload: UploadFilePayload) => Promise<Result<void>>
+        insertMediaFile: (payload: UploadFilePayload) => Promise<Result<{ id: number }>>
         applyTagOperations: (operations: TagOperation[]) => Promise<Result<void>>
         searchFiles: (query: TagSearchQuery) => Promise<Result<void>>
         getFilesOfIds: (ids: number[]) => Promise<Result<void>>
@@ -97,6 +99,11 @@ type iapi = {
         isLocked: () => Promise<Result<boolean>>
         purge: () => Promise<Result<void>>
         onTaskUpdate: (handler: (task: TaskInfo) => void) => () => void
+    }
+    clipboard: {
+        read: () => Promise<ClipboardReadResult>
+        write: (options: ClipboardWriteOptions) => Promise<void>
+        importImage: (imageDataUrl: string) => Promise<Result<MediaFile>>
     }
 }
 

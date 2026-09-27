@@ -4,9 +4,12 @@ import { Result } from '../shared/types/api'
 import {
     BackupLoadOptions,
     BackupSaveOptions,
+    ClipboardReadResult,
+    ClipboardWriteOptions,
     DownloadInfoEvent,
     DownloadProgressEvent,
     FileDownloadResult,
+    MediaFile,
     TagOperation,
     TagSearchQuery,
     TaskInfo,
@@ -143,6 +146,14 @@ const api = {
                 ipcRenderer.off('api:tasks:updated', listener)
             }
         }
+    },
+
+    clipboard: {
+        read: (): Promise<ClipboardReadResult> => ipcRenderer.invoke('api:clipboard:read'),
+        write: (options: ClipboardWriteOptions): Promise<void> =>
+            ipcRenderer.invoke('api:clipboard:write', options),
+        importImage: (imageDataUrl: string): Promise<Result<MediaFile>> =>
+            ipcRenderer.invoke('api:clipboard:importImage', imageDataUrl)
     }
 }
 

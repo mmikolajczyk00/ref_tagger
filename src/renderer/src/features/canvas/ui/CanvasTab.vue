@@ -41,6 +41,22 @@ const canvasMenu = ref()
 
 const ctxMenuItems = computed(() => [
     {
+        label: 'Copy',
+        icon: 'pi pi-copy',
+        disabled: canvasScene.selectedElements.length === 0,
+        command: () => {
+            commandService.execute(CANVAS_COMMANDS.COPY)
+        }
+    },
+    {
+        label: 'Paste',
+        icon: 'pi pi-clipboard',
+        command: () => {
+            commandService.execute(CANVAS_COMMANDS.PASTE)
+        }
+    },
+    { separator: true },
+    {
         label: 'Delete',
         icon: 'pi pi-trash',
         command: () => {

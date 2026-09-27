@@ -14,11 +14,18 @@ import { registerIPCCanvasesHandlers } from './ipc/handleIPCCanvases'
 import { registerIPCTagsProcessingHandlers } from './ipc/handleIPCTagsProcessing'
 import { registerIPCDownloadHandlers } from './ipc/handleIPCDownload'
 import { registerIPCBackupHandlers } from './ipc/handleIPCBackup'
+import { registerIPCClipboardHandlers } from './ipc/handleIPCClipboard'
 
 protocol.registerSchemesAsPrivileged([
     {
         scheme: 'media',
-        privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true }
+        privileges: {
+            standard: true,
+            secure: true,
+            supportFetchAPI: true,
+            corsEnabled: true,
+            stream: true
+        }
     }
 ])
 
@@ -112,7 +119,10 @@ app.whenReady().then(() => {
 
             const targetPath = url.searchParams.get('path')
             if (!targetPath) {
-                return new Response('Missing path parameter', { status: 400 })
+                return new Response('Missing path parameter', {
+                    status: 400,
+                    headers: { 'Access-Control-Allow-Origin': '*' }
+                })
             }
 
             const normalizedPath = path.normalize(decodeURIComponent(targetPath))
@@ -121,7 +131,10 @@ app.whenReady().then(() => {
             try {
                 size = statSync(normalizedPath).size
             } catch {
-                return new Response('Not Found', { status: 404 })
+                return new Response('Not Found', {
+                    status: 404,
+                    headers: { 'Access-Control-Allow-Origin': '*' }
+                })
             }
 
             const contentType =
@@ -149,7 +162,10 @@ app.whenReady().then(() => {
             const headers: Record<string, string> = {
                 'Content-Type': contentType,
                 'Accept-Ranges': 'bytes',
-                'Content-Length': String(end - start + 1)
+                'Content-Length': String(end - start + 1),
+                // Custom-protocol responses are cross-origin w.r.t. the app origin
+                // (media:// vs file:// / http://localhost), so renderer fetch() needs CORS.
+                'Access-Control-Allow-Origin': '*'
             }
             if (partial) {
                 headers['Content-Range'] = `bytes ${start}-${end}/${size}`
@@ -165,7 +181,10 @@ app.whenReady().then(() => {
             return new Response(body, { status: partial ? 206 : 200, headers })
         } catch (error) {
             console.error('Custom Protocol Error:', error)
-            return new Response('Internal Protocol Error', { status: 500 })
+            return new Response('Internal Protocol Error', {
+                status: 500,
+                headers: { 'Access-Control-Allow-Origin': '*' }
+            })
         }
     })
 
@@ -191,6 +210,7 @@ app.whenReady().then(() => {
     registerIPCCanvasesHandlers(ipcMain, dbService, dbService.canvasService)
     registerIPCTagsProcessingHandlers(ipcMain, dbService, dbService.tagsProcessingService)
     registerIPCBackupHandlers(ipcMain, dbService, backupService)
+    registerIPCClipboardHandlers(ipcMain, dbService.fileService)
 
     ipcMain.handle('shell:openExternal', (_event, url: string) => {
         return shell.openExternal(url)

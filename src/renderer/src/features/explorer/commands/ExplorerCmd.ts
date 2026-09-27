@@ -1,5 +1,6 @@
 import { CommandRegistry, ICommand } from '@renderer/core/command_system/UndoRedoManager'
 import { useExplorerStore } from '../ts/useExplorerStore'
+import { buildScenePayload } from '@shared/clipboard/sceneClipboard'
 import { Explorer } from '../ts/createExplorer'
 import { useCanvasStore } from '../../canvas/ts/useCanvasStore'
 import { useFileStore } from '@renderer/core/stores/useFileStore'
@@ -7,12 +8,13 @@ import { useTagStore } from '@renderer/core/stores/useTagStore'
 import { AppContext } from '@renderer/core/command_system/AppContext'
 
 export const EXPLORER_COMMANDS = {
-    SELECT_ALL: 'select_all',
-    DELETE_SELECTED: 'delete_selected',
-    ADD_TO_NEW_CANVAS: 'add_to_new_canvas',
-    VIEW_IN_GALLERIA: 'view_in_galleria',
-    ADD_TAGS_TO_FILES: 'add_tags_to_files',
-    REMOVE_TAGS_FROM_FILES: 'remove_tags_from_files'
+    SELECT_ALL: 'explorer_select_all',
+    DELETE_SELECTED: 'explorer_delete_selected',
+    ADD_TO_NEW_CANVAS: 'explorer_add_to_new_canvas',
+    VIEW_IN_GALLERIA: 'explorer_view_in_galleria',
+    ADD_TAGS_TO_FILES: 'explorer_add_tags_to_files',
+    REMOVE_TAGS_FROM_FILES: 'explorer_remove_tags_from_files',
+    COPY: 'explorer_copy'
 } as const
 
 class SelectAllCommand implements ICommand {
@@ -197,6 +199,30 @@ class RemoveTagsFromFilesCommand implements ICommand {
     }
 }
 
+class CopySelectedCommand implements ICommand {
+    undoable = false
+    timestamp: number | undefined
+
+    constructor(private explorer: Explorer) {}
+
+    async execute(): Promise<void> {
+        const items = this.explorer.selectedItems
+        if (items.length === 0) return
+
+        await window.api.clipboard.write({
+            scene: buildScenePayload(
+                items.map((f) => ({
+                    elementId: crypto.randomUUID(),
+                    type: 'media',
+                    fileId: f.id
+                }))
+            ),
+            uriList: items.map((f) => f.filePath)
+        })
+    }
+    undo(): void {}
+}
+
 export function registerExplorerCommands(commandRegistry: CommandRegistry) {
     const activeExplorer = () => useExplorerStore().getActiveExplorer
     const scope = 'explorer'
@@ -226,6 +252,16 @@ export function registerExplorerCommands(commandRegistry: CommandRegistry) {
         keybind: 'delete',
         when: hasSelection,
         create: () => new DeleteSelectedCommand(activeExplorer()!)
+    })
+
+    commandRegistry.register({
+        id: EXPLORER_COMMANDS.COPY,
+        label: 'Copy',
+        scope,
+        showInPalette: true,
+        keybind: 'ctrl+c',
+        when: hasSelection,
+        create: () => new CopySelectedCommand(activeExplorer()!)
     })
 
     commandRegistry.register({
